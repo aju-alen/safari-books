@@ -35,7 +35,7 @@ const App = () => {
     });
 
     return (
-      <Redirect href='(authenticate)/register' />
+      <Redirect href='(authenticate)/[chooseRole]' />
     )
 
 }

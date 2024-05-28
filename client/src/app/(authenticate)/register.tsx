@@ -11,7 +11,7 @@ import { defaultStyles } from '../../styles/index'
 
 const RegisterPage = () => {
     const [name, setName] = useState('');
-    const [isPasswordShown, setIsPasswordShown] = useState(false);
+    const [isPasswordShown, setIsPasswordShown] = useState(true);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -29,19 +29,19 @@ const RegisterPage = () => {
                 Alert.alert('Passwords do not match');
                 return;
             }
+            console.log(`${ipURL}/api/auth/register`);
+            
             const resp = await axios.post(`${ipURL}/api/auth/register`, user)
             console.log(resp.data, 'Registered succesfully');
             Alert.alert('Registration Succesful, Verify email to login');
-            router.replace(`/(authenticate)/${resp.data.userId}`);
+            router.replace(`/(authenticate)/${resp.data.id}`);
         }
-        catch (err) {
-            console.log(err);
-            Alert.alert('Something wrong has happened');
+        catch (error) {
+            console.log(error.response.data, 'Error in registration');
+            Alert.alert(error.response.data.message);
             return;
         }
     }
-
-
 
     return (
 
@@ -231,7 +231,7 @@ const RegisterPage = () => {
                     <Button
                         title="Sign Up"
                         filled
-                        color={COLORS.primary
+                        color={COLORS.secondary
                         }
                         style={{
                             marginTop: verticalScale(18),

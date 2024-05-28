@@ -4,10 +4,10 @@ const TabsLaout = () =>{
 
     return(
         <Tabs>
-            <Tabs.Screen name='home' options={{ headerShown: false }} />
-            <Tabs.Screen name='favoirites' options={{ headerShown: false }} />
-            <Tabs.Screen name='library' options={{ headerShown: false }} />
-            <Tabs.Screen name='favoirites' options={{ headerShown: false }} />
+            <Tabs.Screen
+        name="home"
+        options={{ headerShown: false, tabBarLabel: "Home" }}
+      />
         </Tabs>
     )
 

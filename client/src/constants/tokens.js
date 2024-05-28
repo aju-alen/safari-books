@@ -1,6 +1,7 @@
 export const COLORS = {
 	primary: '#800000',
-	secondary: "#444262",
+	secondary: "#606c38",
+	secondary2: "#6F2DBD",
   tertiary: "#FF7754",
 	background: '#000',
 	text: '#fff',
@@ -31,7 +32,7 @@ export const SCREENPADDING = {
 
 export const SHADOWS = {
 	small: {
-		shadowColor: "#000",
+		shadowColor: "#ffffff",
 		shadowOffset: {
 			width: 0,
 			height: 2,
@@ -41,7 +42,7 @@ export const SHADOWS = {
 		elevation: 2,
 	},
 	medium: {
-		shadowColor: "#000",
+		shadowColor: "#ffffff",
 		shadowOffset: {
 			width: 0,
 			height: 2,
