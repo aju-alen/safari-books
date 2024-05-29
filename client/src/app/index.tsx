@@ -8,10 +8,10 @@ import { View, Text } from "react-native";
 import * as SecureStore from 'expo-secure-store';
 import { FONT } from '../constants/tokens';
 
-// SplashScreen.preventAutoHideAsync();
+SplashScreen.preventAutoHideAsync();
 
 const App = () => {
-
+  const [wait, setWait] = useState(true);
     const [fontsLoaded] = useFonts({
 
         NotoSemiBold: require('../../assets/fonts/NotoSans/NotoSans-SemiBold.ttf'),
@@ -30,12 +30,35 @@ const App = () => {
         RobotoRegular: require('../../assets/fonts/Roboto/Roboto-Regular.ttf'),
         RobotoThin: require('../../assets/fonts/Roboto/Roboto-Thin.ttf'),
         RobotoThinItalic: require('../../assets/fonts/Roboto/Roboto-ThinItalic.ttf'),
+        "ClashGroteskBold": require('../../assets/fonts/Clash_Grotesk/ClashGrotesk-Bold.ttf'),
+        ClashGroteskRegular: require('../../assets/fonts/Clash_Grotesk/ClashGrotesk-Regular.ttf'),
+        ClashGroteskMedium: require('../../assets/fonts/Clash_Grotesk/ClashGrotesk-Medium.ttf'),
+        ClashGroteskSemiBold: require('../../assets/fonts/Clash_Grotesk/ClashGrotesk-Semibold.ttf'),
+        ClashGroteskExtraLight: require('../../assets/fonts/Clash_Grotesk/ClashGrotesk-Extralight.ttf'),
+        "ClashGroteskLight": require('../../assets/fonts/Clash_Grotesk/ClashGrotesk-Light.ttf'),
 
 
     });
 
+    useEffect(() => {
+      const hideSplashScreen = async () => {
+        if (fontsLoaded) {
+          // Wait for 10 seconds before hiding the splash screen
+          setTimeout(async () => {
+            await SplashScreen.hideAsync();
+            setWait(false);  // Update state to reflect that the splash screen has been hidden
+          }, 2000);
+        }
+      };
+      hideSplashScreen();
+    }, [fontsLoaded]);
+
+    if (!fontsLoaded || wait) {
+      return null;
+    }
+
     return (
-      <Redirect href='(authenticate)/[chooseRole]' />
+      <Redirect href='(tabs)/home' />
     )
 
 }

@@ -1,4 +1,4 @@
-import { COLORS, FONTSIZE } from '../constants/tokens'
+import { COLORS, FONT, FONTSIZE } from '../constants/tokens'
 import { StyleSheet } from 'react-native'
 
 export const defaultStyles = StyleSheet.create({
@@ -8,6 +8,11 @@ export const defaultStyles = StyleSheet.create({
 	},
 	text: {
 		fontSize: FONTSIZE.large,
+		color: COLORS.text,
+	},
+	mainText: {
+		fontSize: FONTSIZE.large,
+		fontFamily:FONT.notoBold,
 		color: COLORS.text,
 	},
 })

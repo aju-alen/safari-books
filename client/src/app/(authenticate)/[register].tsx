@@ -8,8 +8,11 @@ import { COLORS, welcomeCOLOR } from '../../constants/tokens';
 import Button from '../../components/Button';
 import { verticalScale, horizontalScale, moderateScale } from '../../utils/responsiveSize';
 import { defaultStyles } from '../../styles/index'
+import { useLocalSearchParams } from 'expo-router';
 
 const RegisterPage = () => {
+    const { register } = useLocalSearchParams();
+
     const [name, setName] = useState('');
     const [isPasswordShown, setIsPasswordShown] = useState(true);
     const [email, setEmail] = useState('');
@@ -23,6 +26,7 @@ const RegisterPage = () => {
             email,
             password,
             confirmPassword,
+            role: register
         }
         try {
             if (password !== confirmPassword) {
@@ -34,7 +38,7 @@ const RegisterPage = () => {
             const resp = await axios.post(`${ipURL}/api/auth/register`, user)
             console.log(resp.data, 'Registered succesfully');
             Alert.alert('Registration Succesful, Verify email to login');
-            router.replace(`/(authenticate)/${resp.data.id}`);
+            router.replace(`/(authenticate)/login`);
         }
         catch (error) {
             console.log(error.response.data, 'Error in registration');
@@ -42,7 +46,7 @@ const RegisterPage = () => {
             return;
         }
     }
-
+    
     return (
 
         <SafeAreaView style={defaultStyles.container}>

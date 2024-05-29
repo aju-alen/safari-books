@@ -1,17 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { View, TextInput, SafeAreaView, StyleSheet, KeyboardAvoidingView, TouchableOpacity, Text,Pressable, Alert, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Link, router } from 'expo-router';
-import { Router } from 'expo-router';
+import { router } from 'expo-router';
 import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
-import { ipURL } from '../../utils/backendURL.js';
-import { COLORS, FONT, SHADOWS } from '../../constants/tokens.js';
-import { welcomeCOLOR } from '../../constants/tokens.js';
+import { ipURL } from '../../utils/backendURL.ts';
+import { COLORS, FONT, SHADOWS } from '../../constants/tokens.ts';
+import { welcomeCOLOR } from '../../constants/tokens.ts';
 import Button from '../../components/Button.tsx';
-import { horizontalScale, moderateScale, verticalScale } from '../../utils/responsiveSize.js';
-import { defaultStyles } from '../../styles/index.js';
+import { horizontalScale, moderateScale, verticalScale } from '../../utils/responsiveSize.ts';
+import { defaultStyles } from '../../styles/index.ts';
 
 
 const LoginPage = () => {
@@ -198,7 +196,7 @@ const LoginPage = () => {
                                 fontFamily:FONT.RobotoLight
                              }}>Don't have an account?</Text>
                         <Pressable
-                            onPress={() => router.replace('/(authenticate)/register')}
+                            onPress={() => router.replace('/(authenticate)/chooseRole')}
                         >
                             <Text style={{
                                 fontSize: moderateScale(16),

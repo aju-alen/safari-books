@@ -19,7 +19,7 @@ model User{
   name String
   email String @unique
   password String
-  role Role @default(LISTENER)
+  role Role 
   emailVerificationToken String?
   emailVerified Boolean @default(false)
   
@@ -34,4 +34,20 @@ enum Role{
   NARRATOR
   ADMIN
   PUBLISHER
+}
+
+model Book{
+  id String @id @default(cuid())
+  title String
+  description String
+  durationInHours Int
+  durationInMinutes Int
+  coverImage String
+  authorName String
+  narratorName String
+  Summary String @db.LongText
+  ReleaseDate DateTime
+  Language String
+  Publisher String
+  rating Int
 }

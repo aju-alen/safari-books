@@ -2,7 +2,7 @@ export const COLORS = {
 	primary: '#800000',
 	secondary: "#606c38",
 	secondary2: "#6F2DBD",
-  tertiary: "#FF7754",
+	tertiary: "#FF7754",
 	background: '#000',
 	text: '#fff',
 	textMuted: '#9ca3af',
@@ -12,9 +12,10 @@ export const COLORS = {
 
 	gray: "#83829A",
 	gray2: "#C1C0C8",
-  
+
 	white: "#F3F4F8",
 	lightWhite: "#FAFAFC",
+	tabs: "#1B1212",
 }
 
 export const FONTSIZE = {
@@ -81,5 +82,12 @@ export const FONT = {
 	RobotoRegular: "RobotoRegular",
 	RobotoThin: "RobotoThin",
 	RobotoThinItalic: "RobotoThinItalic",
+
+	ClashGroteskBold: "ClashGroteskBold",
+	ClashGroteskRegular: "ClashGroteskRegular",
+	ClashGroteskMedium: "ClashGroteskMedium",
+	ClashGroteskSemiBold: "ClashGroteskSemiBold",
+	ClashGroteskExtraLight: "ClashGroteskExtraLight",
+	ClashGroteskLight: "ClashGroteskLight",
 
 };

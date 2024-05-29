@@ -1,0 +1,50 @@
+export const eBookData = [
+    {
+        id: 'a1b2',
+        title: 'Looney Tunes',
+        description: 'Learn how to take strong decisions in life',
+        durationInHours:4,
+        durationInMinutes:37,
+        coverImage:"https://i1.sndcdn.com/artworks-3SD8lFMYlkD5znic-CRqlTw-t500x500.jpg",
+        authorName:"James Kora",
+        narratorName:"Boran Mark",
+        Summary:"This book is about taking strong decisions in life. It is a must read for everyone who wants to be successful in life.",
+        ReleaseDate:"2021-09-01",
+        Language:"English",
+        Publisher:"Corpo Inc",
+        rating:12356,
+        colorCode:'CABF1D'
+    },
+    {
+        id: 'aewrb2',
+        title: 'Aikido Student Manual',
+        description: 'Learn how to take strong decisions in life',
+        durationInHours:4,
+        durationInMinutes:37,
+        coverImage:"https://m.media-amazon.com/images/I/41OX6CyPlLL._SL500_.jpg",
+        authorName:"James Kora",
+        narratorName:"Boran Mark",
+        Summary:"This book is about taking strong decisions in life. It is a must read for everyone who wants to be successful in life.",
+        ReleaseDate:"2021-09-01",
+        Language:"English",
+        Publisher:"Corpo Inc",
+        rating:52356,
+        colorCode:'E34A24'
+    },
+    {
+        id: 'aafn82',
+        title: 'Taking Strong Decisions',
+        description: 'Learn how to take strong decisions in life',
+        durationInHours:4,
+        durationInMinutes:37,
+        coverImage:"https://blog.kotobee.com/wp-content/uploads/2019/03/red-book-rests-on-wood670.jpg",
+        authorName:"James Kora",
+        narratorName:"Boran Mark",
+        Summary:"This book is about taking strong decisions in life. It is a must read for everyone who wants to be successful in life.",
+        ReleaseDate:"2021-09-01",
+        Language:"English",
+        Publisher:"Corpo Inc",
+        rating:385,
+        colorCode:'DDDCCF'
+    }
+]

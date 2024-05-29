@@ -10,10 +10,10 @@ dotenv.config();
 const prisma = new PrismaClient();
 
 export const register = async (req, res) => {
-    const { name, email, password } = req.body;
+    const { name, email, password,role } = req.body;
     try{
 
-        if (!name ||  !email || !password) {
+        if (!name ||  !email || !password || !role) {
             return res.status(400).json({ message: "Please fill all the fields" });
         }
         const userExists = await prisma.user.findUnique({
@@ -34,7 +34,8 @@ export const register = async (req, res) => {
                 email: lowercaseEmail,
                 password: hashedPassword,
                 name,
-                emailVerificationToken
+                emailVerificationToken,
+                role
             }
         });
         await prisma.$disconnect();
