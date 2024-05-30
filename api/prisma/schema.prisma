@@ -37,6 +37,7 @@ enum Role{
 }
 
 model Book{
+
   id String @id @default(cuid())
   title String
   description String
@@ -45,9 +46,11 @@ model Book{
   coverImage String
   authorName String
   narratorName String
-  Summary String @db.LongText
-  ReleaseDate DateTime
-  Language String
-  Publisher String
+  summary String @db.LongText
+  releaseDate DateTime
+  language String
+  publisher String
   rating Int
+  colorCode String
+
 }

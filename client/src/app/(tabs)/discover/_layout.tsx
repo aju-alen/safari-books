@@ -4,7 +4,7 @@ import { Stack, router } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons';
 
 
-const SearchLayout = () => {
+const DiscoverLayout = () => {
   return (
     <Stack>
         <Stack.Screen name="index" options={{ headerShown: false }} />
@@ -14,4 +14,4 @@ const SearchLayout = () => {
   )
 }
 
-export default SearchLayout
+export default DiscoverLayout

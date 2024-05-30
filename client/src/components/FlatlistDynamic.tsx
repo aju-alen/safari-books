@@ -5,7 +5,6 @@ import { horizontalScale, moderateScale, verticalScale } from '@/utils/responsiv
 import { FONT } from '@/constants/tokens';
 
 const FlatlistDynamic = ({ bookData,renderItem }) => {
-  console.log(bookData, 'bookData');
 
   return (
 

@@ -6,7 +6,7 @@ import { defaultStyles } from '@/styles'
 import FlatlistDynamic from './FlatlistDynamic'
 import { router } from 'expo-router'
 
-const LatestRelease = ({bookData}) => {
+const TrendingRelease = ({bookData}) => {
 
     const renderItem=({ item }) => (
         
@@ -14,11 +14,13 @@ const LatestRelease = ({bookData}) => {
           <TouchableOpacity onPress={()=>router.push(`/(tabs)/home/${item.id}`)} >
 
             <Image source={{ uri: item.coverImage }} style={styles.coverImageContainer} />
+            <View style={styles.coverTextContainer}>
             <Text style={[defaultStyles.text, styles.bookTitle]}>{item.title}</Text>
             <Text style={[defaultStyles.text, styles.bookAuthor]}>{item.authorName}</Text>
             <View style={{flexDirection:'row'}}>
               <Text style={[defaultStyles.text,styles.bookRatings]}> ☆ ☆ ☆ </Text>
               <Text style={[defaultStyles.text,styles.bookRatings]}>{item.rating} rating</Text>
+            </View>
             </View>
 
           </TouchableOpacity>
@@ -30,18 +32,27 @@ const LatestRelease = ({bookData}) => {
   )
 }
 
-export default LatestRelease
+export default TrendingRelease
 
 const styles = StyleSheet.create({
     flatlistItemContainer: {
       margin: moderateScale(10),
       alignItems: 'center',
       justifyContent: 'center',
+      
     },
     coverImageContainer: {
       width: horizontalScale(170),
       height: verticalScale(200),
       borderRadius: moderateScale(10),
+     
+      
+    },
+    coverTextContainer: {
+      width: horizontalScale(170),
+      borderRadius: moderateScale(10),
+      
+      
     },
     bookTitle: {
       fontSize: moderateScale(14),

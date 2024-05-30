@@ -20,7 +20,8 @@ const SingleBookPage = () => {
     console.log(singleBookData, 'singleBookData');
     
   return (
-    <SafeAreaView style={defaultStyles.container}>
+        <ScrollView style={defaultStyles.container}>
+    <SafeAreaView >
          <LinearGradient
             style={{
                 flex: 1
@@ -28,7 +29,6 @@ const SingleBookPage = () => {
             colors={[`#${singleBookData[0]?.colorCode}`, COLORS.background]}
             end={{ x: 0.5, y: 0.3 }}
         >
-            <ScrollView>
     <View style={styles.imageContainer}>
       <Image source={{uri: singleBookData[0]?.coverImage}} style={{width: 200, height: 200,borderRadius:moderateScale(10)}} />
       <Text style={[defaultStyles.text,{fontSize:moderateScale(20),marginTop:moderateScale(10)}]}>{singleBookData[0]?.title}</Text>
@@ -52,7 +52,7 @@ const SingleBookPage = () => {
 
         <View style={{justifyContent:'center', alignItems:'center'}}>
         <Text style={[defaultStyles.text,{fontSize:moderateScale(15),marginTop:moderateScale(10)}]}>BY</Text>
-        <Text style={[defaultStyles.text,{fontSize:moderateScale(15),marginTop:moderateScale(10)}]}>{singleBookData[0]?.authorName}</Text>
+        <Text style={[defaultStyles.text,{fontSize:moderateScale(15),marginTop:moderateScale(10)}]}>{singleBookData[0]?.narratorName}</Text>
         </View>
         
         </View>
@@ -67,10 +67,20 @@ const SingleBookPage = () => {
         <Text style={[defaultStyles.mainText]}>Summary</Text>
         <Text style={[defaultStyles.text,{fontSize:moderateScale(15),marginTop:moderateScale(10)}]}>{singleBookData[0]?.Summary}</Text>
 
+        <Text style={[defaultStyles.mainText]}>Product Details</Text>
+        <Text style={[defaultStyles.text,{fontSize:moderateScale(15),marginTop:moderateScale(10)}]}>Release Date: {singleBookData[0]?.ReleaseDate}</Text>
+        <Text style={[defaultStyles.text,{fontSize:moderateScale(15),marginTop:moderateScale(10)}]}>Language: {singleBookData[0]?.Language}</Text>
+        <Text style={[defaultStyles.text,{fontSize:moderateScale(15),marginTop:moderateScale(10)}]}>Publisher: {singleBookData[0]?.Publisher}</Text>
+
+        <Text style={[defaultStyles.mainText]}>You may also enjoy...</Text>
+        
+
+
+
     </View>
-    </ScrollView>
     </LinearGradient>
     </SafeAreaView>
+    </ScrollView>
   )
 }
 
