@@ -52,6 +52,9 @@ const LoginPage = () => {
             if (resp.data.role === 'LISTENER') {
                 router.replace('/(tabs)/home');
             }
+            else if (resp.data.role === 'PUBLISHER') {
+                router.replace('/(publisher)/publisherhome');
+            }
 
         }
         catch (err) {

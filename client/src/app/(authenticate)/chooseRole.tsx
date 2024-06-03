@@ -8,9 +8,8 @@ import { router } from 'expo-router';
 
 const options = [
   { id: '1', title: 'I am here to listen to some books',role:'LISTENER' },
-  { id: '2', title: 'I am here to publish my book',role:'AUTHOR' },
+  { id: '2', title: 'I am here to publish my book',role:'PUBLISHER' },
   { id: '3', title: 'I am here to narrate books', role:'NARRATOR' },
-  { id: '4', title: 'I am here to publish book rights', role:'PUBLISHER'},
 ];
 
 const App = () => {
@@ -70,7 +69,7 @@ const styles = StyleSheet.create({
   },
   card: {
     width: horizontalScale(350),
-    height: verticalScale(150),
+    height: verticalScale(200),
     padding: 20,
     marginVertical: 10,
     borderRadius: 10,

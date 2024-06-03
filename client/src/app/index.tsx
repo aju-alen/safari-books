@@ -58,7 +58,7 @@ const App = () => {
     }
 
     return (
-      <Redirect href='(tabs)/home' />
+      <Redirect href='/(publisher)/publisherhome' />
     )
 
 }

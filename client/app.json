@@ -18,7 +18,9 @@
         "usesNonExemptEncryption": false
       },
       "infoPlist": {
-        "UIBackgroundModes": ["audio"]
+        "UIBackgroundModes": [
+          "audio"
+        ]
       }
     },
     "android": {
@@ -26,7 +28,11 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#000000"
       },
-      "permissions": ["WAKE_LOCK"]
+      "permissions": [
+        "android.permission.WAKE_LOCK",
+        "android.permission.RECORD_AUDIO"
+      ],
+      "package": "com.rise_admin.safaribooks"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -40,11 +46,25 @@
         {
           "photosPermission": "The app accesses your photos to let you share them with your friends."
         }
+      ],
+      [
+        "expo-dev-launcher",
+        {
+          "launchMode": "most-recent"
+        }
       ]
     ],
     "experiments": {
       "typedRoutes": true,
       "tsconfigPaths": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "123af441-0599-4e2f-9f5c-51f01300af07"
+      }
     }
   }
 }

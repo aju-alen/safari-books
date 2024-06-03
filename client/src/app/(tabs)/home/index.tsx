@@ -30,7 +30,7 @@ const HomePage = () => {
         <EvilIcons name="search" size={24} color={COLORS.primary} /> 
         </TouchableOpacity>
       </View>
-      <AudioPlayer audioUrl={'../../../../assets/sounds/testAudio.mp3'} />
+      <AudioPlayer />
 
         <Text style={[defaultStyles.mainText,styles.mainHeading]}>Trending Release</Text>
         <View>

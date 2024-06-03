@@ -1,74 +1,41 @@
-import { FontAwesome } from '@expo/vector-icons';
-import { Audio, InterruptionModeAndroid, InterruptionModeIOS } from 'expo-av';
-import { Sound } from 'expo-av/build/Audio';
-import React, { useEffect, useState } from 'react';
-import { StyleSheet, TouchableOpacity,SafeAreaView,ScrollView } from 'react-native';
-import { defaultStyles } from '@/styles';
+import { useEffect, useState } from 'react';
+import { View, StyleSheet, Button } from 'react-native';
+import { Audio } from 'expo-av';
 
+export default function App() {
+  const [sound, setSound] = useState();
 
+  async function playSound() {
+    console.log('Loading Sound');
+    const { sound } = await Audio.Sound.createAsync( require('../../assets/sounds/testAudio.mp3')
+    );
+    setSound(sound);
 
-const AudioPlayer = ({ audioUrl}) => {
-    const [isPlaying, setIsPlaying] = useState<boolean>(false);
-    const [sound, setSound] = useState<Sound | null>(null);
-    console.log(audioUrl, 'audioUrl');
-    
-  
-    useEffect(() => {
-      Audio.setAudioModeAsync({
-          staysActiveInBackground: true,
-          playsInSilentModeIOS: true,
-          interruptionModeIOS: InterruptionModeIOS.DuckOthers,
-          interruptionModeAndroid: InterruptionModeAndroid.DuckOthers,
-          shouldDuckAndroid: true,
-          playThroughEarpieceAndroid: true,
-      });
-      return sound
-        ? () => {
-          sound.unloadAsync();
-        }
-        : undefined;
-    }, [sound]);
-  
-    const playAudio = async () => {
-      // Set and play the sound
-      const { sound: newSound } = await Audio.Sound.createAsync(require('../../assets/sounds/testAudio.mp3'));
-      setSound(newSound);
-  
-      setIsPlaying(true);
-      await newSound.playAsync();
-  
-      // After the sound has finished, update the state so that the icon changes
-      newSound.setOnPlaybackStatusUpdate((status) => {
-        if ('didJustFinish' in status && status.didJustFinish) {
-          setIsPlaying(false);
-        }
-      });
-  };
-    
-    return (
-      <SafeAreaView style={defaultStyles.container}>
-        <ScrollView showsVerticalScrollIndicator={false}>
-          
-        <TouchableOpacity onPress={playAudio}>
-        <FontAwesome name={isPlaying ? 'volume-up' : 'play'} size={35} color="#fff" />
-      </TouchableOpacity>
-          </ScrollView>
-      </SafeAreaView>
-    )
+    console.log('Playing Sound');
+    await sound.playAsync();
   }
 
-export default AudioPlayer;
+  useEffect(() => {
+    return sound
+      ? () => {
+          console.log('Unloading Sound');
+          sound.unloadAsync();
+        }
+      : undefined;
+  }, [sound]);
+
+  return (
+    <View style={styles.container}>
+      <Button title="Play Sound" onPress={playSound} />
+    </View>
+  );
+}
 
 const styles = StyleSheet.create({
-  button: {
-    height: 30,
-    width: 30,
-    borderRadius: 15, // Half of the height/width
+  container: {
+    flex: 1,
     justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    marginHorizontal: 5,
+    backgroundColor: '#ecf0f1',
+    padding: 10,
   },
 });
