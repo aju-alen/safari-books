@@ -20,13 +20,13 @@ const publisherhome = () => {
       {text: 'I am an author', onPress: () => router.push('/(publisher)/publisheauthorForm'),}
     ]);
 
-  useEffect(() => {
-    const getAsyncData = async () => {
-      const token = await SecureStore.getItemAsync('userDetails');
-      console.log(token, 'token');
-    }
-    getAsyncData();
-  }, [])
+  // useEffect(() => {
+  //   const getAsyncData = async () => {
+  //     const token = await SecureStore.getItemAsync('userDetails');
+  //     console.log(token, 'token');
+  //   }
+  //   getAsyncData();
+  // }, [])
 
   
   return (
