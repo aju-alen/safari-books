@@ -12,32 +12,44 @@ const s3 = new AWS.S3({
 });
 export const postProfileImageS3 = async (req, res,next) => {
 //    const userId = req.params.userId;
-    const file = req.file;
-    // const filePath = path.join(__dirname, file.path);
-    console.log('backend hit',file);
+console.log(req.files,'files');
+const files = req.files;
+const uploadPromises = [];
 
-  
-    try {
-        const fileContent = file.buffer;  
-      // Set up S3 upload parameters
-      const params = {
+Object.keys(files).forEach((key) => {
+    const file = files[key][0];
+    const params = {
         Bucket: process.env.S3_BUCKET_NAME,
         Key: `${file.originalname}`, // File name you want to save as in S3
-        Body: fileContent,
+        Body: file.buffer,
         ContentType: file.mimetype,
-      };
-  
-      // Uploading files to the bucket
-      const data = await s3.upload(params).promise();
-  
-      // Delete file from server after upload
-  
-      console.log(`File uploaded successfully. ${data.Location}`);
-      res.status(200).json({ message: 'File uploaded successfully', data });
-    } catch (err) {
-      console.error(err);
-      // Delete file from server if there's an error
-      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-      res.status(500).json({ error: 'Error uploading file' });
-    }
+    };
+    uploadPromises.push(s3.upload(params).promise());
+});
+
+try {
+    const uploadResults = await Promise.all(uploadPromises);
+    const fileLocations = uploadResults.map(result => result.Location);
+    res.status(200).json({ message: 'Files uploaded successfully', data: fileLocations });
+} catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error uploading files' });
+}
   };
+
+  export const postAudioS3 = async (req, res) => {
+    const file = req.file;
+    const params = {
+        Bucket: process.env.S3_BUCKET_NAME,
+        Key: `${file.originalname}`, // File name you want to save as in S3
+        Body: file.buffer,
+        ContentType: file.mimetype,
+    };
+    try {
+        const uploadResult = await s3.upload(params).promise();
+        res.status(200).json({ message: 'File uploaded successfully', data: uploadResult.Location });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Error uploading file' });
+    }
+  }

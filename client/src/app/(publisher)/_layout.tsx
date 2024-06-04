@@ -10,6 +10,7 @@ const PublisherLayout = () =>{
             <Stack.Screen name='publisherhome' options={{ headerShown: false }} />
             <Stack.Screen name='publisheauthorForm' options={{ headerShown: false }} />
             <Stack.Screen name='publishercompanyForm' options={{ headerShown: false }} />
+            <Stack.Screen name='[publisherCommonForm]' options={{ headerShown: false }} />
         </Stack>
         </View>
     )
