@@ -38,6 +38,7 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
+      "react-native-compressor",
       "expo-router",
       "expo-font",
       "expo-secure-store",
@@ -58,7 +59,8 @@
         {
           "iCloudContainerEnvironment": "Production"
         }
-      ]
+      ],
+      "react-native-compressor"
     ],
     "experiments": {
       "typedRoutes": true,

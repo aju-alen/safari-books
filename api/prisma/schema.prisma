@@ -26,6 +26,10 @@ model User{
   updatedAt DateTime @updatedAt
   createdAt DateTime @default(now())
 
+   // Define the one-to-many relationship
+  companies             Company[] // A user can have many companies
+
+
 }
 
 enum Role{
@@ -51,5 +55,40 @@ model Book{
   publisher String
   rating Int
   colorCode String
+}
 
+model Company{
+id String @id 
+companyName String
+address String
+telephone String
+companyRegNo String
+kraPin String
+companyRegNoPdfUrl String
+kraPinPdfUrl String
+
+// Add a foreign key to reference the user
+  userId                String   
+
+  // Define the relationship with the User model
+  user                  User     @relation(fields: [userId], references: [id])
+
+
+title String?
+language String?
+categories String?
+date DateTime?
+ISBNDOIISRC String?
+synopsis String? @db.LongText
+narrator String?
+narrationStyleSlow Boolean?
+narrationStyleFast Boolean?
+narrationStyleIntimate Boolean?
+narrationStyleCasual Boolean?
+narrationStyleStatic Boolean?
+narrationStyleOratoric Boolean?
+audioSampleURL String?
+pdfURL String?
+rightsHolder Boolean?
+  
 }

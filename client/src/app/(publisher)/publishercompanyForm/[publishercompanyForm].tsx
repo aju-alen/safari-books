@@ -7,9 +7,16 @@ import { COLORS, FONT, welcomeCOLOR } from '@/constants/tokens'
 import { ipURL } from '@/utils/backendURL'
 import * as DocumentPicker from 'expo-document-picker';
 import Button from '@/components/Button'
+import { createId } from '@paralleldrive/cuid2';
+import { router, useLocalSearchParams } from 'expo-router'
+import axios from 'axios'
 
+const id = createId();
 
 const publishercompanyForm = () => {
+  const {publishercompanyForm} = useLocalSearchParams();
+  console.log(publishercompanyForm,'this is userId');
+  
   const [companyName, setCompanyName] = React.useState('')
   const [address, setAddress] = React.useState('')
   const [telephone, setTelephone] = React.useState('')
@@ -45,6 +52,9 @@ const publishercompanyForm = () => {
     if (doc1) formData.append('document1', { uri: doc1.uri, name: doc1.name, type: doc1.type });
     if (doc2) formData.append('document2', { uri: doc2.uri, name: doc2.name, type: doc2.type });
 
+    formData.append('id',id,);
+    formData.append('userId',publishercompanyForm);
+  
 
     const options = {
       method: 'POST',
@@ -61,13 +71,45 @@ const publishercompanyForm = () => {
         throw new Error('Network response was not ok');
       }
       const responseData = await response.json();
-      console.log('Success:', responseData);
-
+      return responseData['data'];
 
     } catch (error) {
       console.error('Error:', error);
+      return error;
     }
   };
+
+  const handleSubmit = async () => {
+    try{
+      const docata = await postDocuments();
+      console.log(docata,'document function return ');
+      
+      const data = {
+        id,
+        companyName: companyName,
+        address: address,
+        telephone: telephone,
+        companyRegNo: companyRegNo,
+        kraPin: kraPin,
+        companyRegNoPdfUrl:docata[0],
+        kraPinPdfUrl:docata[1],
+        userId:publishercompanyForm
+  
+      }
+  
+      const response = await axios.post(`${ipURL}/api/publisher/create-company`, data
+      );
+      console.log(response.data,'after backend data is saved');
+
+      router.push(`/(publisher)/${id}`)
+    }
+    catch(error){
+      console.log(error,'error');
+    }
+  
+
+
+  }
   return (
     <SafeAreaView style={defaultStyles.container}>
 
@@ -87,7 +129,7 @@ const publishercompanyForm = () => {
             marginVertical: verticalScale(12),
             color: welcomeCOLOR.white
           }}>
-            Publish as an author
+            Publish as an company
           </Text>
 
 
@@ -298,7 +340,7 @@ const publishercompanyForm = () => {
                             marginTop: verticalScale(18),
                             marginBottom: verticalScale(4),
                         }}
-                        onPress={postDocuments}
+                        onPress={handleSubmit}
                     />
         </View>
 

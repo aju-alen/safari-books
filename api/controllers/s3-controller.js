@@ -13,6 +13,8 @@ const s3 = new AWS.S3({
 export const postProfileImageS3 = async (req, res,next) => {
 //    const userId = req.params.userId;
 console.log(req.files,'files');
+console.log(req.body,'body');
+const {id,userId,publishingType} = req.body;
 const files = req.files;
 const uploadPromises = [];
 
@@ -20,7 +22,7 @@ Object.keys(files).forEach((key) => {
     const file = files[key][0];
     const params = {
         Bucket: process.env.S3_BUCKET_NAME,
-        Key: `${file.originalname}`, // File name you want to save as in S3
+        Key: `${userId}/${id}/verificationfiles/${file.originalname}`, // File name you want to save as in S3
         Body: file.buffer,
         ContentType: file.mimetype,
     };
@@ -38,13 +40,16 @@ try {
   };
 
   export const postAudioS3 = async (req, res) => {
+    const {id,userId,publishingType} = req.body;
+    console.log(id,userId,'id,userId');
     const file = req.file;
     const params = {
         Bucket: process.env.S3_BUCKET_NAME,
-        Key: `${file.originalname}`, // File name you want to save as in S3
+        Key: `${userId}/${id}/verificationfiles/${file.originalname}`, // File name you want to save as in S3
         Body: file.buffer,
         ContentType: file.mimetype,
     };
+    console.log(params,'paramssssssssssssssss');
     try {
         const uploadResult = await s3.upload(params).promise();
         res.status(200).json({ message: 'File uploaded successfully', data: uploadResult.Location });

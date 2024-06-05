@@ -1,5 +1,5 @@
-import { StyleSheet, Text, TextInput, View, Button, KeyboardAvoidingView, ScrollView, TouchableOpacity } from 'react-native'
-import React, { useState } from 'react'
+import { StyleSheet, Text, TextInput, View, Button,ScrollView, TouchableOpacity } from 'react-native'
+import React, { useState,useEffect } from 'react'
 import { useLocalSearchParams } from 'expo-router'
 import { defaultStyles } from '@/styles'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -10,10 +10,16 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import Checkbox from 'expo-checkbox';
 import * as DocumentPicker from 'expo-document-picker';
 import { ipURL } from '@/utils/backendURL'
+import Buttons from '@/components/Button'
+import { Audio } from 'react-native-compressor';
+import axios from 'axios'
+import * as SecureStore from 'expo-secure-store';
+
 
 const publisherCommonForm = () => {
-    const params = useLocalSearchParams()
-    console.log(params, 'params');
+    const {publisherCommonForm} = useLocalSearchParams()
+    console.log(publisherCommonForm, 'params');
+    const [token, setToken] = useState(null);
 
     const [title, setTitle] = useState('')
     const [language, setLanguage] = useState('')
@@ -28,7 +34,10 @@ const publisherCommonForm = () => {
     const [narrationStyleCasual, setNarrationStyleCasual] = useState(false)
     const [narrationStyleStatic, setNarrationStyleStatic] = useState(false)
     const [narrationStyleOratoric, setNarrationStyleOratoric] = useState(false)
+
     const [audioSample, setAudioSample] = useState({})
+    const [audioCompressURL, setAudioCompressURL] = useState('')
+
     const [doc1, setDoc1] = useState(null);
     const [rightsHolder, setRightsHolder] = useState(false)
 
@@ -53,6 +62,16 @@ const publisherCommonForm = () => {
         showMode('date');
     };
 
+    useEffect(() => {
+        const getAsyncData = async () => {
+          const tokenStore = await SecureStore.getItemAsync('userDetails');
+          setToken(JSON.parse(tokenStore).userId);
+          
+    
+        }
+        getAsyncData();
+      }, [])
+
     const pickAudio = async () => {
         let result = await DocumentPicker.getDocumentAsync({
             type: "audio/*",
@@ -69,18 +88,37 @@ const publisherCommonForm = () => {
                 type: `audio/${fileType}`
             };
             setAudioSample(fileToUpload);
+            
+            const resultCompress = await Audio.compress(
+                uri, // recommended wav file but can be use mp3 file
+                {
+                    bitrate: 32000,
+                    samplerate: 22050,
+                    channels: 1,
+                }
+            );
+            setAudioCompressURL(resultCompress)
+              
     };
     
 
     const postAudio = async () => {
         const url = `${ipURL}/api/s3/upload-to-aws-audio`;
         const formData = new FormData();
+       
+        
         
         formData.append('audio1', {
-            uri: audioSample.uri,
+            uri: audioCompressURL,
             name: audioSample.name,
             type: audioSample.type
         });
+        console.log(publisherCommonForm,'companyId');
+        
+        formData.append('id', publisherCommonForm)
+
+        formData.append('userId', token)
+
         
         const options = {
             method: 'POST',
@@ -100,9 +138,11 @@ const publisherCommonForm = () => {
             }
             const responseData = await response.json();
             console.log('Success:', responseData);
+            return responseData
             
         } catch (error) {
             console.error('Error:', error);
+            return error
         }
     };
 
@@ -126,10 +166,16 @@ const publisherCommonForm = () => {
     };
 
     const postDocuments = async () => {
+        
         const url = `${ipURL}/api/s3/upload-to-aws`;
         const formData = new FormData();
         
         if (doc1) formData.append('document1', { uri: doc1.uri, name: doc1.name, type: doc1.type });       
+
+        formData.append('id',publisherCommonForm,);
+console.log(publisherCommonForm,'companyId in document submit');
+
+        formData.append('userId',token);
     
         const options = {
             method: 'POST',
@@ -147,11 +193,44 @@ const publisherCommonForm = () => {
             }
             const responseData = await response.json();
             console.log('Success:', responseData);
+            return responseData
             
         } catch (error) {
             console.error('Error:', error);
+            return error
         }
     };
+
+    const handleSubmit = async () => {
+        const audioData = await postAudio()
+        const docData = await postDocuments()
+        console.log(audioData, 'audioData', docData, 'docData');
+
+        const data ={
+            id:publisherCommonForm,
+            title: title,
+            language: language,
+            categories: categories,
+            date: date,
+            ISBNDOIISRC: ISBNDOIISRC,
+            synopsis: synopsis,
+            narrator: narrator,
+            narrationStyleSlow: narrationStyleSlow,
+            narrationStyleFast: narrationStyleFast,
+            narrationStyleIntimate: narrationStyleIntimate,
+            narrationStyleCasual: narrationStyleCasual,
+            narrationStyleStatic: narrationStyleStatic,
+            narrationStyleOratoric: narrationStyleOratoric,
+            audioSampleURL: audioData.data,
+            pdfURL: docData.data[0],
+            rightsHolder: rightsHolder
+        }
+
+        console.log(data, 'data');
+        const response = await axios.put(`${ipURL}/api/publisher/update-company`, data)
+        console.log(response, 'responsein common form');
+
+    }
 
     
 
@@ -241,6 +320,8 @@ const publisherCommonForm = () => {
                                     onValueChange={(itemValue, itemIndex) =>
                                         setCategories(itemValue)
                                     }>
+                                    <Picker.Item style={{ color: COLORS.white, backgroundColor: COLORS.background }} label="Select a category" value="none" />
+
                                     <Picker.Item style={{ color: COLORS.white, backgroundColor: COLORS.background }} label="Biographies & Memoirs" value="biographiesmemoirs" />
 
                                     <Picker.Item label="Arts & Entertainment" value="artsentertainment" style={{ color: COLORS.white, backgroundColor: COLORS.background }} />
@@ -590,7 +671,17 @@ const publisherCommonForm = () => {
                                 </View>
                             
                         </View>
-
+                        <Buttons
+                        title="Submit"
+                        filled
+                        color={COLORS.secondary
+                        }
+                        style={{
+                            marginTop: verticalScale(18),
+                            marginBottom: verticalScale(4),
+                        }}
+                        onPress={handleSubmit}
+                    />
                     </View>
                 </View>
             </ScrollView>
