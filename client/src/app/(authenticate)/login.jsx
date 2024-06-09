@@ -50,16 +50,17 @@ const LoginPage = () => {
             const userDetails = await SecureStore.getItemAsync("userDetails");
 
             if (resp.data.role === 'LISTENER') {
-                router.replace('/(tabs)/home');
+                router.replace('/(onboarding)/listeneronboarding');
             }
             else if (resp.data.role === 'PUBLISHER') {
-                router.replace('/(publisher)/publisherhome');
+                router.replace('/(onboarding)/publisheronboarding');
+                    
             }
 
         }
         catch (err) {
             console.log(err);
-            Alert.alert(err.response.data.message)
+            Alert.alert(err.response)
             return;
         }
     }

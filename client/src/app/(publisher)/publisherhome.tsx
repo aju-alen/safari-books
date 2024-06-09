@@ -18,7 +18,7 @@ const publisherhome = () => {
         text: 'I am a company',
         onPress: () => router.push(`/(publisher)/publishercompanyForm/${token}`),
       },
-      {text: 'I am an author', onPress: () => router.push('/(publisher)/publisheauthorForm'),}
+      {text: 'I am an author', onPress: () => router.push(`/(publisher)/publisherauthorForm/${token}`),}
     ]);
 
   useEffect(() => {
@@ -38,9 +38,11 @@ const publisherhome = () => {
     <SafeAreaView style={defaultStyles.container}>
     <View>
       <Text style={defaultStyles.mainText}>Welcome Publisher</Text>
-      <TouchableOpacity onPress={createCheckbox}>
+      <View style={styles.buttonplacement}>
+      <TouchableOpacity onPress={createCheckbox} style={styles.buttonContainer}>
         <Text style={defaultStyles.mainText}>Publish</Text>
       </TouchableOpacity>
+      </View>
 
       
     </View>
@@ -50,4 +52,20 @@ const publisherhome = () => {
 
 export default publisherhome
 
-const styles = StyleSheet.create({})
+const styles = StyleSheet.create({
+  buttonContainer: {
+    flexDirection: 'row',
+    marginBottom: 60,
+    width: 200,
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'red',
+    borderRadius: 25
+  },
+  buttonplacement:{
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 200
+  }
+})

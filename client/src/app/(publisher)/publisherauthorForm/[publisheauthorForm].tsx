@@ -1,4 +1,4 @@
-import { StyleSheet, Text, TextInput,TouchableOpacity, View } from 'react-native'
+import { ScrollView, StyleSheet, Text, TextInput,TouchableOpacity, View } from 'react-native'
 import React, { useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { defaultStyles } from '@/styles'
@@ -8,8 +8,14 @@ import Button from '@/components/Button'
 import * as DocumentPicker from 'expo-document-picker';
 import { ipURL } from '@/utils/backendURL'
 import { router } from 'expo-router'
+import { useLocalSearchParams } from 'expo-router'
+import { createId } from '@paralleldrive/cuid2';
+import axios from 'axios'
+
+const id = createId();
 
 const publisheauthorForm = () => {
+    const {publisheauthorForm} = useLocalSearchParams()
     const [fullname, setFullname] = React.useState('')
     const [address, setAddress] = React.useState('')
     const [telephone, setTelephone] = React.useState('')
@@ -47,6 +53,8 @@ const publisheauthorForm = () => {
         if (doc1) formData.append('document1', { uri: doc1.uri, name: doc1.name, type: doc1.type });
         if (doc2) formData.append('document2', { uri: doc2.uri, name: doc2.name, type: doc2.type });
        
+        formData.append('id',id,);
+        formData.append('userId',publisheauthorForm);
     
         const options = {
             method: 'POST',
@@ -63,18 +71,7 @@ const publisheauthorForm = () => {
                 throw new Error('Network response was not ok');
             }
             const responseData = await response.json();
-            console.log('Success:', responseData);
-            const data = {
-                fullname: fullname,
-                address: address,
-                telephone: telephone,
-                idppNo: idppNo,
-                kraPin: kraPin,
-                writersGuildMemberNo: writersGuildMemberNo,
-                publishingType: "author",
-            }
-            console.log(data);
-            router.push(`/(publisher)/${123}`);
+            return responseData['data']
             
         } catch (error) {
             console.error('Error:', error);
@@ -85,16 +82,39 @@ const publisheauthorForm = () => {
 
 
 
-    const handleAuthorForm = () => {
-        console.log('handleAuthorForm in logs');
+    const handleSubmit = async () => {
+        try{
+            const docURL = await postDocuments();
 
+            
+            const data = {
+                id,
+                fullName: fullname,
+                address: address,
+                telephone: telephone,
+                idppNo: idppNo,
+                idppPdfUrl:docURL[0],
+                kraPin: kraPin,
+                kraPinPdfUrl:docURL[1],
+                writersGuildNo: writersGuildMemberNo,
+                userId: publisheauthorForm
+            }
+            const response = await axios.post(`${ipURL}/api/publisher/create-author`, data
+      );
+      console.log(response.data,'after backend data is saved');
+
+      router.push(`/(publisher)/${id}`)
+    }
+        catch (error) {
+            console.error('Error:', error);
+        }
     }
 
     return (
 
         <SafeAreaView style={defaultStyles.container}>
-            
-            
+            <ScrollView>
+            <Text style={defaultStyles.mainText}>{publisheauthorForm}</Text>
             <View style={{
                 flex: 1,
                 marginHorizontal: horizontalScale(22),
@@ -357,13 +377,14 @@ const publisheauthorForm = () => {
                             marginTop: verticalScale(18),
                             marginBottom: verticalScale(4),
                         }}
-                        onPress={postDocuments}
+                        onPress={handleSubmit}
                     />
 
                 </View>
 
 
             </View>
+            </ScrollView>
         </SafeAreaView>
     )
 }

@@ -35,33 +35,92 @@ export const publisherCompany = async (req, res) => {
     }
 };
 
-export const publisherCompanyUpdate = async (req, res) => {
+export const publisherAuthor = async (req, res) => {
     try {
-        const updateCompany = await prisma.company.update({
-            where: {
-                id: req.body.id,
-            },
+        const createAuthor = await prisma.author.create({
             data: {
-                title:req.body.title,
-                language:req.body.language,
-                categories:req.body.categories,
-                date:req.body.date,
-                ISBNDOIISRC:req.body.ISBNDOIISRC,
-                synopsis:req.body.synopsis,
-                narrator:req.body.narrator,
-                narrationStyleSlow:req.body.narrationStyleSlow,
-                narrationStyleFast:req.body.narrationStyleFast,
-                narrationStyleIntimate:req.body.narrationStyleIntimate,
-                narrationStyleCasual:req.body.narrationStyleCasual,
-                narrationStyleStatic:req.body.narrationStyleStatic,
-                narrationStyleOratoric:req.body.narrationStyleOratoric,
-                audioSampleURL:req.body.audioSampleURL,
-                pdfURL:req.body.pdfURL,
-                rightsHolder:req.body.rightsHolder,
+                id: req.body.id,
+                fullName: req.body.fullName,
+                address: req.body.address,
+                telephone: req.body.telephone,
+                idppNo: req.body.idppNo,
+                idppPdfUrl: req.body.idppPdfUrl,
+                kraPin: req.body.kraPin,
+                kraPinPdfUrl: req.body.kraPinPdfUrl,
+                writersGuildNo: req.body.writersGuildNo,
+                userId: req.body.userId
             }
         });
         await prisma.$disconnect();
-        res.status(204).json({ message: "Company updated successfully", updateCompany });
+        res.status(201).json({ message: "Author registered successfully", createAuthor });
+    }
+    catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "Internal server error", error });
+
+    }
+}
+
+export const publisherCompanyUpdate = async (req, res) => {
+    try {
+        const findUnique = await prisma.company.findUnique({
+            where: {
+                id: req.body.id,
+            }
+        });
+        if(findUnique){
+            const updateCompany = await prisma.company.update({
+                where: {
+                    id: req.body.id,
+                },
+                data: {
+                    title:req.body.title,
+                    language:req.body.language,
+                    categories:req.body.categories,
+                    date:req.body.date,
+                    ISBNDOIISRC:req.body.ISBNDOIISRC,
+                    synopsis:req.body.synopsis,
+                    narrator:req.body.narrator,
+                    narrationStyleSlow:req.body.narrationStyleSlow,
+                    narrationStyleFast:req.body.narrationStyleFast,
+                    narrationStyleIntimate:req.body.narrationStyleIntimate,
+                    narrationStyleCasual:req.body.narrationStyleCasual,
+                    narrationStyleStatic:req.body.narrationStyleStatic,
+                    narrationStyleOratoric:req.body.narrationStyleOratoric,
+                    audioSampleURL:req.body.audioSampleURL,
+                    pdfURL:req.body.pdfURL,
+                    rightsHolder:req.body.rightsHolder,
+                }
+            });
+        }
+        else{
+            const updateAuthor = await prisma.author.update({
+                where: {
+                    id: req.body.id,
+                },
+                data: {
+                    title:req.body.title,
+                    language:req.body.language,
+                    categories:req.body.categories,
+                    date:req.body.date,
+                    ISBNDOIISRC:req.body.ISBNDOIISRC,
+                    synopsis:req.body.synopsis,
+                    narrator:req.body.narrator,
+                    narrationStyleSlow:req.body.narrationStyleSlow,
+                    narrationStyleFast:req.body.narrationStyleFast,
+                    narrationStyleIntimate:req.body.narrationStyleIntimate,
+                    narrationStyleCasual:req.body.narrationStyleCasual,
+                    narrationStyleStatic:req.body.narrationStyleStatic,
+                    narrationStyleOratoric:req.body.narrationStyleOratoric,
+                    audioSampleURL:req.body.audioSampleURL,
+                    pdfURL:req.body.pdfURL,
+                    rightsHolder:req.body.rightsHolder,
+                }
+            });
+        }
+       
+        await prisma.$disconnect();
+        res.status(204).json({ message: "Company updated successfully"});
 
     }
     catch (error) {

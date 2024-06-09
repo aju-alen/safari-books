@@ -1,6 +1,6 @@
 import { StyleSheet, Text, TextInput, View, Button,ScrollView, TouchableOpacity } from 'react-native'
 import React, { useState,useEffect } from 'react'
-import { useLocalSearchParams } from 'expo-router'
+import { router, useLocalSearchParams } from 'expo-router'
 import { defaultStyles } from '@/styles'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { horizontalScale, verticalScale, moderateScale } from '@/utils/responsiveSize'
@@ -229,6 +229,8 @@ console.log(publisherCommonForm,'companyId in document submit');
         console.log(data, 'data');
         const response = await axios.put(`${ipURL}/api/publisher/update-company`, data)
         console.log(response, 'responsein common form');
+
+        router.push('/(publisher)/publisherhome')
 
     }
 
@@ -543,71 +545,61 @@ console.log(publisherCommonForm,'companyId in document submit');
                         </View>
 
                         <View style={{ marginBottom: verticalScale(12) }}>
-                            <Text style={{
-                                fontSize: moderateScale(16),
-                                fontWeight: "200",
-                                marginVertical: verticalScale(8),
-                                color: welcomeCOLOR.black,
-                                fontFamily: FONT.RobotoLight
+    <Text style={{
+        fontSize: moderateScale(16),
+        fontWeight: "200",
+        marginVertical: verticalScale(8),
+        color: welcomeCOLOR.black,
+        fontFamily: FONT.RobotoLight
+    }}>Narration style</Text>
 
-                            }}>Narration style</Text>
+    <View style={styles.checkboxContainer}>
+        <View style={styles.row}>
+            <Checkbox
+                value={narrationStyleSlow}
+                onValueChange={setNarrationStyleSlow}
+                color={isChecked ? '#4630EB' : undefined}
+            />
+            <Text style={styles.label}>Slow</Text>
 
-                            <View style={[{
-                                flexDirection: "row",
+            <Checkbox
+                value={narrationStyleFast}
+                onValueChange={setNarrationStyleFast}
+                color={isChecked ? '#4630EB' : undefined}
+            />
+            <Text style={styles.label}>Fast</Text>
+        </View>
+        <View style={styles.row}>
+            <Checkbox
+                value={narrationStyleIntimate}
+                onValueChange={setNarrationStyleIntimate}
+                color={isChecked ? '#4630EB' : undefined}
+            />
+            <Text style={styles.label}>Intimate</Text>
+            <Checkbox
+                value={narrationStyleCasual}
+                onValueChange={setNarrationStyleCasual}
+                color={isChecked ? '#4630EB' : undefined}
+            />
+            <Text style={styles.label}>Casual</Text>
+        </View>
+        <View style={styles.row}>
+            <Checkbox
+                value={narrationStyleOratoric}
+                onValueChange={setNarrationStyleOratoric}
+                color={isChecked ? '#4630EB' : undefined}
+            />
+            <Text style={styles.label}>Oratoric</Text>
+            <Checkbox
+                value={narrationStyleStatic}
+                onValueChange={setNarrationStyleStatic}
+                color={isChecked ? '#4630EB' : undefined}
+            />
+            <Text style={styles.label}>Static</Text>
+        </View>
+    </View>
+</View>
 
-                            },]}>
-
-                                <Checkbox
-                                    value={narrationStyleSlow}
-                                    onValueChange={setNarrationStyleSlow}
-                                    color={isChecked ? '#4630EB' : undefined}
-                                />
-                                <Text style={defaultStyles.text}>Slow</Text>
-
-                                <Checkbox
-                                    value={narrationStyleFast}
-                                    onValueChange={setNarrationStyleFast}
-                                    color={isChecked ? '#4630EB' : undefined}
-                                />
-                                <Text style={defaultStyles.text}>Fast</Text>
-                                </View>
-                                <View style={[{
-                                flexDirection: "row",
-
-                            },]}>
-                                <Checkbox
-                                    value={narrationStyleIntimate}
-                                    onValueChange={setNarrationStyleIntimate}
-                                    color={isChecked ? '#4630EB' : undefined}
-                                />
-                                <Text style={defaultStyles.text}>Intimate</Text>
-                                <Checkbox
-                                    value={narrationStyleCasual}
-                                    onValueChange={setNarrationStyleCasual}
-                                    color={isChecked ? '#4630EB' : undefined}
-                                />
-                                <Text style={defaultStyles.text}>Casual</Text>
-                                </View>
-
-                                <View style={[{
-                                flexDirection: "row",
-
-                            },]}>
-                                <Checkbox
-                                    value={narrationStyleOratoric}
-                                    onValueChange={setNarrationStyleOratoric}
-                                    color={isChecked ? '#4630EB' : undefined}
-                                />
-                                <Text style={defaultStyles.text}>Oratoric</Text>
-                                <Checkbox
-                                    value={narrationStyleStatic}
-                                    onValueChange={setNarrationStyleStatic}
-                                    color={isChecked ? '#4630EB' : undefined}
-                                />
-                                <Text style={defaultStyles.text}>Static</Text>
-                                </View>
-                            
-                        </View>
 
                         <View style={{ marginBottom: verticalScale(12) }}>
                         <Text style={{
@@ -630,7 +622,7 @@ console.log(publisherCommonForm,'companyId in document submit');
 
                             }}>Upload Audio Sample</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity onPress={postAudio} ><Text style={defaultStyles.mainText}>Upload Audio to backend</Text></TouchableOpacity>
+                       
 
                         <TouchableOpacity onPress={pickDocument} >
                             <Text style={{
@@ -642,7 +634,7 @@ console.log(publisherCommonForm,'companyId in document submit');
 
                             }}>Upload Pdf </Text>
                         </TouchableOpacity>
-                        <TouchableOpacity onPress={postDocuments} ><Text style={defaultStyles.mainText}>Upload Pdf to backend</Text></TouchableOpacity>
+                        
                         
                     </View>
 
@@ -691,4 +683,17 @@ console.log(publisherCommonForm,'companyId in document submit');
 
 export default publisherCommonForm
 
-const styles = StyleSheet.create({})
+const styles = StyleSheet.create({
+    checkboxContainer: {
+        flexDirection: "column",
+    },
+    row: {
+        flexDirection: "row",
+        alignItems: "center",
+        marginBottom: verticalScale(4), // Adjust as needed
+    },
+    label: {
+        ...defaultStyles.text,
+        marginLeft: 8, // Adjust as needed
+    },
+})

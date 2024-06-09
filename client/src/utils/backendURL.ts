@@ -1,2 +1,2 @@
-export const ipURL = "http://10.65.0.200:3001" //http + ip + port
+export const ipURL = "http://192.168.0.189:3001" //http + ip + port
 

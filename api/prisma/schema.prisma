@@ -22,12 +22,14 @@ model User{
   role Role 
   emailVerificationToken String?
   emailVerified Boolean @default(false)
+  firstTimeLogin Boolean @default(true)
   
   updatedAt DateTime @updatedAt
   createdAt DateTime @default(now())
 
    // Define the one-to-many relationship
   companies             Company[] // A user can have many companies
+  authors               Author[] // A user can have many authors
 
 
 }
@@ -91,4 +93,42 @@ audioSampleURL String?
 pdfURL String?
 rightsHolder Boolean?
   
+}
+
+model Author{
+id String @id
+fullName String
+address String
+telephone String
+idppNo String
+idppPdfUrl String
+kraPin String
+kraPinPdfUrl String
+writersGuildNo String?
+
+  // Add a foreign key to reference the user
+userId                String   
+
+  // Define the relationship with the User model
+user                  User     @relation(fields: [userId], references: [id])
+
+title String?
+language String?
+categories String?
+date DateTime?
+ISBNDOIISRC String?
+synopsis String? @db.LongText
+narrator String?
+narrationStyleSlow Boolean?
+narrationStyleFast Boolean?
+narrationStyleIntimate Boolean?
+narrationStyleCasual Boolean?
+narrationStyleStatic Boolean?
+narrationStyleOratoric Boolean?
+audioSampleURL String?
+pdfURL String?
+rightsHolder Boolean?
+
+
+
 }
