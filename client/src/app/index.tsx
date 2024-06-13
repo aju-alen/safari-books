@@ -7,10 +7,16 @@ import { useCallback, useEffect, useState } from "react";
 import { View, Text } from "react-native";
 import * as SecureStore from 'expo-secure-store';
 import { FONT } from '../constants/tokens';
+import {useSetupTrackPlayer} from '@/utils/useSetupPlayer';
+import { useLogTrackPlayerState } from "@/utils/useLogTrackPlayerState";
 
 SplashScreen.preventAutoHideAsync();
 
 const App = () => {
+  
+
+  
+
   const [wait, setWait] = useState(true);
     const [fontsLoaded] = useFonts({
 

@@ -4,7 +4,7 @@ import { useLocalSearchParams } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { defaultStyles } from '@/styles'
 import { eBookData } from '@/utils/flatlistData'
-import { moderateScale, verticalScale } from '@/utils/responsiveSize'
+import { horizontalScale, moderateScale, verticalScale } from '@/utils/responsiveSize'
 import { LinearGradient } from 'expo-linear-gradient'
 import { COLORS } from '@/constants/tokens'
 
@@ -60,16 +60,16 @@ const SingleBookPage = () => {
         <TouchableOpacity style={{backgroundColor:COLORS.primary, padding:moderateScale(20), borderRadius:moderateScale(30), marginTop:moderateScale(10),width:"90%"}}>
             <Text style={[defaultStyles.text,{fontSize:moderateScale(15), color:'#fff',textAlign:'center'}]}>Sample Now</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={{backgroundColor:COLORS.primary, padding:moderateScale(20), borderRadius:moderateScale(30), marginTop:moderateScale(10),width:"90%"}}>
+        {/* <TouchableOpacity style={{backgroundColor:COLORS.primary, padding:moderateScale(20), borderRadius:moderateScale(30), marginTop:moderateScale(10),width:"90%"}}>
             <Text style={[defaultStyles.text,{fontSize:moderateScale(15), color:'#fff',textAlign:'center'}]}>Add to wishlist</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
 
         <Text style={[defaultStyles.mainText]}>Summary</Text>
-        <Text style={[defaultStyles.text,{fontSize:moderateScale(15),marginTop:moderateScale(10)}]}>{singleBookData[0]?.Summary}</Text>
+        <Text style={[defaultStyles.text,{fontSize:moderateScale(15),marginTop:moderateScale(10),marginHorizontal:horizontalScale(10)}]}>{singleBookData[0]?.summary}</Text>
 
         <Text style={[defaultStyles.mainText]}>Product Details</Text>
-        <Text style={[defaultStyles.text,{fontSize:moderateScale(15),marginTop:moderateScale(10)}]}>Release Date: {singleBookData[0]?.ReleaseDate}</Text>
-        <Text style={[defaultStyles.text,{fontSize:moderateScale(15),marginTop:moderateScale(10)}]}>Language: {singleBookData[0]?.Language}</Text>
+        <Text style={[defaultStyles.text,{fontSize:moderateScale(15),marginTop:moderateScale(10)}]}>Release Date: {singleBookData[0]?.releaseDate}</Text>
+        <Text style={[defaultStyles.text,{fontSize:moderateScale(15),marginTop:moderateScale(10)}]}>Language: {singleBookData[0]?.language}</Text>
         <Text style={[defaultStyles.text,{fontSize:moderateScale(15),marginTop:moderateScale(10)}]}>Publisher: {singleBookData[0]?.Publisher}</Text>
 
         <Text style={[defaultStyles.mainText]}>You may also enjoy...</Text>

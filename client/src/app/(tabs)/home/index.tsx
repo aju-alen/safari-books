@@ -17,7 +17,7 @@ const HomePage = () => {
   const [latestRelease, setLatestRelease] = useState([]);
   useEffect(() => {
     setBookData(eBookData)
-    setLatestRelease(eBookData.map((book) => ({coverImage:book.coverImage,id:book.id})).slice(0, 5))
+    setLatestRelease(eBookData.map((book) => ({coverImage:book.coverImage,id:book.id})).slice(5, 9))
   }, [])
   console.log(latestRelease, 'latestRelease');
   

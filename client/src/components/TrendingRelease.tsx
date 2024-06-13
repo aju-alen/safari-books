@@ -26,6 +26,8 @@ const TrendingRelease = ({bookData}) => {
           </TouchableOpacity>
         </View>
       )
+      console.log(bookData, 'bookData in romance');
+      
   return (
     <FlatlistDynamic renderItem={renderItem} bookData={bookData} />
     

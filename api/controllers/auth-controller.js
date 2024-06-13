@@ -75,7 +75,7 @@ const sendVerificationEmail = async (email, verificationToken, name) => {
     <body>
         <div>
 
-            <img src="https://i.postimg.cc/8cpfZ5sP/215b7754-0e37-41b2-be2f-453d190af861.jpg" alt="email verification" style="display:block;margin:auto;width:50%;" />
+          
             <p>Safari Books</p>
 
         </div>
@@ -152,7 +152,7 @@ const sendWelcomeEmail = async (email,name) => {
     <body>
         <div>
 
-            <img src="https://i.postimg.cc/8cpfZ5sP/215b7754-0e37-41b2-be2f-453d190af861.jpg" alt="Welcome Email" style="display:block;margin:auto;width:50%;" />
+           
             <p>Safari Books</p>
 
         </div>
