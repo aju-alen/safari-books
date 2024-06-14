@@ -90,7 +90,7 @@ const publisherCommonForm = () => {
             setAudioSample(fileToUpload);
             
             const resultCompress = await Audio.compress(
-                uri, // recommended wav file but can be use mp3 file
+                uri, // recommended wav file but can be use mp3 file. . Edit: convert to 192
                 {
                     bitrate: 32000,
                     samplerate: 22050,

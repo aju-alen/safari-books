@@ -31,6 +31,7 @@ const publisherhome = () => {
     getAsyncData();
   }, [])
 
+console.log(token,'token');
 
   
   
@@ -41,6 +42,10 @@ const publisherhome = () => {
       <View style={styles.buttonplacement}>
       <TouchableOpacity onPress={createCheckbox} style={styles.buttonContainer}>
         <Text style={defaultStyles.mainText}>Publish</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity onPress={()=>router.push(`/(publisher)/publisherDetails/${token}`)} style={styles.buttonContainer}>
+        <Text style={defaultStyles.mainText}>View Details</Text>
       </TouchableOpacity>
       </View>
 

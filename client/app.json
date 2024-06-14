@@ -4,13 +4,13 @@
     "slug": "safari-books",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/app-icon.png",
     "userInterfaceStyle": "dark",
     "scheme": "safari-books",
     "splash": {
-      "image": "./assets/splash.png",
+      "image": "./assets/app-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#000000"
+      "backgroundColor": "#25292e"
     },
     "ios": {
       "supportsTablet": true,
@@ -25,8 +25,8 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#000000"
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "red"
       },
       "permissions": [
         "android.permission.WAKE_LOCK",
