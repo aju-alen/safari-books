@@ -1,5 +1,5 @@
 import { defaultStyles } from '@/styles';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
@@ -9,13 +9,15 @@ import { ipURL } from '@/utils/backendURL';
 
 const publisherDetailsData = () => {
   const {publisherDetailsData} = useLocalSearchParams();
+  const [authorData, setAuthorData] = useState([]);
   console.log(publisherDetailsData,'publisherDetailsData');
 
   useEffect(() => {
     const getAllData = async () => {
       try {
-        const response = await axios.get(`${ipURL}/api/publisher/get-all-publish-data/${publisherDetailsData}`)
-        console.log(response.data,'response');
+        const response = await axios.get(`${ipURL}/api/publisher/get-all-author-data/${publisherDetailsData}`)
+        console.log(response.data["authorData"],'response');
+        setAuthorData(response.data["authorData"]);
       } catch (error) {
         console.error(error);
     }
@@ -39,10 +41,10 @@ const publisherDetailsData = () => {
                 <Text style={[styles.headerText, styles.headerViewDetails,defaultStyles.mainText]}>View Details</Text>
             </View>
             <ScrollView >
-                {data.map((item, index) => (
+                {authorData.map((item, index) => (
                     <View key={index} style={styles.row}>
                         <Text style={[styles.cell, styles.cellId,defaultStyles.text]}>{item.id}</Text>
-                        <Text style={[styles.cell, styles.cellType,defaultStyles.text]}>{item.type}</Text>
+                        <Text style={[styles.cell, styles.cellType,defaultStyles.text]}>Author</Text>
                         <TouchableOpacity style={[styles.cell, styles.cellViewDetails]}>
                             <Text style={[styles.viewDetailsText,defaultStyles.text]}>View</Text>
                         </TouchableOpacity>

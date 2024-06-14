@@ -1,9 +1,6 @@
-import crypto from "crypto";
+
 import { PrismaClient } from '@prisma/client'
-import bcrypt from 'bcrypt';
-import nodemailer from "nodemailer";
-import jwt from "jsonwebtoken";
-import { backendUrl } from "../utils/backendUrl.js";
+
 import dotenv from "dotenv";
 dotenv.config();
 
