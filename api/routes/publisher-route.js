@@ -5,6 +5,6 @@ import {publisherCompany,publisherCompanyUpdate,publisherAuthor,getAllData} from
 router.post('/create-company', publisherCompany);
 router.post('/create-author',publisherAuthor)
 router.put('/update-company', publisherCompanyUpdate);
-router.get('/get-all-publish-data/:userId',getAllData)
+router.get('/get-all-author-data/:userId',getAllData)
 
 export default router;

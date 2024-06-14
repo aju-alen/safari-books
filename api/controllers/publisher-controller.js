@@ -130,16 +130,35 @@ export const publisherCompanyUpdate = async (req, res) => {
     }
 }
 
-export const getAllData = async (req, res) => {
+export const getAllAuthorData = async (req, res) => {
     
     try {
-        const allData = await prisma.author.findMany({
+        const authorData = await prisma.author.findMany({
             where: {
                 userId: req.body.userId,
             }
         });
         await prisma.$disconnect();
-        res.status(200).json({ message: "All data fetched successfully", allData });
+        res.status(200).json({ message: "All data fetched successfully", authorData });
+    }
+    catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "Internal server error", error });
+
+    }
+
+}
+
+export const getAllCompanyData = async (req, res) => {
+    
+    try {
+        const companyData = await prisma.company.findMany({
+            where: {
+                userId: req.body.userId,
+            }
+        });
+        await prisma.$disconnect();
+        res.status(200).json({ message: "All data fetched successfully", companyData });
     }
     catch (error) {
         console.log(error);
