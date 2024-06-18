@@ -27,6 +27,10 @@ const DiscoverPage = () => {
     <View>
       <Text style={defaultStyles.text}>DiscoverPage</Text>
 
+      <View>
+        <Text style={defaultStyles.mainText}>Top listens across categories</Text>
+      </View>
+
       <Text style={[defaultStyles.mainText,styles.mainHeading]}>New in Romance</Text>
         <View>
           <TrendingRelease bookData={bookData} />

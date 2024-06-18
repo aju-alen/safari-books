@@ -64,7 +64,7 @@ const App = () => {
     }
 
     return (
-      <Redirect href='/(authenticate)/chooseRole' />
+      <Redirect href='/(tabs)/home' />
     )
 
 }

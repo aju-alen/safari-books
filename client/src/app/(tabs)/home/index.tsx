@@ -10,6 +10,7 @@ import {eBookData} from '@/utils/flatlistData'
 import TrendingRelease from '@/components/TrendingRelease'
 import ImageGrid from '@/components/ImageGrid'
 import AudioPlayer from '@/components/AudioPlayer'
+import HomeOnboarding from '@/components/HomeOnboarding'
 
 
 const HomePage = () => {
@@ -30,7 +31,8 @@ const HomePage = () => {
         <EvilIcons name="search" size={24} color={COLORS.primary} /> 
         </TouchableOpacity>
       </View>
-      <AudioPlayer />
+      {/* <AudioPlayer /> */}
+      <HomeOnboarding />
 
         <Text style={[defaultStyles.mainText,styles.mainHeading]}>Trending Release</Text>
         <View>

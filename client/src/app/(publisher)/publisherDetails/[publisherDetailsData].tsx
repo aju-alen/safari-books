@@ -8,50 +8,61 @@ import { ipURL } from '@/utils/backendURL';
 
 
 const publisherDetailsData = () => {
-  const {publisherDetailsData} = useLocalSearchParams();
-  const [authorData, setAuthorData] = useState([]);
-  console.log(publisherDetailsData,'publisherDetailsData');
+    const { publisherDetailsData } = useLocalSearchParams();
+    const [authorData, setAuthorData] = useState([]);
+    const [companyData, setCompanyData] = useState([]);
 
-  useEffect(() => {
-    const getAllData = async () => {
-      try {
-        const response = await axios.get(`${ipURL}/api/publisher/get-all-author-data/${publisherDetailsData}`)
-        console.log(response.data["authorData"],'response');
-        setAuthorData(response.data["authorData"]);
-      } catch (error) {
-        console.error(error);
-    }
-  };
-  getAllData();
-  
 
-  }, []);
-  
-  const data = [
-    { id: 1, type: 'Type A' },
-    { id: 2, type: 'Type B' },
-    { id: 3, type: 'Type C' },
-  ];
+    useEffect(() => {
+        const getAllData = async () => {
+            try {
+                const authorresponse = await axios.get(`${ipURL}/api/publisher/get-all-author-data/${publisherDetailsData}`)
+                const companyResponse = await axios.get(`${ipURL}/api/publisher/get-all-company-data/${publisherDetailsData}`)
+                setCompanyData(companyResponse.data["companyData"]);
+
+
+                setAuthorData(authorresponse.data["authorData"]);
+            } catch (error) {
+                console.error(error);
+            }
+        };
+        getAllData();
+
+
+    }, []);
+
+
     return (
-      <SafeAreaView style={defaultStyles.container}>
-        <View >
-            <View style={styles.header}>
-                <Text style={[styles.headerText, styles.headerId,defaultStyles.mainText]}>Id</Text>
-                <Text style={[styles.headerText, styles.headerType,defaultStyles.mainText]}>Type</Text>
-                <Text style={[styles.headerText, styles.headerViewDetails,defaultStyles.mainText]}>View Details</Text>
+        <SafeAreaView style={defaultStyles.container}>
+            <View >
+                <View style={styles.header}>
+
+                    <Text style={[styles.headerText, styles.headerType, defaultStyles.mainText]}>Book Title</Text>
+
+                    <Text style={[styles.headerText, styles.headerViewDetails, defaultStyles.mainText]}>Status</Text>
+                </View>
+                <ScrollView >
+                    {authorData.map((item, index) => (
+                        <View key={index} style={styles.row}>
+
+                            <Text style={[styles.cell, styles.cellType, defaultStyles.text]}>{item.title}</Text>
+
+                            <Text style={[styles.cell, styles.cellType, defaultStyles.text]}>Waiting for Approval</Text>
+
+                        </View>
+                    ))}
+
+                    {companyData?.map((item, index) => (
+                        <View key={index} style={styles.row}>
+
+                            <Text style={[styles.cell, styles.cellType, defaultStyles.text]}>{item.title}</Text>
+
+                            <Text style={[styles.cell, styles.cellType, defaultStyles.text]}>Waiting for Approval</Text>
+
+                        </View>
+                    ))}
+                </ScrollView>
             </View>
-            <ScrollView >
-                {authorData.map((item, index) => (
-                    <View key={index} style={styles.row}>
-                        <Text style={[styles.cell, styles.cellId,defaultStyles.text]}>{item.id}</Text>
-                        <Text style={[styles.cell, styles.cellType,defaultStyles.text]}>Author</Text>
-                        <TouchableOpacity style={[styles.cell, styles.cellViewDetails]}>
-                            <Text style={[styles.viewDetailsText,defaultStyles.text]}>View</Text>
-                        </TouchableOpacity>
-                    </View>
-                ))}
-            </ScrollView>
-        </View>
         </SafeAreaView>
     );
 };
