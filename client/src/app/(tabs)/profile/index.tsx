@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { defaultStyles } from '@/styles'
 import * as SecureStore from 'expo-secure-store';
 import { router } from 'expo-router';
+import { AntDesign } from '@expo/vector-icons'; 
 
 const ProfilePage = () => {
 
@@ -16,7 +17,12 @@ const ProfilePage = () => {
   return (
     <SafeAreaView style={defaultStyles.container}>
     <View>
+      <View style={styles.header}>
       <Text style={defaultStyles.mainText}>Profile</Text>
+      <TouchableOpacity onPress={() => router.push('/(tabs)/profile/settings')}>
+      <AntDesign name="setting" size={24} color="white" />
+      </TouchableOpacity>
+      </View>
       <View style={styles.buttonplacement}>
       <TouchableOpacity onPress={handleLogout}  style={styles.buttonContainer}>
         <Text style={defaultStyles.mainText}>Logout</Text>
@@ -46,5 +52,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 200
-  }
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    backgroundColor: '#000',
+    borderBottomLeftRadius: 10,
+    borderBottomRightRadius: 10,
+  },
 })

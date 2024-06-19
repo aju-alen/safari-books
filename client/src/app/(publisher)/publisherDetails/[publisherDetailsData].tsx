@@ -2,7 +2,7 @@ import { defaultStyles } from '@/styles';
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import axios from 'axios';
 import { ipURL } from '@/utils/backendURL';
 
@@ -30,6 +30,7 @@ const publisherDetailsData = () => {
 
 
     }, []);
+    console.log(authorData,'authorData');
 
 
     return (
@@ -40,6 +41,8 @@ const publisherDetailsData = () => {
                     <Text style={[styles.headerText, styles.headerType, defaultStyles.mainText]}>Book Title</Text>
 
                     <Text style={[styles.headerText, styles.headerViewDetails, defaultStyles.mainText]}>Status</Text>
+
+                    <Text style={[styles.headerText, styles.headerViewDetails, defaultStyles.mainText]}>View Details</Text>
                 </View>
                 <ScrollView >
                     {authorData.map((item, index) => (
@@ -48,6 +51,10 @@ const publisherDetailsData = () => {
                             <Text style={[styles.cell, styles.cellType, defaultStyles.text]}>{item.title}</Text>
 
                             <Text style={[styles.cell, styles.cellType, defaultStyles.text]}>Waiting for Approval</Text>
+
+                            <TouchableOpacity onPress={()=>router.push(`/(publisher)/publisherSingleDetail/${item.id}`)}>
+                                <Text style={[styles.cell, styles.cellViewDetails, styles.viewDetailsText]}>View Details</Text>
+                            </TouchableOpacity>
 
                         </View>
                     ))}
@@ -58,6 +65,10 @@ const publisherDetailsData = () => {
                             <Text style={[styles.cell, styles.cellType, defaultStyles.text]}>{item.title}</Text>
 
                             <Text style={[styles.cell, styles.cellType, defaultStyles.text]}>Waiting for Approval</Text>
+
+                            <TouchableOpacity onPress={()=>router.push(`/(publisher)/publisherSingleDetail/${item.id}`)}>
+                                <Text style={[styles.cell, styles.cellViewDetails, styles.viewDetailsText]}>View Details</Text>
+                            </TouchableOpacity>
 
                         </View>
                     ))}

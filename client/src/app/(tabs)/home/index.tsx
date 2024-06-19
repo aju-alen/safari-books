@@ -32,7 +32,9 @@ const HomePage = () => {
         </TouchableOpacity>
       </View>
       {/* <AudioPlayer /> */}
+      <View>
       <HomeOnboarding />
+        </View>
 
         <Text style={[defaultStyles.mainText,styles.mainHeading]}>Trending Release</Text>
         <View>
