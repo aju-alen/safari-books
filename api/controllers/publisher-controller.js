@@ -128,11 +128,35 @@ export const publisherCompanyUpdate = async (req, res) => {
 }
 
 export const getAllAuthorData = async (req, res) => {
+    console.log(req.body.userId);
     
     try {
         const authorData = await prisma.author.findMany({
             where: {
                 userId: req.body.userId,
+            },
+           select: {
+            id: true,
+            title: true,
+           }
+        });
+        await prisma.$disconnect();
+        res.status(200).json({ message: "All data fetched successfully", authorData });
+    }
+    catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "Internal server error", error });
+
+    }
+
+}
+
+export const getSingleAuthorData = async (req, res) => {
+    
+    try {
+        const authorData = await prisma.author.findUnique({
+            where: {
+                id: req.params.userId,
             }
         });
         await prisma.$disconnect();
@@ -152,6 +176,25 @@ export const getAllCompanyData = async (req, res) => {
         const companyData = await prisma.company.findMany({
             where: {
                 userId: req.body.userId,
+            }
+        });
+        await prisma.$disconnect();
+        res.status(200).json({ message: "All data fetched successfully", companyData });
+    }
+    catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "Internal server error", error });
+
+    }
+
+}
+
+export const getSingleCompanyData = async (req, res) => {
+    
+    try {
+        const companyData = await prisma.company.findMany({
+            where: {
+                id: req.params.userId,
             }
         });
         await prisma.$disconnect();

@@ -23,6 +23,25 @@ const ProfilePage = () => {
       <AntDesign name="setting" size={24} color="white" />
       </TouchableOpacity>
       </View>
+
+      <View style={styles.buttonplacementSetting}>
+    <TouchableOpacity onPress={()=>router.push(`(tabs)/profile/personalInfo`)} >
+    <Text style={[defaultStyles.text,styles.textContainer]}>Personal Information</Text>
+    </TouchableOpacity>
+
+    <TouchableOpacity>
+    <Text style={[defaultStyles.text,styles.textContainer]}>Preferences</Text>
+    </TouchableOpacity>
+
+    <TouchableOpacity>
+    <Text style={[defaultStyles.text,styles.textContainer]}>Analytics</Text>
+    </TouchableOpacity>
+
+    <TouchableOpacity onPress={handleLogout}>
+    <Text style={[defaultStyles.text,styles.textContainer]}>Logout</Text>
+    </TouchableOpacity>
+    </View>
+
       <View style={styles.buttonplacement}>
       <TouchableOpacity onPress={handleLogout}  style={styles.buttonContainer}>
         <Text style={defaultStyles.mainText}>Logout</Text>
@@ -51,7 +70,11 @@ const styles = StyleSheet.create({
   buttonplacement:{
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 200
+    marginTop: 200,
+    
+  },
+  buttonplacementSetting:{
+    width: "100%"
   },
   header: {
     flexDirection: 'row',
@@ -62,4 +85,21 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 10,
     borderBottomRightRadius: 10,
   },
+  textContainer:{
+    borderBottomWidth: 0.5,
+    borderColor: 'gray',
+    width:"100%",
+    paddingVertical: 40 ,
+    paddingHorizontal: 10,
+  },
 })
+
+
+
+  
+
+
+  
+
+
+

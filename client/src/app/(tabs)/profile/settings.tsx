@@ -2,23 +2,28 @@ import {  StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import React from 'react'
 import { defaultStyles } from '@/styles'
+import * as SecureStore from 'expo-secure-store';
+import { router } from 'expo-router';
+
 
 const settings = () => {
+
+  const handleLogout = async() => {
+    await SecureStore.deleteItemAsync('userDetails');
+    await SecureStore.deleteItemAsync('authToken');
+    router.push('/(authenticate)/login');
+
+  }
+
   return (
     <SafeAreaView style={defaultStyles.container}>
     <View>
       <Text style={defaultStyles.mainText}>Settings</Text>
       <View style={styles.buttonplacement}>
-        <TouchableOpacity >
-        <Text style={[defaultStyles.text,styles.textContainer]}>Personal Information</Text>
-        </TouchableOpacity>
+        
 
-        <TouchableOpacity>
-        <Text style={[defaultStyles.text,styles.textContainer]}>Preferences</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity>
-        <Text style={[defaultStyles.text,styles.textContainer]}>Analytics</Text>
+        <TouchableOpacity onPress={handleLogout}>
+        <Text style={[defaultStyles.text,styles.textContainer]}>Logout</Text>
         </TouchableOpacity>
         </View>
 

@@ -36,7 +36,6 @@ export const utilsStyles = StyleSheet.create({
 		...defaultStyles.text,
 		color: COLORS.textMuted,
 		textAlign: 'center',
-		marginTop: 20,
 	},
 	emptyContentImage: {
 		width: 200,

@@ -9,6 +9,8 @@ const ProfileLayout = () => {
     <Stack>
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="settings" options={{ headerShown: false }} />
+        <Stack.Screen name="personalInfo" options={{ headerShown: false }} />
+
     </Stack>
   )
 }

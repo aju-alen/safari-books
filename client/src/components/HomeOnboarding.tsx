@@ -3,6 +3,7 @@ import { View, StyleSheet,Text } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { defaultStyles } from '@/styles';
 import { COLORS, FONT, FONTSIZE } from '@/constants/tokens';
+import { horizontalScale, moderateScale } from '@/utils/responsiveSize';
 
 const HomeOnboarding = () => {
     return (
@@ -12,7 +13,7 @@ const HomeOnboarding = () => {
                 style={styles.oval}
             >
               <View>
-                <Text style={{textAlign:'center',fontSize: FONTSIZE.xLarge,fontFamily:FONT.notoBold,color: COLORS.text,}}>Members get even more</Text>
+                <Text style={{textAlign:'center',fontSize: FONTSIZE.xxLarge,fontFamily:FONT.notoBold,color: COLORS.text,}}>Members get even more</Text>
 
                 <View style={styles.cardContainer} >
                 <Text style={defaultStyles.mainText}>Pick 1 audiobook a month</Text>
@@ -45,16 +46,16 @@ const styles = StyleSheet.create({
     },
     oval: {
         width: "100%",
-        borderRadius: 10, // Half of the height to make it an oval
+        borderRadius: moderateScale(10), // Half of the height to make it an oval
         justifyContent: 'center',
         alignItems: 'center',
     },
     cardContainer: {
       backgroundColor: '#000',
-      padding: 20,
-      borderRadius: 10,
-      margin: 20,
-      width: 400,
+      padding: moderateScale(20),
+      borderRadius: moderateScale(10),
+      margin: moderateScale(20),
+      width: horizontalScale(300),
       
     }
 });

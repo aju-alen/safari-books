@@ -70,7 +70,7 @@ const SingleBookPage = () => {
         <Text style={[defaultStyles.mainText]}>Product Details</Text>
         <Text style={[defaultStyles.text,{fontSize:moderateScale(15),marginTop:moderateScale(10)}]}>Release Date: {singleBookData[0]?.releaseDate}</Text>
         <Text style={[defaultStyles.text,{fontSize:moderateScale(15),marginTop:moderateScale(10)}]}>Language: {singleBookData[0]?.language}</Text>
-        <Text style={[defaultStyles.text,{fontSize:moderateScale(15),marginTop:moderateScale(10)}]}>Publisher: {singleBookData[0]?.Publisher}</Text>
+        <Text style={[defaultStyles.text,{fontSize:moderateScale(15),marginTop:moderateScale(10)}]}>Publisher: {singleBookData[0]?.publisher}</Text>
 
         <Text style={[defaultStyles.mainText]}>You may also enjoy...</Text>
         

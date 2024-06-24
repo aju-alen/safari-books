@@ -214,3 +214,19 @@ export const login = async (req, res, next) => {
        next(err);
     }
 }
+
+export const getUserById = async (req, res) => {
+    try{
+        const user = await prisma.user.findUnique({
+            where: {
+                id: req.params.id
+            }
+        });
+        await prisma.$disconnect();
+        res.status(200).json({ message: "User data fetched successfully", user });
+    }
+    catch(err){
+        console.log(err);
+        res.status(500).json({ message: "Internal server error", err });
+    }
+}
