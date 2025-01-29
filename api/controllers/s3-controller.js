@@ -1,14 +1,16 @@
 import dotenv from "dotenv";
-import multer from 'multer';
-import AWS from 'aws-sdk';
-import fs from 'fs';
+import { Upload } from '@aws-sdk/lib-storage';
+import { S3 } from '@aws-sdk/client-s3';
 
 dotenv.config();
 
-const s3 = new AWS.S3({
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-    region: process.env.AWS_REGION,
+const s3 = new S3({
+    credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+        region: process.env.AWS_REGION,
+    },
+
 });
 export const postProfileImageS3 = async (req, res,next) => {
 //    const userId = req.params.userId;
@@ -26,7 +28,10 @@ Object.keys(files).forEach((key) => {
         Body: file.buffer,
         ContentType: file.mimetype,
     };
-    uploadPromises.push(s3.upload(params).promise());
+    uploadPromises.push(new Upload({
+        client: s3,
+        params,
+    }).done());
 });
 
 try {
@@ -39,22 +44,25 @@ try {
 }
   };
 
-  export const postAudioS3 = async (req, res) => {
-    const {id,userId,publishingType} = req.body;
-    console.log(id,userId,'id,userId');
-    const file = req.file;
-    const params = {
-        Bucket: process.env.S3_BUCKET_NAME,
-        Key: `${userId}/${id}/verificationfiles/${file.originalname}`, // File name you want to save as in S3
-        Body: file.buffer,
-        ContentType: file.mimetype,
-    };
-    console.log(params,'paramssssssssssssssss');
-    try {
-        const uploadResult = await s3.upload(params).promise();
-        res.status(200).json({ message: 'File uploaded successfully', data: uploadResult.Location });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Error uploading file' });
-    }
+export const postAudioS3 = async (req, res) => {
+  const {id,userId,publishingType} = req.body;
+  console.log(id,userId,'id,userId');
+  const file = req.file;
+  const params = {
+      Bucket: process.env.S3_BUCKET_NAME,
+      Key: `${userId}/${id}/verificationfiles/${file.originalname}`, // File name you want to save as in S3
+      Body: file.buffer,
+      ContentType: file.mimetype,
+  };
+  console.log(params,'paramssssssssssssssss');
+  try {
+      const uploadResult = await new Upload({
+          client: s3,
+          params,
+      }).done();
+      res.status(200).json({ message: 'File uploaded successfully', data: uploadResult.Location });
+  } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Error uploading file' });
   }
+}
