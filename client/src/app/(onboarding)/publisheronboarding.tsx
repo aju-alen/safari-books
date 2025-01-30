@@ -5,6 +5,7 @@ import OnboardingPublisherItem from '@/components/OnboardingPublisherItem'
 import { horizontalScale, moderateScale, verticalScale } from '@/utils/responsiveSize'
 import Pageinator from '@/components/Pageinator'
 import { router } from 'expo-router'
+import { COLORS } from '@/constants/tokens'
 
 const publisheronboarding = () => {
   return (
@@ -42,7 +43,7 @@ const styles = StyleSheet.create({
         height: verticalScale(50),
         justifyContent: 'space-around',
         alignItems: 'center',
-        backgroundColor: 'red',
+        backgroundColor: COLORS.primary,
         borderRadius: moderateScale(25)
     }
 })

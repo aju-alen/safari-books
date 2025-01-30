@@ -4,52 +4,73 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { defaultStyles } from '@/styles'
 import * as SecureStore from 'expo-secure-store';
 import { router } from 'expo-router';
-import { AntDesign } from '@expo/vector-icons'; 
+import { AntDesign, Ionicons } from '@expo/vector-icons';
+import { COLORS } from '@/constants/tokens';
 
 const ProfilePage = () => {
+  const menuItems = [
+    {
+      title: 'Personal Information',
+      icon: 'person-outline',
+      onPress: () => router.push('(tabs)/profile/personalInfo')
+    },
+    {
+      title: 'Preferences',
+      icon: 'options-outline',
+      onPress: () => {}
+    },
+    {
+      title: 'Analytics',
+      icon: 'analytics-outline',
+      onPress: () => {}
+    }
+  ];
 
   const handleLogout = async() => {
     await SecureStore.deleteItemAsync('userDetails');
     await SecureStore.deleteItemAsync('authToken');
     router.push('/(authenticate)/login');
-
   }
+
   return (
-    <SafeAreaView style={defaultStyles.container}>
-    <View>
+    <SafeAreaView style={[defaultStyles.container, styles.container]}>
       <View style={styles.header}>
-      <Text style={defaultStyles.mainText}>Profile</Text>
-      <TouchableOpacity onPress={() => router.push('/(tabs)/profile/settings')}>
-      <AntDesign name="setting" size={24} color="white" />
-      </TouchableOpacity>
+        <Text style={styles.headerTitle}>Profile</Text>
+        <TouchableOpacity 
+          style={styles.settingsButton}
+          onPress={() => router.push('/(tabs)/profile/settings')}
+        >
+          <Ionicons name="settings-outline" size={24} color={COLORS.primary} />
+        </TouchableOpacity>
       </View>
 
-      <View style={styles.buttonplacementSetting}>
-    <TouchableOpacity onPress={()=>router.push(`(tabs)/profile/personalInfo`)} >
-    <Text style={[defaultStyles.text,styles.textContainer]}>Personal Information</Text>
-    </TouchableOpacity>
-
-    <TouchableOpacity>
-    <Text style={[defaultStyles.text,styles.textContainer]}>Preferences</Text>
-    </TouchableOpacity>
-
-    <TouchableOpacity>
-    <Text style={[defaultStyles.text,styles.textContainer]}>Analytics</Text>
-    </TouchableOpacity>
-
-    <TouchableOpacity onPress={handleLogout}>
-    <Text style={[defaultStyles.text,styles.textContainer]}>Logout</Text>
-    </TouchableOpacity>
-    </View>
-
-      <View style={styles.buttonplacement}>
-      <TouchableOpacity onPress={handleLogout}  style={styles.buttonContainer}>
-        <Text style={defaultStyles.mainText}>Logout</Text>
-      </TouchableOpacity>
+      <View style={styles.menuContainer}>
+        {menuItems.map((item, index) => (
+          <TouchableOpacity 
+            key={index}
+            style={styles.menuItem}
+            onPress={item.onPress}
+          >
+            <View style={styles.menuItemContent}>
+              <View style={styles.menuItemLeft}>
+                <Ionicons name={item.icon} size={24} color="rgba(255, 255, 255, 0.7)" />
+                <Text style={styles.menuItemText}>{item.title}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="rgba(255, 255, 255, 0.4)" />
+            </View>
+          </TouchableOpacity>
+        ))}
       </View>
 
-      
-    </View>
+      <View style={styles.logoutContainer}>
+        <TouchableOpacity 
+          onPress={handleLogout}
+          style={styles.logoutButton}
+        >
+          <Ionicons name="log-out-outline" size={20} color="#FFFFFF" style={styles.logoutIcon} />
+          <Text style={styles.logoutText}>Logout</Text>
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   )
 }
@@ -57,49 +78,81 @@ const ProfilePage = () => {
 export default ProfilePage
 
 const styles = StyleSheet.create({
-  buttonContainer: {
-    flexDirection: 'row',
-    marginBottom: 60,
-    width: 200,
-    height: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'red',
-    borderRadius: 25
-  },
-  buttonplacement:{
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 200,
-    
-  },
-  buttonplacementSetting:{
-    width: "100%"
+  container: {
+    backgroundColor: COLORS.background,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
-    backgroundColor: '#000',
-    borderBottomLeftRadius: 10,
-    borderBottomRightRadius: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    backgroundColor: COLORS.background,
   },
-  textContainer:{
-    borderBottomWidth: 0.5,
-    borderColor: 'gray',
-    width:"100%",
-    paddingVertical: 40 ,
-    paddingHorizontal: 10,
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
-})
+  settingsButton: {
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+  },
+  menuContainer: {
+    marginTop: 20,
+    paddingHorizontal: 16,
+  },
+  menuItem: {
+    marginBottom: 8,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    overflow: 'hidden',
+  },
+  menuItemContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+  },
+  menuItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  menuItemText: {
+    marginLeft: 12,
+    fontSize: 16,
+    fontWeight: '500',
+    color: 'rgba(255, 255, 255, 0.9)',
+  },
+  logoutContainer: {
+    flex: 1,
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingBottom: 32,
+  },
+  logoutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#6366F1',
+    paddingVertical: 16,
+    borderRadius: 28,
+    shadowColor: '#6366F1',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
 
-
-
-  
-
-
-  
-
-
-
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  logoutIcon: {
+    marginRight: 8,
+  },
+  logoutText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+});

@@ -44,7 +44,7 @@ const LoginPage = () => {
             const resp = await axios.post(`${ipURL}/api/auth/login`, user)
             console.log(resp.data, 'Logged in succesfully');
             
-            await SecureStore.setItemAsync("authToken",resp.data.token);
+            await SecureStore.setItemAsync("authToken",JSON.stringify({token:resp.data.token}));
             await SecureStore.setItemAsync("userDetails",JSON.stringify({role:resp.data.role,userId:resp.data.id,email:resp.data.email}));
             const result = await SecureStore.getItemAsync("authToken");
             const userDetails = await SecureStore.getItemAsync("userDetails");

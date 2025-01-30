@@ -14,7 +14,8 @@ export const eBookData = [
         publisher:"Corpo Inc",
         rating:12315,
         colorCode:'fff',
-        categories:"Romance"
+        categories:"Romance",
+        sampleAudio:'https://safari-books-mobile.s3.ap-south-1.amazonaws.com/clwymbela0001coko5h4b0mar/k0qx5lmfuobzvuk5nt1xapcw/verificationfiles/compress.mp3'
     },
     {
         id: 'aewrb2',
@@ -31,7 +32,8 @@ export const eBookData = [
         publisher:"Corpo Inc",
         rating:52356,
         colorCode:'E34A24',
-        categories:"Comedy"
+        categories:"Comedy",
+        sampleAudio:'https://safari-books-mobile.s3.ap-south-1.amazonaws.com/clwymbela0001coko5h4b0mar/k0qx5lmfuobzvuk5nt1xapcw/verificationfiles/compress.mp3'
     },
     {
         id: 'a1b2',
@@ -48,7 +50,8 @@ export const eBookData = [
         publisher:"Corpo Inc",
         rating:12356,
         colorCode:'CABF1D',
-        categories:"Education"
+        categories:"Education",
+        sampleAudio:'https://safari-books-mobile.s3.ap-south-1.amazonaws.com/clwymbela0001coko5h4b0mar/k0qx5lmfuobzvuk5nt1xapcw/verificationfiles/compress.mp3'
     },
     {
         id: 'lofn02',
@@ -65,7 +68,8 @@ export const eBookData = [
         publisher:"Semmo Inc",
         rating:7955,
         colorCode:'FFFFFF',
-        categories:"Romance"
+        categories:"Romance",
+        sampleAudio:'https://safari-books-mobile.s3.ap-south-1.amazonaws.com/clwymbela0001coko5h4b0mar/k0qx5lmfuobzvuk5nt1xapcw/verificationfiles/compress.mp3'
     },
     {
         id: 'aam7c2',
@@ -82,7 +86,8 @@ export const eBookData = [
         publisher:"Corpo Inc",
         rating:385,
         colorCode:'DDDCCF',
-        categories:"Comedy"
+        categories:"Comedy",
+        sampleAudio:'https://safari-books-mobile.s3.ap-south-1.amazonaws.com/clwymbela0001coko5h4b0mar/k0qx5lmfuobzvuk5nt1xapcw/verificationfiles/compress.mp3'
     },
     {
         id: 'alrp12',
@@ -99,7 +104,8 @@ export const eBookData = [
         publisher:"Corpo Inc",
         rating:385,
         colorCode:'DDDCCF',
-        categories:"Education"
+        categories:"Education",
+        sampleAudio:'https://safari-books-mobile.s3.ap-south-1.amazonaws.com/clwymbela0001coko5h4b0mar/k0qx5lmfuobzvuk5nt1xapcw/verificationfiles/compress.mp3'
     },
     {
         id: 'aloz32',
@@ -116,7 +122,8 @@ export const eBookData = [
         publisher:"Corpo Inc",
         rating:6185,
         colorCode:'DDDCCF',
-        categories:"Romance"
+        categories:"Romance",
+        sampleAudio:'https://safari-books-mobile.s3.ap-south-1.amazonaws.com/clwymbela0001coko5h4b0mar/k0qx5lmfuobzvuk5nt1xapcw/verificationfiles/compress.mp3'
     },
     {
         id: 'zikn90',
@@ -133,7 +140,8 @@ export const eBookData = [
         publisher:"Corpo Inc",
         rating:385,
         colorCode:'DDDCCF',
-        categories:"Comedy"
+        categories:"Comedy",
+        sampleAudio:'https://safari-books-mobile.s3.ap-south-1.amazonaws.com/clwymbela0001coko5h4b0mar/k0qx5lmfuobzvuk5nt1xapcw/verificationfiles/compress.mp3'
     },
     {
         id: 'aqwe62',
@@ -150,7 +158,8 @@ export const eBookData = [
         publisher:"Corpo Inc",
         rating:385,
         colorCode:'DDDCCF',
-        categories:"Education"
+        categories:"Education",
+        sampleAudio:'https://safari-books-mobile.s3.ap-south-1.amazonaws.com/clwymbela0001coko5h4b0mar/k0qx5lmfuobzvuk5nt1xapcw/verificationfiles/compress.mp3'
     },
     {
         id: 'ghgh45',
@@ -167,7 +176,8 @@ export const eBookData = [
         publisher:"Corpo Inc",
         rating:385,
         colorCode:'DDDCCF',
-        categories:"Romance"
+        categories:"Romance",
+        sampleAudio:'https://safari-books-mobile.s3.ap-south-1.amazonaws.com/clwymbela0001coko5h4b0mar/k0qx5lmfuobzvuk5nt1xapcw/verificationfiles/compress.mp3'
     },
     {
         id: 'sdre13',
@@ -184,7 +194,8 @@ export const eBookData = [
         publisher:"Corpo Inc",
         rating:385,
         colorCode:'DDDCCF',
-        categories:"Comedy"
+        categories:"Comedy",
+        sampleAudio:'https://safari-books-mobile.s3.ap-south-1.amazonaws.com/clwymbela0001coko5h4b0mar/k0qx5lmfuobzvuk5nt1xapcw/verificationfiles/compress.mp3'
     },
     {
         id: 'plmnj00',
@@ -201,7 +212,8 @@ export const eBookData = [
         publisher:"Corpo Inc",
         rating:385,
         colorCode:'DDDCCF',
-        categories:"Education"
+        categories:"Education",
+        sampleAudio:'https://safari-books-mobile.s3.ap-south-1.amazonaws.com/clwymbela0001coko5h4b0mar/k0qx5lmfuobzvuk5nt1xapcw/verificationfiles/compress.mp3'
     },
     {
         id: 'zxas22',
@@ -218,7 +230,8 @@ export const eBookData = [
         publisher:"Corpo Inc",
         rating:385,
         colorCode:'DDDCCF',
-        categories:"Romance"
+        categories:"Romance",
+        sampleAudio:'https://safari-books-mobile.s3.ap-south-1.amazonaws.com/clwymbela0001coko5h4b0mar/k0qx5lmfuobzvuk5nt1xapcw/verificationfiles/compress.mp3'
     },
     {
         id: 'tyty88',
@@ -235,7 +248,8 @@ export const eBookData = [
         publisher:"Corpo Inc",
         rating:385,
         colorCode:'DDDCCF',
-        categories:"Comedy"
+        categories:"Comedy",
+        sampleAudio:'https://safari-books-mobile.s3.ap-south-1.amazonaws.com/clwymbela0001coko5h4b0mar/k0qx5lmfuobzvuk5nt1xapcw/verificationfiles/compress.mp3'
     },
     {
         id: 'uquy34',
@@ -252,7 +266,8 @@ export const eBookData = [
         publisher:"Corpo Inc",
         rating:385,
         colorCode:'DDDCCF',
-        categories:"Education"
+        categories:"Education",
+        sampleAudio:'https://safari-books-mobile.s3.ap-south-1.amazonaws.com/clwymbela0001coko5h4b0mar/k0qx5lmfuobzvuk5nt1xapcw/verificationfiles/compress.mp3'
     },
     
 

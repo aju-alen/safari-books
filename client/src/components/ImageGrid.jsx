@@ -1,21 +1,42 @@
 import React from 'react';
-import { View, Image, StyleSheet, Touchable, TouchableOpacity } from 'react-native';
-import { horizontalScale,verticalScale,moderateScale } from '@/utils/responsiveSize';
+import { View, Image, StyleSheet, TouchableOpacity, Animated } from 'react-native';
+import { horizontalScale, verticalScale, moderateScale } from '@/utils/responsiveSize';
 import { router } from 'expo-router';
 
 const ImageGrid = ({ images }) => {
-    console.log(images, 'images');
   return (
     <View style={styles.gridContainer}>
-      {images.map((image, index) => (
-        <TouchableOpacity key={image.id} onPress={()=>router.push(`/(tabs)/home/${image.id}`)}>
-        <Image
-          key={image.id}
-          source={{ uri: image.coverImage }}
-          style={styles.image}
-        />
-        </TouchableOpacity>
-      ))}
+      {images.map((image, index) => {
+        const scaleValue = new Animated.Value(1);
+
+        const handlePressIn = () => {
+          Animated.spring(scaleValue, {
+            toValue: 0.95,
+            useNativeDriver: true,
+          }).start();
+        };
+
+        const handlePressOut = () => {
+          Animated.spring(scaleValue, {
+            toValue: 1,
+            useNativeDriver: true,
+          }).start();
+        };
+
+        return (
+          <TouchableOpacity
+            key={image.id}
+            onPress={() => router.push(`/(tabs)/home/${image.id}`)}
+            onPressIn={handlePressIn}
+            onPressOut={handlePressOut}
+            activeOpacity={0.8}
+          >
+            <Animated.View style={[styles.imageContainer, { transform: [{ scale: scaleValue }] }]}>
+              <Image source={{ uri: image.coverImage }} style={styles.image} resizeMode="cover" />
+            </Animated.View>
+          </TouchableOpacity>
+        );
+      })}
     </View>
   );
 };
@@ -25,12 +46,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
+    paddingHorizontal: moderateScale(5),
+  },
+  imageContainer: {
+    borderRadius: moderateScale(12),
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+
+    shadowRadius: 5,
+    elevation: 5,
+    backgroundColor: '#fff', // Ensures shadows are visible
   },
   image: {
-    width: horizontalScale(163),
+    width: horizontalScale(160),
     height: verticalScale(200),
-    marginBottom: verticalScale(10),
-    borderRadius: moderateScale(10),
+    borderRadius: moderateScale(12),
   },
 });
 

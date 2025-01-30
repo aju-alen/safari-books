@@ -1,74 +1,198 @@
 import { StatusBar } from "expo-status-bar";
+import { StyleSheet, Text, Animated, View, Pressable, Image, Dimensions } from 'react-native';
+import { router } from "expo-router";
+import React, { useEffect, useRef } from 'react';
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { Redirect } from "expo-router";
-import { useFonts } from 'expo-font';
-import * as SplashScreen from 'expo-splash-screen';
-import { useCallback, useEffect, useState } from "react";
-import { View, Text } from "react-native";
 import * as SecureStore from 'expo-secure-store';
-import { FONT } from '../constants/tokens';
-import {useSetupTrackPlayer} from '@/utils/useSetupPlayer';
-import { useLogTrackPlayerState } from "@/utils/useLogTrackPlayerState";
+import { LinearGradient } from 'expo-linear-gradient';
 
-SplashScreen.preventAutoHideAsync();
+const { width, height } = Dimensions.get('window');
 
 const App = () => {
-  
+  const scaleValue = useRef(new Animated.Value(1)).current; // Initialize scale
+  const fadeAnim = useRef(new Animated.Value(0)).current; // Fade animation for text
 
-  
-
-  const [wait, setWait] = useState(true);
-    const [fontsLoaded] = useFonts({
-
-        NotoSemiBold: require('../../assets/fonts/NotoSans/NotoSans-SemiBold.ttf'),
-        NotoRegular: require('../../assets/fonts/NotoSans/NotoSans-Regular.ttf'),
-        NotoMedium: require('../../assets/fonts/NotoSans/NotoSans-Medium.ttf'),
-        NotoBold: require('../../assets/fonts/NotoSans/NotoSans-Bold.ttf'),
-        NotoThinItalic: require('../../assets/fonts/NotoSans/NotoSans-ThinItalic.ttf'),
-        NotoThin: require('../../assets/fonts/NotoSans/NotoSans-Thin.ttf'),
-        RobotoBold: require('../../assets/fonts/Roboto/Roboto-Bold.ttf'),
-        RobotoBoldItalic: require('../../assets/fonts/Roboto/Roboto-BoldItalic.ttf'),
-        RobotoItalic: require('../../assets/fonts/Roboto/Roboto-Italic.ttf'),
-        RobotoLight: require('../../assets/fonts/Roboto/Roboto-Light.ttf'),
-        RobotoLightItalic: require('../../assets/fonts/Roboto/Roboto-LightItalic.ttf'),
-        RobotoMedium: require('../../assets/fonts/Roboto/Roboto-Medium.ttf'),
-        RobotoMediumItalic: require('../../assets/fonts/Roboto/Roboto-MediumItalic.ttf'),
-        RobotoRegular: require('../../assets/fonts/Roboto/Roboto-Regular.ttf'),
-        RobotoThin: require('../../assets/fonts/Roboto/Roboto-Thin.ttf'),
-        RobotoThinItalic: require('../../assets/fonts/Roboto/Roboto-ThinItalic.ttf'),
-        "ClashGroteskBold": require('../../assets/fonts/Clash_Grotesk/ClashGrotesk-Bold.ttf'),
-        ClashGroteskRegular: require('../../assets/fonts/Clash_Grotesk/ClashGrotesk-Regular.ttf'),
-        ClashGroteskMedium: require('../../assets/fonts/Clash_Grotesk/ClashGrotesk-Medium.ttf'),
-        ClashGroteskSemiBold: require('../../assets/fonts/Clash_Grotesk/ClashGrotesk-Semibold.ttf'),
-        ClashGroteskExtraLight: require('../../assets/fonts/Clash_Grotesk/ClashGrotesk-Extralight.ttf'),
-        "ClashGroteskLight": require('../../assets/fonts/Clash_Grotesk/ClashGrotesk-Light.ttf'),
-
-
+  // Button animation
+  const animateButton = () => {
+    Animated.sequence([
+      Animated.timing(scaleValue, {
+        toValue: 0.9,  // Scale down to 90%
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scaleValue, {
+        toValue: 1,   // Scale back to 100%
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      router.push('/(authenticate)/chooseRole');
     });
+  };
 
-    useEffect(() => {
-      const hideSplashScreen = async () => {
-        if (fontsLoaded) {
-          // Wait for 10 seconds before hiding the splash screen
-          setTimeout(async () => {
-            await SplashScreen.hideAsync();
-            setWait(false);  // Update state to reflect that the splash screen has been hidden
-          }, 2000);
-        }
-      };
-      hideSplashScreen();
-    }, [fontsLoaded]);
+  // Fade-in animation for text
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 1000,
+      useNativeDriver: true,
+    }).start();
+  }, []);
 
-    if (!fontsLoaded || wait) {
-      return null;
-    }
+  // Check user role
+  useEffect(() => {
+    const checkUser = async () => {
+      let userDetail = await SecureStore.getItemAsync('userDetails');
+      let authToken = await SecureStore.getItemAsync('authToken');
+      if (!userDetail) return;
+      const userData = JSON.parse(userDetail);
+      if (userData.role === 'PUBLISHER') {
+        router.push('/(publisher)/publisherhome');
+      } else if (userData.role === 'LISTENER') {
+        router.push('/(tabs)/home');
+      }
+    };
+    checkUser();
+  }, []);
 
-    return (
-      <Redirect href='/(authenticate)/chooseRole' />
-    )
+  return (
+    <SafeAreaProvider>
+      <StatusBar style="light" />
+      <LinearGradient
+        colors={['#000', '#000', '#6366F1']} // Gradient background
+        style={styles.container}
+      >
+        <Animated.View style={[{ transform: [{ scale: scaleValue }] }, styles.content]}>
+          {/* App Logo */}
+          {/* <Image
+            source={require('@/assets/images/safari-books-logo.png')} // Replace with your logo
+            style={styles.logo}
+          /> */}
 
-}
+          {/* App Name */}
+          <Animated.Text style={[styles.appName, { opacity: fadeAnim }]}>
+            Safari Books
+          </Animated.Text>
 
+          {/* Tagline */}
+          <Animated.Text style={[styles.tagline, { opacity: fadeAnim }]}>
+            Where Stories Come to Life
+          </Animated.Text>
 
+          {/* Features Section */}
+          <View style={styles.featuresContainer}>
+            <View style={styles.featureCard}>
+              <Text style={styles.featureIcon}>🎙️</Text>
+              <Text style={styles.featureTitle}>Publish</Text>
+              <Text style={styles.featureDescription}>
+                Share your stories with the world.
+              </Text>
+            </View>
+
+            <View style={styles.featureCard}>
+              <Text style={styles.featureIcon}>🎧</Text>
+              <Text style={styles.featureTitle}>Listen</Text>
+              <Text style={styles.featureDescription}>
+                Dive into a world of audio stories.
+              </Text>
+            </View>
+
+            <View style={styles.featureCard}>
+              <Text style={styles.featureIcon}>🎭</Text>
+              <Text style={styles.featureTitle}>Narrate</Text>
+              <Text style={styles.featureDescription}>
+                Bring stories to life with your voice.
+              </Text>
+            </View>
+          </View>
+
+          {/* Get Started Button */}
+          <Pressable onPress={animateButton} style={styles.button}>
+            <Text style={styles.buttonText}>Get Started</Text>
+          </Pressable>
+        </Animated.View>
+      </LinearGradient>
+    </SafeAreaProvider>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  content: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  logo: {
+    width: 120,
+    height: 120,
+    marginBottom: 20,
+  },
+  appName: {
+    fontSize: 36,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginBottom: 10,
+  },
+  tagline: {
+    fontSize: 18,
+    color: '#E0E7FF',
+    textAlign: 'center',
+    marginBottom: 40,
+  },
+  featuresContainer: {
+    width: '100%',
+    marginBottom: 40,
+  },
+  featureCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)', // Semi-transparent white
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 16,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)', // Light border
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+
+    shadowRadius: 10,
+    elevation: 5,
+  },
+  featureIcon: {
+    fontSize: 32,
+    marginBottom: 10,
+    color: '#FFFFFF',
+  },
+  featureTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    marginBottom: 8,
+  },
+  featureDescription: {
+    fontSize: 14,
+    color: '#E0E7FF',
+    textAlign: 'center',
+  },
+  button: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 40,
+    paddingVertical: 15,
+    borderRadius: 30,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+
+    shadowRadius: 10,
+    elevation: 5,
+  },
+  buttonText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#3B82F6',
+  },
+});
 
 export default App;

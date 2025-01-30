@@ -1,14 +1,14 @@
 {
   "expo": {
-    "name": "safari-books",
+    "name": "Safari Books",
     "slug": "safari-books",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/app-icon.png",
+    "icon": "./assets/sbLogo.jpeg",
     "userInterfaceStyle": "dark",
     "scheme": "safari-books",
     "splash": {
-      "image": "./assets/app-icon.png",
+      "image": "./assets/sbLogo.jpeg",
       "resizeMode": "contain",
       "backgroundColor": "#25292e"
     },
@@ -21,11 +21,12 @@
         "UIBackgroundModes": [
           "audio"
         ]
-      }
+      },
+      "bundleIdentifier": "ios"
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/icon.png",
+        "foregroundImage": "./assets/sbLogo.jpeg",
         "backgroundColor": "red"
       },
       "permissions": [

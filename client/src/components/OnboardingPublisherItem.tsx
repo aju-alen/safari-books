@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View, Image, useWindowDimensions} from 'react-native'
 import React from 'react'
+import { COLORS } from '@/constants/tokens'
 
 const OnboardingPublisherItem = ({item}) => {
   const {width} = useWindowDimensions()
@@ -32,7 +33,7 @@ const styles = StyleSheet.create({
     fontWeight:'800',
     fontSize:28,
     marginBottom:16,
-    color:'red',
+    color:COLORS.secondary,
     textAlign:'center'
   },
   description:{

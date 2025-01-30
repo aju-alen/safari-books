@@ -1,59 +1,162 @@
-import { defaultStyles } from '@/styles';
-import { horizontalScale, verticalScale } from '@/utils/responsiveSize';
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, FlatList, StyleSheet, Dimensions, SafeAreaView } from 'react-native';
-import {FONT} from '@/constants/tokens';
+import React, { useState, useEffect } from 'react';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  SafeAreaView, 
+  Animated, 
+  Dimensions,
+  TouchableWithoutFeedback
+} from 'react-native';
+import { FONT } from '@/constants/tokens';
 import { router } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 
+const { width, height } = Dimensions.get('window');
 
 const options = [
-  { id: '1', title: 'I am here to listen to some books',role:'LISTENER' },
-  { id: '2', title: 'I am here to publish my book',role:'PUBLISHER' },
-  { id: '3', title: 'I am here to narrate books', role:'NARRATOR' },
+  {
+    id: '1',
+    title: 'Listener',
+    icon: '🎧',
+    role: 'LISTENER',
+    description: 'Discover audiobooks',
+    gradient: ['#FF6B6B', '#FF8E53']
+  },
+  {
+    id: '2',
+    title: 'Publisher',
+    icon: '📚',
+    role: 'PUBLISHER',
+    description: 'Share your stories',
+    gradient: ['#4E65FF', '#92EFFD']
+  },
+  {
+    id: '3',
+    title: 'Narrator',
+    icon: '🎙️',
+    role: 'NARRATOR',
+    description: 'Voice stories',
+    gradient: ['#6B4EFF', '#B592FD']
+  }
 ];
 
 const App = () => {
   const [selectedId, setSelectedId] = useState(null);
+  const [animations] = useState(options.map(() => new Animated.Value(0)));
+  const [buttonAnim] = useState(new Animated.Value(0));
 
-  const handlePress = (role) => {
-    setSelectedId(role);
+  useEffect(() => {
+    // Animate cards in on mount
+    options.forEach((_, index) => {
+      Animated.spring(animations[index], {
+        toValue: 1,
+        delay: index * 100,
+        useNativeDriver: true,
+      }).start();
+    });
+  }, []);
 
+  useEffect(() => {
+    // Animate button when selection changes
+    Animated.spring(buttonAnim, {
+      toValue: selectedId ? 1 : 0,
+      useNativeDriver: true,
+    }).start();
+  }, [selectedId]);
+
+  const handleSelect = (role) => {
+    const isDeselecting = role === selectedId;
+    setSelectedId(isDeselecting ? null : role);
   };
 
-  const renderItem = ({ item }) => {
-    const backgroundColor = item.role === selectedId ? '#fff' : '#000';
-    const textColor = item.role === selectedId ? 'black' : 'white';
-    const borderColor = item.role === selectedId ? '#000' : '#fff';
+  const renderOption = (item, index) => {
+    const isSelected = item.role === selectedId;
+    const otherSelected = selectedId && !isSelected;
+
+    const scale = animations[index].interpolate({
+      inputRange: [0, 1],
+      outputRange: [0.8, 1]
+    });
+
+    const cardStyle = {
+      transform: [
+        { scale },
+        { 
+          translateY: animations[index].interpolate({
+            inputRange: [0, 1],
+            outputRange: [50, 0]
+          })
+        }
+      ],
+      opacity: animations[index].interpolate({
+        inputRange: [0, 1],
+        outputRange: [0, 1]
+      })
+    };
+
     return (
-      <TouchableOpacity
-        onPress={() => handlePress(item.role)}
-        style={[styles.card, { backgroundColor, borderColor,borderWidth:1, shadowColor: "#000", shadowOffset: { width: 0, height: 2, }, shadowOpacity: 0.25, shadowRadius: 3.84, elevation: 5}]}
-      >
-        <Text style={[styles.text, { color: textColor }]}>{item.title}</Text>
-      </TouchableOpacity>
+      <TouchableWithoutFeedback key={item.id} onPress={() => handleSelect(item.role)}>
+        <Animated.View style={[
+          styles.card,
+          cardStyle,
+          otherSelected && styles.cardDimmed
+        ]}>
+            <LinearGradient
+              colors={item.gradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={[
+                styles.cardGradient,
+                isSelected && styles.selectedCard
+              ]}
+            >
+              <Text style={styles.cardIcon}>{item.icon}</Text>
+              <Text style={styles.cardTitle}>{item.title}</Text>
+              <Text style={styles.cardDescription}>{item.description}</Text>
+            </LinearGradient>
+
+        </Animated.View>
+      </TouchableWithoutFeedback>
     );
   };
-  console.log(selectedId,'selectedId');
-  
+
+  const buttonTranslateY = buttonAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [100, 0]
+  });
 
   return (
-    <SafeAreaView style={[defaultStyles.container,styles.container]}>
-      <View>
-    <Text style={styles.mainHeading}>You are here to </Text>
-      <FlatList
-        style={{marginTop:20}}
-        data={options}
-        renderItem={renderItem}
-        keyExtractor={(item) => item.id}
-        extraData={selectedId}
-        contentContainerStyle={styles.list}
-        
-      />
-      <TouchableOpacity onPress={()=> router.push(`/(authenticate)/${selectedId}`)}>
-      <Text style={{color:'#fff',fontSize:20,marginTop:10,fontFamily:FONT.notoBold, textAlign:'right'}}>Continue</Text>
-    </TouchableOpacity>
-    </View>
-    
+    <SafeAreaView style={styles.container}>
+      <LinearGradient
+        colors={['#000000', '#1A1A1A']}
+        style={styles.gradient}
+      >
+        <View style={styles.content}>
+          <Text style={styles.heading}>Welcome!</Text>
+          <Text style={styles.subheading}>How would you like to experience stories?</Text>
+          
+          <View style={styles.cardsContainer}>
+            {options.map((item, index) => renderOption(item, index))}
+          </View>
+
+          <Animated.View style={[
+            styles.buttonContainer,
+            { transform: [{ translateY: buttonTranslateY }] }
+          ]}>
+            <TouchableWithoutFeedback onPress={() => router.push(`/(authenticate)/${selectedId}`)}>
+              <LinearGradient
+                colors={selectedId ? options.find((item) => item.role === selectedId).gradient : ['#000', '#000']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.button}
+              >
+                <Text style={styles.buttonText}>Continue</Text>
+              </LinearGradient>
+            </TouchableWithoutFeedback>
+          </Animated.View>
+        </View>
+      </LinearGradient>
     </SafeAreaView>
   );
 };
@@ -61,34 +164,100 @@ const App = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'flex-start',
+    backgroundColor: '#000',
   },
-  list: {
-    alignItems: 'center',
+  gradient: {
+    flex: 1,
   },
-  card: {
-    width: horizontalScale(350),
-    height: verticalScale(200),
-    padding: 20,
-    marginVertical: 10,
-    borderRadius: 10,
+  content: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: height * 0.08,
+  },
+  heading: {
+    fontFamily: FONT.notoBold,
+    color: '#fff',
+    fontSize: 32, // Reduced heading size
+    marginBottom: 8,
+  },
+  subheading: {
+    fontFamily: FONT.notoRegular,
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 16, // Reduced subheading size
+    marginBottom: height * 0.04,
+  },
+  cardsContainer: {
     alignItems: 'center',
     justifyContent: 'center',
   },
-  text: {
-    fontSize: 18,
+  card: {
+    width: width * 0.8, // Reduced width
+    height: height * 0.18, // Reduced height
+    marginBottom: 15, // Reduced margin between cards
+    borderRadius: 18, // Reduced border radius
+    overflow: 'hidden',
   },
-  mainHeading:{
+  cardBlur: {
+    flex: 1,
+    overflow: 'hidden',
+    borderRadius: 18,
+  },
+  cardGradient: {
+    flex: 1,
+    padding: 20, // Reduced padding inside card
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 18,
+  },
+  cardDimmed: {
+    opacity: 0.5,
+    transform: [{ scale: 0.95 }],
+  },
+  selectedCard: {
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
+  cardIcon: {
+    fontSize: 32, // Reduced icon size
+    marginRight: 16, // Reduced space between icon and text
+  },
+  cardTitle: {
     fontFamily: FONT.notoBold,
     color: '#fff',
-    fontSize: 28,
-    textShadowColor: 'rgba(0, 0, 0, 0)',
-    textShadowOffset: { width: -1, height: 1 },
-    textShadowRadius: 20,
-    letterSpacing: 1,
-    marginTop:verticalScale(20),
-  }
+    fontSize: 20, // Reduced title size
+    marginBottom: 4,
+  },
+  cardDescription: {
+    fontFamily: FONT.notoRegular,
+    color: 'rgba(255,255,255,0.9)',
+    fontSize: 14, // Reduced description size
+  },
+  buttonContainer: {
+    position: 'absolute',
+    bottom: 30, // Adjusted position for the button
+    left: 20,
+    right: 20,
+  },
+  button: {
+    height: 50, // Reduced button height
+    borderRadius: 25, // Adjusted border radius
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+
+    shadowRadius: 4.65,
+    elevation: 8,
+  },
+  buttonText: {
+    fontFamily: FONT.notoBold,
+    color: '#fff',
+    fontSize: 16, // Reduced button text size
+    letterSpacing: 0.5,
+  },
 });
 
 export default App;

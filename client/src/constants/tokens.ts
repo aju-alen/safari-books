@@ -1,7 +1,7 @@
 export const COLORS = {
-	primary: '#800000',
-	secondary: "#606c38",
-	secondary2: "#6F2DBD",
+	primary: '#4A4DFF',
+	secondary2: "#606c38",
+	secondary: "#6366F1",
 	tertiary: "#FF7754",
 	background: '#000',
 	text: '#fff',
@@ -38,7 +38,6 @@ export const SHADOWS = {
 			width: 0,
 			height: 2,
 		},
-		shadowOpacity: 0.25,
 		shadowRadius: 3.84,
 		elevation: 2,
 	},
@@ -48,7 +47,7 @@ export const SHADOWS = {
 			width: 0,
 			height: 2,
 		},
-		shadowOpacity: 0.25,
+
 		shadowRadius: 5.84,
 		elevation: 5,
 	},

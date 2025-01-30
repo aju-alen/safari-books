@@ -1,31 +1,29 @@
-import { ScrollView, StyleSheet, Text, TextInput,TouchableOpacity, View } from 'react-native'
+import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Animated } from 'react-native'
 import React, { useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { defaultStyles } from '@/styles'
 import { horizontalScale, verticalScale, moderateScale } from '@/utils/responsiveSize'
-import { COLORS, FONT, welcomeCOLOR } from '@/constants/tokens'
+import { COLORS, FONT } from '@/constants/tokens'
 import Button from '@/components/Button'
-import * as DocumentPicker from 'expo-document-picker';
+import * as DocumentPicker from 'expo-document-picker'
 import { ipURL } from '@/utils/backendURL'
-import { router } from 'expo-router'
-import { useLocalSearchParams } from 'expo-router'
-import { createId } from '@paralleldrive/cuid2';
+import { router, useLocalSearchParams } from 'expo-router'
+import { createId } from '@paralleldrive/cuid2'
 import axios from 'axios'
+import { MaterialIcons } from '@expo/vector-icons'
 
 const id = createId();
 
-const publisheauthorForm = () => {
-    const {publisheauthorForm} = useLocalSearchParams()
-    const [fullname, setFullname] = React.useState('')
-    const [address, setAddress] = React.useState('')
-    const [telephone, setTelephone] = React.useState('')
-    const [idppNo, setIdppNo] = React.useState('')
-    const [kraPin, setKraPin] = React.useState('')
-    const [writersGuildMemberNo, setWritersGuildMemberNo] = React.useState('')
-    const [doc1, setDoc1] = useState(null);
-    const [doc2, setDoc2] = useState(null);
-    const [formData, setFormData] = useState({})
-    
+const PublishAuthorForm = () => {
+    const { publisheauthorForm } = useLocalSearchParams()
+    const [fullname, setFullname] = useState('')
+    const [address, setAddress] = useState('')
+    const [telephone, setTelephone] = useState('')
+    const [idppNo, setIdppNo] = useState('')
+    const [kraPin, setKraPin] = useState('')
+    const [writersGuildMemberNo, setWritersGuildMemberNo] = useState('')
+    const [doc1, setDoc1] = useState(null)
+    const [doc2, setDoc2] = useState(null)
 
     const pickDocument = async (setDoc) => {
         let result = await DocumentPicker.getDocumentAsync({
@@ -33,17 +31,16 @@ const publisheauthorForm = () => {
             copyToCacheDirectory: true
         });
 
-        
-            let { name, size, uri } = result["assets"][0];
-            let nameParts = name.split('.');
-            let fileType = nameParts[nameParts.length - 1];
-            var fileToUpload = {
-                name: name,
-                size: size,
-                uri: uri,
-                type: "application/" + fileType
-            };
-            setDoc(fileToUpload);
+        let { name, size, uri } = result["assets"][0];
+        let nameParts = name.split('.');
+        let fileType = nameParts[nameParts.length - 1];
+        var fileToUpload = {
+            name: name,
+            size: size,
+            uri: uri,
+            type: "application/" + fileType
+        };
+        setDoc(fileToUpload);
     };
 
     const postDocuments = async () => {
@@ -53,8 +50,8 @@ const publisheauthorForm = () => {
         if (doc1) formData.append('document1', { uri: doc1.uri, name: doc1.name, type: doc1.type });
         if (doc2) formData.append('document2', { uri: doc2.uri, name: doc2.name, type: doc2.type });
        
-        formData.append('id',id,);
-        formData.append('userId',publisheauthorForm);
+        formData.append('id', id);
+        formData.append('userId', publisheauthorForm);
     
         const options = {
             method: 'POST',
@@ -67,25 +64,17 @@ const publisheauthorForm = () => {
     
         try {
             const response = await fetch(url, options);
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
+            if (!response.ok) throw new Error('Network response was not ok');
             const responseData = await response.json();
-            return responseData['data']
-            
+            return responseData['data'];
         } catch (error) {
             console.error('Error:', error);
         }
     };
-    
-
-
-
 
     const handleSubmit = async () => {
-        try{
+        try {
             const docURL = await postDocuments();
-
             
             const data = {
                 id,
@@ -93,349 +82,216 @@ const publisheauthorForm = () => {
                 address: address,
                 telephone: telephone,
                 idppNo: idppNo,
-                idppPdfUrl:docURL[0],
+                idppPdfUrl: docURL[0],
                 kraPin: kraPin,
-                kraPinPdfUrl:docURL[1],
+                kraPinPdfUrl: docURL[1],
                 writersGuildNo: writersGuildMemberNo,
                 userId: publisheauthorForm
             }
-            const response = await axios.post(`${ipURL}/api/publisher/create-author`, data
-      );
-      console.log(response.data,'after backend data is saved');
-
-      router.push(`/(publisher)/${id}`)
-    }
-        catch (error) {
+            const response = await axios.post(`${ipURL}/api/publisher/create-author`, data);
+            console.log(response.data, 'after backend data is saved');
+            router.push(`/(publisher)/${id}`);
+        } catch (error) {
             console.error('Error:', error);
         }
     }
 
-    return (
-
-        <SafeAreaView style={defaultStyles.container}>
-            <ScrollView>
-            <Text style={defaultStyles.mainText}>{publisheauthorForm}</Text>
-            <View style={{
-                flex: 1,
-                marginHorizontal: horizontalScale(22),
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "center"
-            }}>
-
-                <View style={{ marginVertical: verticalScale(22) }}>
-                    <Text style={{
-                        fontSize: moderateScale(22),
-                        fontWeight: 'bold',
-                        marginVertical: verticalScale(12),
-                        color: welcomeCOLOR.white
-                    }}>
-                        Publish as an author
-                    </Text>
-
-
-                </View>
-
-
-                <View >
-                    <View style={{ marginBottom: verticalScale(12) }}>
-                        <Text style={{
-                            fontSize: moderateScale(16),
-                            fontWeight: "200",
-                            marginVertical: verticalScale(8),
-                            color: welcomeCOLOR.black,
-                            fontFamily: FONT.RobotoLight
-
-                        }}>Full name</Text>
-
-                        <View style={[{
-                            width: "100%",
-                            height: verticalScale(48),
-                            borderColor: welcomeCOLOR.black,
-                            borderWidth: moderateScale(1),
-                            borderRadius: moderateScale(8),
-                            alignItems: "center",
-                            justifyContent: "center",
-                            paddingLeft: horizontalScale(22)
-                        },]}>
-                            <TextInput
-                                placeholder="Enter Your Full name"
-                                placeholderTextColor="gray"
-                                autoCapitalize="none"
-                                value={fullname}
-                                onChangeText={setFullname}
-                                keyboardType='default'
-                                style={{
-                                    width: "100%",
-                                    color: COLORS.white
-                                }}
-                            />
-                        </View>
-                    </View>
-                    <View style={{ marginBottom: verticalScale(12) }}>
-                        <Text style={{
-                            fontSize: moderateScale(16),
-                            fontWeight: "200",
-                            marginVertical: verticalScale(8),
-                            color: welcomeCOLOR.black,
-                            fontFamily: FONT.RobotoLight
-
-                        }}>Address</Text>
-
-                        <View style={[{
-                            width: "100%",
-                            height: verticalScale(48),
-                            borderColor: welcomeCOLOR.black,
-                            borderWidth: moderateScale(1),
-                            borderRadius: moderateScale(8),
-                            alignItems: "center",
-                            justifyContent: "center",
-                            paddingLeft: horizontalScale(22)
-                        },]}>
-                            <TextInput
-                                placeholder="Enter Your Address"
-                                placeholderTextColor="gray"
-                                autoCapitalize="none"
-                                value={address}
-                                onChangeText={setAddress}
-                                keyboardType='default'
-                                style={{
-                                    width: "100%",
-                                    color: COLORS.white
-                                }}
-                            />
-                        </View>
-                    </View>
-
-                    <View style={{ marginBottom: verticalScale(12) }}>
-                        <Text style={{
-                            fontSize: moderateScale(16),
-                            fontWeight: "200",
-                            marginVertical: verticalScale(8),
-                            color: welcomeCOLOR.black,
-                            fontFamily: FONT.RobotoLight
-
-                        }}>Telephone number</Text>
-
-                        <View style={[{
-                            width: "100%",
-                            height: verticalScale(48),
-                            borderColor: welcomeCOLOR.black,
-                            borderWidth: moderateScale(1),
-                            borderRadius: moderateScale(8),
-                            alignItems: "center",
-                            justifyContent: "center",
-                            paddingLeft: horizontalScale(22)
-                        },]}>
-                            <TextInput
-                                placeholder="Enter Your Telephone number"
-                                placeholderTextColor="gray"
-                                autoCapitalize="none"
-                                value={telephone}
-                                onChangeText={setTelephone}
-                                keyboardType='number-pad'
-                                style={{
-                                    width: "100%",
-                                    color: COLORS.white
-                                }}
-                            />
-                        </View>
-                    </View>
-                    <View style={{ marginBottom: verticalScale(12) }}>
-                        <Text style={{
-                            fontSize: moderateScale(16),
-                            fontWeight: "200",
-                            marginVertical: verticalScale(8),
-                            color: welcomeCOLOR.black,
-                            fontFamily: FONT.RobotoLight
-
-                        }}>ID/PP No.</Text>
-
-                        <View style={[{
-                            width: "100%",
-                            height: verticalScale(48),
-                            borderColor: welcomeCOLOR.black,
-                            borderWidth: moderateScale(1),
-                            borderRadius: moderateScale(8),
-                            alignItems: "center",
-                            justifyContent: "center",
-                            paddingLeft: horizontalScale(22)
-                        },]}>
-                            <TextInput
-                                placeholder="Enter Your ID/PP No."
-                                placeholderTextColor="gray"
-                                autoCapitalize="none"
-                                value={idppNo}
-                                onChangeText={setIdppNo}
-                                keyboardType='number-pad'
-                                style={{
-                                    width: "100%",
-                                    color: COLORS.white
-                                }}
-                            />
-                        </View>
-                        <TouchableOpacity onPress={() => pickDocument(setDoc1)}>
-                            <Text style={{
-                                fontSize: moderateScale(16),
-                                fontWeight: "200",
-                                marginVertical: verticalScale(8),
-                                color: COLORS.white,
-                                fontFamily: FONT.RobotoLight
-
-                            }}>Upload ID/PP</Text>
-                        </TouchableOpacity>
-                        
-                    </View>
-                    <View style={{ marginBottom: verticalScale(12) }}>
-                        <Text style={{
-                            fontSize: moderateScale(16),
-                            fontWeight: "200",
-                            marginVertical: verticalScale(8),
-                            color: welcomeCOLOR.black,
-                            fontFamily: FONT.RobotoLight
-
-                        }}>KRA PIN No.</Text>
-
-                        <View style={[{
-                            width: "100%",
-                            height: verticalScale(48),
-                            borderColor: welcomeCOLOR.black,
-                            borderWidth: moderateScale(1),
-                            borderRadius: moderateScale(8),
-                            alignItems: "center",
-                            justifyContent: "center",
-                            paddingLeft: horizontalScale(22)
-                        },]}>
-                            <TextInput
-                                placeholder="Enter Your KRA PIN No."
-                                placeholderTextColor="gray"
-                                autoCapitalize="none"
-                                value={kraPin}
-                                onChangeText={setKraPin}
-                                keyboardType='number-pad'
-                                style={{
-                                    width: "100%",
-                                    color: COLORS.white
-                                }}
-                            />
-                        </View>
-                        <TouchableOpacity onPress={() => pickDocument(setDoc2)}>
-                            <Text style={{
-                                fontSize: moderateScale(16),
-                                fontWeight: "200",
-                                marginVertical: verticalScale(8),
-                                color: COLORS.white,
-                                fontFamily: FONT.RobotoLight
-
-                            }}>Upload KRA PIN No.</Text>
-                        </TouchableOpacity>
-                        
-                    </View>
-                    <View style={{ marginBottom: verticalScale(12) }}>
-                        <Text style={{
-                            fontSize: moderateScale(16),
-                            fontWeight: "200",
-                            marginVertical: verticalScale(8),
-                            color: welcomeCOLOR.black,
-                            fontFamily: FONT.RobotoLight
-
-                        }}>Writers Guild Member No.</Text>
-
-                        <View style={[{
-                            width: "100%",
-                            height: verticalScale(48),
-                            borderColor: welcomeCOLOR.black,
-                            borderWidth: moderateScale(1),
-                            borderRadius: moderateScale(8),
-                            alignItems: "center",
-                            justifyContent: "center",
-                            paddingLeft: horizontalScale(22)
-                        },]}>
-                            <TextInput
-                                placeholder="Enter Your Writers Guild Member No. (optional)"
-                                placeholderTextColor="gray"
-                                autoCapitalize="none"
-                                value={writersGuildMemberNo}
-                                onChangeText={setWritersGuildMemberNo}
-                                keyboardType='number-pad'
-                                style={{
-                                    width: "100%",
-                                    color: COLORS.white
-                                }}
-                            />
-                        </View>
-                        
-                        
-                    </View>
-
-                    <Button
-                        title="Submit"
-                        filled
-                        color={COLORS.secondary
-                        }
-                        style={{
-                            marginTop: verticalScale(18),
-                            marginBottom: verticalScale(4),
-                        }}
-                        onPress={handleSubmit}
-                    />
-
-                </View>
-
-
+    const renderInput = (label, value, setValue, placeholder, keyboardType = 'default', optional = false) => (
+        <View style={styles.inputGroup}>
+            <Text style={styles.label}>
+                {label} {optional && <Text style={styles.optionalText}>(Optional)</Text>}
+            </Text>
+            <View style={styles.inputWrapper}>
+                <TextInput
+                    style={styles.input}
+                    placeholder={placeholder}
+                    placeholderTextColor="#666666"
+                    value={value}
+                    onChangeText={setValue}
+                    keyboardType={keyboardType}
+                />
             </View>
+        </View>
+    );
+
+    const renderDocumentUpload = (label, doc, setDoc) => (
+        <TouchableOpacity 
+            style={[styles.uploadButton, doc && styles.uploadButtonSuccess]}
+            onPress={() => pickDocument(setDoc)}
+        >
+            <MaterialIcons 
+                name={doc ? "check-circle" : "upload-file"} 
+                size={24} 
+                color={doc ? "#4CAF50" : "#4A4DFF"}
+            />
+            <Text style={[styles.uploadButtonText, doc && styles.uploadButtonTextSuccess]}>
+                {doc ? `✓ ${label} Uploaded` : `Upload ${label}`}
+            </Text>
+        </TouchableOpacity>
+    );
+
+    return (
+        <SafeAreaView style={[defaultStyles.container, styles.safeArea]}>
+            <ScrollView showsVerticalScrollIndicator={false}>
+                <View style={styles.container}>
+                    <View style={styles.header}>
+                        <Text style={styles.headerTitle}>Publish as an Author</Text>
+                        <Text style={styles.headerSubtitle}>Complete your author profile to get started</Text>
+                    </View>
+
+                    <View style={styles.formContainer}>
+                        {renderInput("Full Name", fullname, setFullname, "Enter your full name")}
+                        {renderInput("Address", address, setAddress, "Enter your address")}
+                        {renderInput("Telephone Number", telephone, setTelephone, "Enter your telephone number", "phone-pad")}
+                        
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.label}>ID/PP Number</Text>
+                            <View style={styles.inputWrapper}>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="Enter your ID/PP number"
+                                    placeholderTextColor="#666666"
+                                    value={idppNo}
+                                    onChangeText={setIdppNo}
+                                />
+                            </View>
+                            {renderDocumentUpload("ID/PP Document", doc1, setDoc1)}
+                        </View>
+
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.label}>KRA PIN Number</Text>
+                            <View style={styles.inputWrapper}>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="Enter your KRA PIN number"
+                                    placeholderTextColor="#666666"
+                                    value={kraPin}
+                                    onChangeText={setKraPin}
+                                />
+                            </View>
+                            {renderDocumentUpload("KRA PIN Document", doc2, setDoc2)}
+                        </View>
+
+                        {renderInput(
+                            "Writers Guild Member No.", 
+                            writersGuildMemberNo, 
+                            setWritersGuildMemberNo, 
+                            "Enter your Writers Guild number",
+                            "default",
+                            true
+                        )}
+
+                        <Button
+                            title="Submit Application"
+                            filled
+                            color="#4A4DFF"
+                            style={styles.submitButton}
+                            onPress={handleSubmit}
+                        />
+                    </View>
+                </View>
             </ScrollView>
         </SafeAreaView>
-    )
+    );
 }
 
-export default publisheauthorForm
-
 const styles = StyleSheet.create({
+    safeArea: {
+
+    },
     container: {
         flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    header: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        marginBottom: 50,
-        alignItems: 'center',
 
     },
-    inputContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 10,
+    header: {
+
+        paddingHorizontal: horizontalScale(4),
     },
-    icon: {
-        marginRight: 10,
+    headerTitle: {
+        fontSize: moderateScale(32),
+        fontWeight: 'bold',
+        color: '#FFFFFF',
+        marginBottom: verticalScale(8),
+        fontFamily: FONT.RobotoLight,
+    },
+    headerSubtitle: {
+        fontSize: moderateScale(16),
+        color: '#A0A0A0',
+        fontFamily: FONT.RobotoLight,
+    },
+    formContainer: {
+        backgroundColor: '#0A0A0A',
+        borderRadius: moderateScale(20),
+        padding: moderateScale(24),
+        shadowColor: '#4A4DFF',
+        shadowOffset: {
+            width: 0,
+            height: 4,
+        },
+        shadowOpacity: 0.15,
+        shadowRadius: 12,
+        elevation: 8,
+        borderWidth: 1,
+        borderColor: '#1A1A1A',
+    },
+    inputGroup: {
+        marginBottom: verticalScale(24),
+    },
+    label: {
+        fontSize: moderateScale(16),
+        fontWeight: "600",
+        marginBottom: verticalScale(8),
+        color: '#FFFFFF',
+        fontFamily: FONT.RobotoLight,
+    },
+    optionalText: {
+        color: '#666666',
+        fontSize: moderateScale(14),
+        fontWeight: "400",
+    },
+    inputWrapper: {
+        borderRadius: moderateScale(12),
+        backgroundColor: '#1A1A1A',
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: '#333333',
     },
     input: {
-        width: 300,
-        height: 40,
+        height: verticalScale(50),
+        paddingHorizontal: horizontalScale(16),
+        color: '#FFFFFF',
+        fontSize: moderateScale(16),
+        fontFamily: FONT.RobotoLight,
+    },
+    uploadButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#1A1A1A',
+        padding: moderateScale(12),
+        borderRadius: moderateScale(12),
         borderWidth: 1,
-        borderRadius: 5,
-        paddingLeft: 10,
+        borderColor: '#4A4DFF',
+        marginTop: verticalScale(8),
     },
-    button: {
-        backgroundColor: '#1E90FF',
-        padding: 10,
-        borderRadius: 5,
-        marginTop: 25,
-        width: 150,
+    uploadButtonSuccess: {
+        borderColor: '#4CAF50',
+        backgroundColor: 'rgba(76, 175, 80, 0.1)',
     },
-    buttonText: {
-        color: 'white',
-        fontWeight: 'bold',
-        textAlign: 'center',
-        fontSize: 22,
+    uploadButtonText: {
+        color: '#FFFFFF',
+        marginLeft: horizontalScale(8),
+        fontSize: moderateScale(14),
+        fontFamily: FONT.RobotoLight,
     },
-    link: {
-        marginTop: 10,
-        color: 'gray',
-        textAlign: 'center',
-        fontSize: 14,
-    }
+    uploadButtonTextSuccess: {
+        color: '#4CAF50',
+    },
+    submitButton: {
+        marginTop: verticalScale(32),
+        height: verticalScale(56),
+        borderRadius: moderateScale(12),
+    },
 });
+
+export default PublishAuthorForm;
