@@ -31,14 +31,14 @@ const options = [
     description: 'Share your stories',
     gradient: ['#4E65FF', '#92EFFD']
   },
-  {
-    id: '3',
-    title: 'Narrator',
-    icon: '🎙️',
-    role: 'NARRATOR',
-    description: 'Voice stories',
-    gradient: ['#6B4EFF', '#B592FD']
-  }
+  // {
+  //   id: '3',
+  //   title: 'Narrator',
+  //   icon: '🎙️',
+  //   role: 'NARRATOR',
+  //   description: 'Voice stories',
+  //   gradient: ['#6B4EFF', '#B592FD']
+  // }
 ];
 
 const App = () => {

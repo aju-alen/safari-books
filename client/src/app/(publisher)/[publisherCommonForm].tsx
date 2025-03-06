@@ -1,19 +1,16 @@
-import { StyleSheet, Text, TextInput, View, Button, ScrollView, TouchableOpacity } from 'react-native'
-import React, { useState, useEffect } from 'react'
-import { router, useLocalSearchParams } from 'expo-router'
-import { defaultStyles } from '@/styles'
-import { SafeAreaView } from 'react-native-safe-area-context'
-import { horizontalScale, verticalScale, moderateScale } from '@/utils/responsiveSize'
-import { COLORS, FONT } from '@/constants/tokens'
-import { Picker } from '@react-native-picker/picker';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import Checkbox from 'expo-checkbox';
-import * as DocumentPicker from 'expo-document-picker';
 import { ipURL } from '@/utils/backendURL'
-import Buttons from '@/components/Button'
-import { Audio } from 'react-native-compressor';
+import { horizontalScale, moderateScale, verticalScale } from '@/utils/responsiveSize'
+import DateTimePicker from '@react-native-community/datetimepicker'
+import { Picker } from '@react-native-picker/picker'
 import axios from 'axios'
-import * as SecureStore from 'expo-secure-store';
+import Checkbox from 'expo-checkbox'
+import * as DocumentPicker from 'expo-document-picker'
+import { router, useLocalSearchParams } from 'expo-router'
+import * as SecureStore from 'expo-secure-store'
+import React, { useEffect, useState } from 'react'
+import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View,ActivityIndicator } from 'react-native'
+import { Audio } from 'react-native-compressor'
+import { SafeAreaView } from 'react-native-safe-area-context'
 
 
 const publisherCommonForm = () => {
@@ -46,6 +43,7 @@ const publisherCommonForm = () => {
 
     const [mode, setMode] = useState('date');
     const [show, setShow] = useState(false);
+    const [loading, setLoading] = useState(false);
 
     const onChange = (event, selectedDate) => {
         const currentDate = selectedDate;
@@ -202,35 +200,44 @@ console.log(publisherCommonForm,'companyId in document submit');
     };
 
     const handleSubmit = async () => {
-        const audioData = await postAudio()
-        const docData = await postDocuments()
-        console.log(audioData, 'audioData', docData, 'docData');
+        try{
+            setLoading(true);
+            const audioData = await postAudio()
+            const docData = await postDocuments()
+            console.log(audioData, 'audioData', docData, 'docData');
+    
+            const data ={
+                id:publisherCommonForm,
+                title: title,
+                language: language,
+                categories: categories,
+                date: date,
+                ISBNDOIISRC: ISBNDOIISRC,
+                synopsis: synopsis,
+                narrator: narrator,
+                narrationStyleSlow: narrationStyleSlow,
+                narrationStyleFast: narrationStyleFast,
+                narrationStyleIntimate: narrationStyleIntimate,
+                narrationStyleCasual: narrationStyleCasual,
+                narrationStyleStatic: narrationStyleStatic,
+                narrationStyleOratoric: narrationStyleOratoric,
+                audioSampleURL: audioData.data,
+                pdfURL: docData.data[0],
+                rightsHolder: rightsHolder
+            }
+    
+            console.log(data, 'data');
+            const response = await axios.put(`${ipURL}/api/publisher/update-company`, data)
+            console.log(response, 'responsein common form');
+            setLoading(false);
+            router.push('/(tabs)/home')
 
-        const data ={
-            id:publisherCommonForm,
-            title: title,
-            language: language,
-            categories: categories,
-            date: date,
-            ISBNDOIISRC: ISBNDOIISRC,
-            synopsis: synopsis,
-            narrator: narrator,
-            narrationStyleSlow: narrationStyleSlow,
-            narrationStyleFast: narrationStyleFast,
-            narrationStyleIntimate: narrationStyleIntimate,
-            narrationStyleCasual: narrationStyleCasual,
-            narrationStyleStatic: narrationStyleStatic,
-            narrationStyleOratoric: narrationStyleOratoric,
-            audioSampleURL: audioData.data,
-            pdfURL: docData.data[0],
-            rightsHolder: rightsHolder
         }
-
-        console.log(data, 'data');
-        const response = await axios.put(`${ipURL}/api/publisher/update-company`, data)
-        console.log(response, 'responsein common form');
-
-        router.push('/(tabs)/home')
+       catch (error) {
+        setLoading(false);
+        console.error('Error:', error);
+        
+       }
 
     }
 
@@ -243,7 +250,7 @@ console.log(publisherCommonForm,'companyId in document submit');
               <View style={styles.content}>
                   <View style={styles.headerContainer}>
                       <Text style={styles.headerText}>
-                          Publish as an Author
+                          Last Steps
                       </Text>
                       <Text style={styles.subHeaderText}>
                           Fill in the details to publish your audiobook
@@ -399,9 +406,10 @@ console.log(publisherCommonForm,'companyId in document submit');
                           style={styles.submitButton}
                           onPress={handleSubmit}
                       >
+                          {loading? <ActivityIndicator/>:
                           <Text style={styles.submitButtonText}>
                               Submit Publication
-                          </Text>
+                          </Text>}
                       </TouchableOpacity>
                   </View>
               </View>

@@ -31,7 +31,7 @@ const PublisherHome = () => {
       await SecureStore.deleteItemAsync('userDetails')
       await SecureStore.deleteItemAsync('authToken')
       
-      router.replace('/login')
+      router.replace('/(authenticate)/login')
     } catch (error) {
       console.error('Logout error:', error)
     }

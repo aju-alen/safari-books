@@ -4,11 +4,11 @@
     "slug": "safari-books",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/sbLogo.jpeg",
+    "icon": "./assets/sbLogo.png",
     "userInterfaceStyle": "dark",
     "scheme": "safari-books",
     "splash": {
-      "image": "./assets/sbLogo.jpeg",
+      "image": "./assets/sbLogo.png",
       "resizeMode": "contain",
       "backgroundColor": "#25292e"
     },
@@ -18,16 +18,28 @@
         "usesNonExemptEncryption": false
       },
       "infoPlist": {
-        "UIBackgroundModes": [
-          "audio"
-        ]
+        "UIBackgroundModes": ["audio"],
+        "UILaunchStoryboardName": "SplashScreen",
+        "UIStatusBarHidden": true,
+        "UIViewControllerBasedStatusBarAppearance": false
       },
-      "bundleIdentifier": "ios"
+      "bundleIdentifier": "com.rise.safaribooks",
+      "buildNumber": "1.0.0",
+      "splash": {
+        "image": "./assets/sbLogo.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#000000",
+        "dark": {
+          "image": "./assets/sbLogo.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#000000"
+        }
+      }
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/sbLogo.jpeg",
-        "backgroundColor": "red"
+        "foregroundImage": "./assets/sbLogo.png",
+        "backgroundColor": "#000000"
       },
       "permissions": [
         "android.permission.WAKE_LOCK",

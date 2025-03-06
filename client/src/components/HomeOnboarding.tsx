@@ -68,7 +68,7 @@ const HomeOnboarding = () => {
   return (
     <View style={styles.container}>
       <LinearGradient
-        colors={['rgba(101,1,1,0.15)']}
+        colors={['rgba(101,1,1,0.15)', 'rgba(101,1,1,0.05)']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.gradient}

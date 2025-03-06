@@ -52,7 +52,7 @@ const PublisherDetailsData = () => {
     return (
         <SafeAreaView style={[defaultStyles.container, styles.container]}>
             <View style={styles.header}>
-                <Text style={styles.headerTitle}>Your Books</Text>
+                {/* <Text style={styles.headerTitle}>Your Books</Text> */}
                 <Text style={styles.subTitle}>
                     {authorData.length + (companyData?.length || 0)} Total Books
                 </Text>

@@ -1,15 +1,14 @@
-import React, { useEffect, useState } from 'react';
-import { View, TextInput, SafeAreaView, StyleSheet,TouchableOpacity, Text,Pressable, Alert, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
 import axios from 'axios';
+import { router } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
-import { ipURL } from '../../utils/backendURL.ts';
-import { COLORS, FONT, SHADOWS } from '../../constants/tokens.ts';
-import { welcomeCOLOR } from '../../constants/tokens.ts';
+import React, { useState } from 'react';
+import { Alert, Pressable, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View, ActivityIndicator } from 'react-native';
 import Button from '../../components/Button.tsx';
-import { horizontalScale, moderateScale, verticalScale } from '../../utils/responsiveSize.ts';
+import { COLORS, FONT, welcomeCOLOR } from '../../constants/tokens.ts';
 import { defaultStyles } from '../../styles/index.ts';
+import { ipURL } from '../../utils/backendURL.ts';
+import { horizontalScale, moderateScale, verticalScale } from '../../utils/responsiveSize.ts';
 
 
 const LoginPage = () => {
@@ -17,6 +16,7 @@ const LoginPage = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isPasswordShown, setIsPasswordShown] = useState(true);
+    const [loading, setLoading] = useState(false);
 
     // useEffect(() => {
     //     const checkLogin = async () => {
@@ -40,6 +40,7 @@ const LoginPage = () => {
             password,
         }
         try {
+            setLoading(true);
             console.log(user, 'user');
             const resp = await axios.post(`${ipURL}/api/auth/login`, user)
             console.log(resp.data, 'Logged in succesfully');
@@ -56,9 +57,10 @@ const LoginPage = () => {
                 router.replace('/(onboarding)/publisheronboarding');
                     
             }
-
+            setLoading(false);
         }
         catch (err) {
+            setLoading(false);
             console.log(err);
             Alert.alert(err.response)
             return;
@@ -175,17 +177,31 @@ const LoginPage = () => {
                             </View>
                         </View>
                     
-                    <Button
-                        title="Login"
+                   
+                    <TouchableOpacity
+
                         filled
                         color={COLORS.secondary
                         }
                         style={{
-                            marginTop: verticalScale(18),
-                            marginBottom: verticalScale(4),
+                            padding: moderateScale(12),
+                            backgroundColor: COLORS.secondary,
+                            borderRadius: moderateScale(8),
                         }}
                         onPress={handleLogin}
-                    />
+                    >
+                        {loading?
+                         <ActivityIndicator/>
+                         :
+                        <Text style={{
+                            fontSize: moderateScale(16),
+                            fontWeight: "bold",
+                            color: welcomeCOLOR.white,
+                        textAlign: "center"
+                        }}>Login</Text>
+                        }
+
+                    </TouchableOpacity>
 
 
 

@@ -1,19 +1,19 @@
-import { StyleSheet, Text, TextInput, TouchableOpacity, View, ScrollView } from 'react-native'
-import React, { useState } from 'react'
-import { SafeAreaView } from 'react-native-safe-area-context'
-import { defaultStyles } from '@/styles'
-import { horizontalScale, verticalScale, moderateScale } from '@/utils/responsiveSize'
-import { COLORS, FONT } from '@/constants/tokens'
-import { ipURL } from '@/utils/backendURL'
-import * as DocumentPicker from 'expo-document-picker'
 import Button from '@/components/Button'
+import { FONT } from '@/constants/tokens'
+import { defaultStyles } from '@/styles'
+import { ipURL } from '@/utils/backendURL'
+import { horizontalScale, moderateScale, verticalScale } from '@/utils/responsiveSize'
 import { createId } from '@paralleldrive/cuid2'
-import { router, useLocalSearchParams } from 'expo-router'
 import axios from 'axios'
+import * as DocumentPicker from 'expo-document-picker'
+import { router, useLocalSearchParams } from 'expo-router'
+import React, { useState } from 'react'
+import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View,ActivityIndicator } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 
-const id = createId()
 
 const PublisherCompanyForm = () => {
+  const id = createId()
   const { publishercompanyForm } = useLocalSearchParams()
   
   const [companyName, setCompanyName] = useState('')
@@ -23,6 +23,7 @@ const PublisherCompanyForm = () => {
   const [kraPin, setKraPin] = useState('')
   const [doc1, setDoc1] = useState(null)
   const [doc2, setDoc2] = useState(null)
+  const [loading, setLoading] = useState(false)
 
   const pickDocument = async (setDoc) => {
     let result = await DocumentPicker.getDocumentAsync({
@@ -74,6 +75,7 @@ const PublisherCompanyForm = () => {
 
   const handleSubmit = async () => {
     try {
+      setLoading(true)
       const docData = await postDocuments()
       const data = {
         id,
@@ -89,7 +91,9 @@ const PublisherCompanyForm = () => {
 
       await axios.post(`${ipURL}/api/publisher/create-company`, data)
       router.push(`/(publisher)/${id}`)
+      setLoading(false)
     } catch (error) {
+      setLoading(false)
       console.log(error, 'error')
     }
   }
@@ -98,7 +102,7 @@ const PublisherCompanyForm = () => {
     <SafeAreaView style={[defaultStyles.container, styles.container]}>
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.content}>
-          <Text style={styles.title}>Publisher Registration</Text>
+          {/* <Text style={styles.title}>Publisher Registration</Text> */}
           
           <View style={styles.form}>
             <View style={styles.fieldGroup}>
@@ -173,13 +177,28 @@ const PublisherCompanyForm = () => {
               </TouchableOpacity>
             </View>
 
-            <Button
-              title="Complete Registration"
-              filled
-              color="#6366F1"
-              style={styles.submitButton}
-              onPress={handleSubmit}
-            />
+            <TouchableOpacity
+             style={styles.submitButton}
+             onPress={handleSubmit}
+            >
+              <Text
+              style={{
+                color: '#fff',
+                fontSize: moderateScale(18),
+                textAlign: 'center',
+                fontFamily: FONT.RobotoMedium,
+              }}
+              >
+
+                {loading ? <ActivityIndicator size="small" color="#fff" style={{
+                  display: loading ? 'flex' : 'none',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  height: verticalScale(50),  
+
+                }} /> : "Submit"}
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
       </ScrollView>
@@ -239,6 +258,7 @@ const styles = StyleSheet.create({
     marginTop: verticalScale(32),
     height: verticalScale(50),
     backgroundColor: '#6366F1',
+    borderRadius: moderateScale(8),
   },
 })
 

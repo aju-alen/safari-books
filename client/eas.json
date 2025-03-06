@@ -19,6 +19,23 @@
     "preview4": {
       "distribution": "internal"
     },
-    "production": {}
+    "production": {
+      "ios": {
+        "resourceClass": "m1-medium",
+        "distribution": "store"
+      },
+      "android": {
+        "buildType": "app-bundle"
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "appleId": "rightintellectual@gmail.com",
+        "ascAppId": "6741313582",
+        "appleTeamId": "46LHZT8BN9"
+      }
+    }
   }
 }

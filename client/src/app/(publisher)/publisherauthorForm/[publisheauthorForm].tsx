@@ -1,20 +1,20 @@
-import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Animated } from 'react-native'
-import React, { useState } from 'react'
-import { SafeAreaView } from 'react-native-safe-area-context'
-import { defaultStyles } from '@/styles'
-import { horizontalScale, verticalScale, moderateScale } from '@/utils/responsiveSize'
-import { COLORS, FONT } from '@/constants/tokens'
 import Button from '@/components/Button'
-import * as DocumentPicker from 'expo-document-picker'
+import { FONT } from '@/constants/tokens'
+import { defaultStyles } from '@/styles'
 import { ipURL } from '@/utils/backendURL'
-import { router, useLocalSearchParams } from 'expo-router'
+import { horizontalScale, moderateScale, verticalScale } from '@/utils/responsiveSize'
+import { MaterialIcons } from '@expo/vector-icons'
 import { createId } from '@paralleldrive/cuid2'
 import axios from 'axios'
-import { MaterialIcons } from '@expo/vector-icons'
+import * as DocumentPicker from 'expo-document-picker'
+import { router, useLocalSearchParams } from 'expo-router'
+import React, { useState } from 'react'
+import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, ActivityIndicator } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 
-const id = createId();
 
 const PublishAuthorForm = () => {
+    const id = createId();
     const { publisheauthorForm } = useLocalSearchParams()
     const [fullname, setFullname] = useState('')
     const [address, setAddress] = useState('')
@@ -24,6 +24,7 @@ const PublishAuthorForm = () => {
     const [writersGuildMemberNo, setWritersGuildMemberNo] = useState('')
     const [doc1, setDoc1] = useState(null)
     const [doc2, setDoc2] = useState(null)
+    const [loading, setLoading] = useState(false)
 
     const pickDocument = async (setDoc) => {
         let result = await DocumentPicker.getDocumentAsync({
@@ -74,6 +75,7 @@ const PublishAuthorForm = () => {
 
     const handleSubmit = async () => {
         try {
+            setLoading(true);
             const docURL = await postDocuments();
             
             const data = {
@@ -91,7 +93,9 @@ const PublishAuthorForm = () => {
             const response = await axios.post(`${ipURL}/api/publisher/create-author`, data);
             console.log(response.data, 'after backend data is saved');
             router.push(`/(publisher)/${id}`);
+            setLoading(false);
         } catch (error) {
+            setLoading(false);
             console.error('Error:', error);
         }
     }
@@ -135,7 +139,7 @@ const PublishAuthorForm = () => {
             <ScrollView showsVerticalScrollIndicator={false}>
                 <View style={styles.container}>
                     <View style={styles.header}>
-                        <Text style={styles.headerTitle}>Publish as an Author</Text>
+                        {/* <Text style={styles.headerTitle}>Publish as an Author</Text> */}
                         <Text style={styles.headerSubtitle}>Complete your author profile to get started</Text>
                     </View>
 
@@ -181,13 +185,27 @@ const PublishAuthorForm = () => {
                             true
                         )}
 
-                        <Button
-                            title="Submit Application"
-                            filled
-                            color="#4A4DFF"
+                        <TouchableOpacity
                             style={styles.submitButton}
                             onPress={handleSubmit}
-                        />
+                        >
+                           {loading?<ActivityIndicator
+                            size='large'
+                            color="#FFFFFF"
+                            style={{padding: moderateScale(16)}}
+                           />: <Text 
+                            style={[defaultStyles.text,{
+                                fontSize: moderateScale(16),
+                                fontFamily: FONT.RobotoLight,
+                                textAlign: 'center',
+                                lineHeight: verticalScale(56),
+                                color: '#FFFFFF',
+                                fontWeight: 'bold',
+                                textTransform: 'uppercase',
+                                letterSpacing: 1,
+                            }] }
+                            >Submit Application</Text>}
+                        </TouchableOpacity>
                     </View>
                 </View>
             </ScrollView>
@@ -291,6 +309,14 @@ const styles = StyleSheet.create({
         marginTop: verticalScale(32),
         height: verticalScale(56),
         borderRadius: moderateScale(12),
+        backgroundColor:"#4A4DFF",
+    },
+    buttonText: {
+        color: '#FFFFFF',
+        fontSize: moderateScale(16),
+        fontFamily: FONT.RobotoLight,
+        textAlign: 'center',
+        lineHeight: verticalScale(56),
     },
 });
 

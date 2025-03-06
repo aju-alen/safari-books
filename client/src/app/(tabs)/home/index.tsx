@@ -1,16 +1,13 @@
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View, Button } from 'react-native';
-import React, { useEffect, useState } from 'react';
+import HomeOnboarding from '@/components/HomeOnboarding';
+import ImageGrid from '@/components/ImageGrid';
+import TrendingRelease from '@/components/TrendingRelease';
 import { defaultStyles } from '@/styles';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { eBookData } from '@/utils/flatlistData';
 import { moderateScale, verticalScale } from '@/utils/responsiveSize';
 import { EvilIcons } from '@expo/vector-icons';
-import { COLORS } from '@/constants/tokens';
-import { router } from 'expo-router';
-import { eBookData } from '@/utils/flatlistData';
-import TrendingRelease from '@/components/TrendingRelease';
-import ImageGrid from '@/components/ImageGrid';
-import AudioPlayer from '@/components/AudioPlayer';
-import HomeOnboarding from '@/components/HomeOnboarding';
+import React, { useEffect, useState } from 'react';
+import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const HomePage = () => {
   const [bookData, setBookData] = useState([]);
@@ -38,10 +35,13 @@ const HomePage = () => {
         contentContainerStyle={styles.scrollContent}
       >
         <View style={styles.homeBar}>
-          <Text style={styles.homeBarLogo}>LOGO</Text>
+          <Image 
+            style={styles.homeBarLogo}
+            source={require('../../../../assets/sbLogo.png')}
+            ></Image>
           <TouchableOpacity 
             style={styles.searchButton}
-            onPress={() => router.push('(tabs)/search')}
+            // onPress={() => router.push('(tabs)/search')}
           >
             <EvilIcons name="search" size={28} color="#4A4DFF" />
           </TouchableOpacity>
@@ -92,9 +92,8 @@ const styles = StyleSheet.create({
     borderBottomColor: '#4A4DFF',
   },
   homeBarLogo: {
-    fontSize: moderateScale(24),
-    color: '#4A4DFF',
-    fontWeight: '700',
+    width: moderateScale(60),
+    height: moderateScale(60),
   },
   searchButton: {
     padding: moderateScale(10),

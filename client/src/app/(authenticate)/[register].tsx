@@ -1,28 +1,25 @@
-import React, { useState } from 'react';
-import { 
-  View, 
-  TextInput, 
-  SafeAreaView, 
-  StyleSheet, 
-  KeyboardAvoidingView, 
-  TouchableOpacity, 
-  Text, 
-  Pressable, 
-  Alert, 
-  ScrollView,
-  Animated,
-  Platform
-} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
 import axios from 'axios';
-import { ipURL } from '../../utils/backendURL';
+import { router, useLocalSearchParams } from 'expo-router';
+import React, { useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  Animated,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
+} from 'react-native';
 import { COLORS, welcomeCOLOR } from '../../constants/tokens';
-import Button from '../../components/Button';
-import { verticalScale, horizontalScale, moderateScale } from '../../utils/responsiveSize';
-import { defaultStyles } from '../../styles/index';
-import { useLocalSearchParams } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
+import { ipURL } from '../../utils/backendURL';
+import { horizontalScale, moderateScale, verticalScale } from '../../utils/responsiveSize';
 
 const RegisterPage = () => {
   const { register } = useLocalSearchParams();
@@ -36,6 +33,7 @@ const RegisterPage = () => {
   });
   const [isPasswordShown, setIsPasswordShown] = useState(true);
   const [focusedField, setFocusedField] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   // Animate form on mount
   React.useEffect(() => {
@@ -66,13 +64,17 @@ const RegisterPage = () => {
     }
 
     try {
+      setLoading(true);
       const resp = await axios.post(`${ipURL}/api/auth/register`, {
         ...formData,
         role: register
       });
       Alert.alert('Success', 'Registration successful! Please verify your email to login.');
+      setLoading(false);
       router.replace('/(authenticate)/login');
+
     } catch (error) {
+      setLoading(false);
       Alert.alert('Error', error.response?.data?.message || 'Registration failed');
     }
   };
@@ -184,11 +186,12 @@ const RegisterPage = () => {
               <TouchableOpacity
                 style={styles.registerButton}
                 onPress={handleRegister}
-                
               >
-                
+                  {loading? 
+                  <ActivityIndicator/>
+                  :
                   <Text style={styles.buttonText}>Create Account</Text>
-
+                  }
               </TouchableOpacity>
 
               <View style={styles.loginContainer}>
@@ -271,14 +274,11 @@ const styles = StyleSheet.create({
     marginTop: verticalScale(24),
   },
   registerButton: {
-    borderRadius: moderateScale(12),
-    overflow: 'hidden',
-    elevation: 3,
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 4 },
 
-    shadowRadius: 4,
+    padding: verticalScale(10),
     alignItems: 'center',
+    backgroundColor:COLORS.secondary,
+    borderRadius: moderateScale(12),
   },
   gradient: {
     paddingVertical: verticalScale(16),
