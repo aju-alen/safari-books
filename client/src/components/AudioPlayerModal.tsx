@@ -6,11 +6,19 @@ import { moderateScale, verticalScale, horizontalScale } from '@/utils/responsiv
 import Slider from '@react-native-community/slider';
 
 const COLORS = {
-  primary: '#6366F1',
-  secondary: '#A5A6F6',
+  primary: '#8B5CF6',      // Vibrant purple
+  secondary: '#C4B5FD',    // Light purple
+  accent: '#EC4899',       // Pink accent
   background: '#000000',
   text: '#FFFFFF',
-  darkGray: '#333333',
+  textSecondary: '#D1D5DB',
+  darkGray: '#1F2937',
+  lightGray: 'rgba(255, 255, 255, 0.1)',
+  gradient: {
+    start: '#8B5CF6',      // Vibrant purple
+    end: '#EC4899',        // Pink
+  },
+  overlay: 'rgba(17, 24, 39, 0.95)', // Dark overlay with higher opacity
 };
 
 const AudioPlayer = ({ 
@@ -146,17 +154,28 @@ console.log(audioUrl,
     <Modal
       visible={isVisible}
       transparent
-      animationType="slide"
+      animationType="fade"
       onRequestClose={handleClose}
     >
       <View style={styles.container}>
+        <View style={styles.blurBackground} />
+        
         <View style={styles.content}>
-          <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
-            <Ionicons name="chevron-down" size={30} color={COLORS.text} />
-          </TouchableOpacity>
+          <View style={styles.header}>
+            <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
+              <Ionicons name="chevron-down" size={28} color={COLORS.text} />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Now Playing</Text>
+            <TouchableOpacity style={styles.menuButton}>
+              <Ionicons name="ellipsis-horizontal" size={24} color={COLORS.text} />
+            </TouchableOpacity>
+          </View>
 
-          <View style={styles.coverContainer}>
-            <Image source={{ uri: bookCover }} style={styles.coverImage} />
+          <View style={styles.coverWrapper}>
+            <View style={styles.coverContainer}>
+              <Image source={{ uri: bookCover }} style={styles.coverImage} />
+              <View style={styles.coverGlow} />
+            </View>
           </View>
 
           <View style={styles.infoContainer}>
@@ -171,9 +190,10 @@ console.log(audioUrl,
               maximumValue={1}
               value={duration ? position / duration : 0}
               onValueChange={handleSeek}
-              minimumTrackTintColor={COLORS.primary}
-              maximumTrackTintColor={COLORS.darkGray}
-              thumbTintColor={COLORS.primary}
+              minimumTrackTintColor={COLORS.accent}
+              maximumTrackTintColor={COLORS.lightGray}
+              thumbTintColor={COLORS.text}
+              thumbStyle={styles.sliderThumb}
             />
             <View style={styles.timeContainer}>
               <Text style={styles.timeText}>{formatTime(position)}</Text>
@@ -183,6 +203,10 @@ console.log(audioUrl,
 
           <View style={styles.controls}>
             <TouchableOpacity style={styles.secondaryButton}>
+              <Ionicons name="play-back" size={20} color={COLORS.textSecondary} />
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={styles.rewindButton}>
               <Ionicons name="play-skip-back" size={24} color={COLORS.text} />
             </TouchableOpacity>
 
@@ -191,17 +215,46 @@ console.log(audioUrl,
               onPress={handlePlayPause}
               disabled={isBuffering}
             >
-              <Ionicons 
-                name={isBuffering ? 'sync' : isPlaying ? 'pause' : 'play'} 
-                size={40} 
-                color={COLORS.text} 
-              />
+              <View style={styles.playButtonInner}>
+                {isBuffering ? (
+                  <Ionicons name="sync" size={36} color={COLORS.text} style={styles.spinningIcon} />
+                ) : (
+                  <Ionicons 
+                    name={isPlaying ? 'pause' : 'play'} 
+                    size={36} 
+                    color={COLORS.text} 
+                  />
+                )}
+              </View>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.secondaryButton}>
+            <TouchableOpacity style={styles.forwardButton}>
               <Ionicons name="play-skip-forward" size={24} color={COLORS.text} />
             </TouchableOpacity>
+            
+            <TouchableOpacity style={styles.secondaryButton}>
+              <Ionicons name="play-forward" size={20} color={COLORS.textSecondary} />
+            </TouchableOpacity>
           </View>
+          
+          <View style={styles.additionalControls}>
+            <TouchableOpacity style={[styles.iconButton, styles.iconButtonActive]}>
+              <Ionicons name="repeat" size={20} color={COLORS.accent} />
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={styles.iconButton}>
+              <Ionicons name="timer-outline" size={20} color={COLORS.textSecondary} />
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={styles.iconButton}>
+              <Ionicons name="speedometer-outline" size={20} color={COLORS.textSecondary} />
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={styles.iconButton}>
+              <Ionicons name="bookmark-outline" size={20} color={COLORS.textSecondary} />
+            </TouchableOpacity>
+          </View>
+          
           {error && (
             <Text style={styles.errorText}>{error}</Text>
           )}
@@ -214,88 +267,209 @@ console.log(audioUrl,
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.95)',
+    backgroundColor: 'transparent',
+  },
+  blurBackground: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: COLORS.overlay,
   },
   content: {
     flex: 1,
     paddingTop: verticalScale(40),
-    paddingHorizontal: horizontalScale(20),
+    paddingHorizontal: horizontalScale(24),
+    justifyContent: 'space-between',
+    paddingBottom: verticalScale(50),
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: verticalScale(20),
+  },
+  headerTitle: {
+    color: COLORS.textSecondary,
+    fontSize: moderateScale(16),
+    fontWeight: '600',
+    letterSpacing: 0.5,
   },
   closeButton: {
-    alignSelf: 'center',
-    padding: moderateScale(10),
+    padding: moderateScale(8),
+    borderRadius: moderateScale(20),
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+  },
+  menuButton: {
+    padding: moderateScale(8),
+    borderRadius: moderateScale(20),
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+  },
+  coverWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: verticalScale(20),
   },
   coverContainer: {
+    position: 'relative',
     alignItems: 'center',
-    marginTop: verticalScale(40),
+    justifyContent: 'center',
   },
   coverImage: {
     width: horizontalScale(300),
     height: verticalScale(300),
-    borderRadius: moderateScale(8),
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-
-    shadowRadius: 8,
+    borderRadius: moderateScale(20),
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  coverGlow: {
+    position: 'absolute',
+    width: horizontalScale(300),
+    height: verticalScale(300),
+    borderRadius: moderateScale(20),
+    backgroundColor: 'transparent',
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 30,
+    elevation: 25,
+    zIndex: -1,
   },
   infoContainer: {
     alignItems: 'center',
-    marginTop: verticalScale(40),
+    marginTop: verticalScale(30),
   },
   title: {
     color: COLORS.text,
-    fontSize: moderateScale(24),
+    fontSize: moderateScale(28),
     fontWeight: '700',
     marginBottom: verticalScale(8),
+    textAlign: 'center',
+    letterSpacing: 0.3,
   },
   author: {
     color: COLORS.secondary,
     fontSize: moderateScale(16),
+    opacity: 0.9,
+    letterSpacing: 0.5,
   },
   progressContainer: {
     marginTop: verticalScale(40),
+    paddingHorizontal: horizontalScale(5),
   },
   slider: {
     width: '100%',
     height: verticalScale(40),
   },
+  sliderThumb: {
+    width: horizontalScale(12),
+    height: verticalScale(12),
+    borderRadius: moderateScale(6),
+    backgroundColor: COLORS.accent,
+  },
   timeContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: verticalScale(-10),
+    marginTop: verticalScale(-15),
   },
   timeText: {
-    color: COLORS.secondary,
+    color: COLORS.textSecondary,
     fontSize: moderateScale(12),
+    fontWeight: '500',
   },
   controls: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: verticalScale(20),
-    gap: horizontalScale(40),
+    marginTop: verticalScale(30),
   },
   playButton: {
     width: horizontalScale(80),
     height: horizontalScale(80),
     borderRadius: horizontalScale(40),
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: horizontalScale(20),
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  playButtonInner: {
+    width: horizontalScale(70),
+    height: horizontalScale(70),
+    borderRadius: horizontalScale(35),
     backgroundColor: COLORS.primary,
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 15,
+    elevation: 10,
   },
   secondaryButton: {
-    width: horizontalScale(50),
-    height: horizontalScale(50),
-    borderRadius: horizontalScale(25),
-    backgroundColor: COLORS.darkGray,
+    width: horizontalScale(40),
+    height: horizontalScale(40),
+    borderRadius: horizontalScale(20),
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  rewindButton: {
+    width: horizontalScale(56),
+    height: horizontalScale(56),
+    borderRadius: horizontalScale(28),
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: horizontalScale(10),
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  forwardButton: {
+    width: horizontalScale(56),
+    height: horizontalScale(56),
+    borderRadius: horizontalScale(28),
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: horizontalScale(10),
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  additionalControls: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: verticalScale(40),
+    gap: horizontalScale(30),
+  },
+  iconButton: {
+    width: horizontalScale(44),
+    height: horizontalScale(44),
+    borderRadius: horizontalScale(22),
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  iconButtonActive: {
+    backgroundColor: 'rgba(236, 72, 153, 0.15)',
+    borderColor: 'rgba(236, 72, 153, 0.3)',
+  },
+  spinningIcon: {
+    opacity: 0.8,
   },
   errorText: {
-    color: 'red',
+    color: COLORS.accent,
     textAlign: 'center',
-    marginTop: verticalScale(10),
+    marginTop: verticalScale(20),
     fontSize: moderateScale(14),
+    backgroundColor: 'rgba(236, 72, 153, 0.15)',
+    padding: moderateScale(10),
+    borderRadius: moderateScale(8),
+    borderWidth: 1,
+    borderColor: 'rgba(236, 72, 153, 0.3)',
   },
 });
 

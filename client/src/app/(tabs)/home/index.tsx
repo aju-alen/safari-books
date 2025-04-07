@@ -38,12 +38,13 @@ const HomePage = () => {
           <Image 
             style={styles.homeBarLogo}
             source={require('../../../../assets/sbLogo.png')}
-            ></Image>
+            resizeMode="contain"
+          />
           <TouchableOpacity 
             style={styles.searchButton}
             // onPress={() => router.push('(tabs)/search')}
           >
-            <EvilIcons name="search" size={28} color="#4A4DFF" />
+            <EvilIcons name="search" size={30} color="#4A4DFF" />
           </TouchableOpacity>
         </View>
 
@@ -77,57 +78,66 @@ const styles = StyleSheet.create({
     backgroundColor: '#000000',
   },
   scrollContent: {
-    paddingBottom: moderateScale(20),
+    paddingBottom: moderateScale(30),
   },
   homeBar: {
     height: verticalScale(70),
-    backgroundColor: 'rgba(74, 77, 255, 0.1)',
-    borderBottomLeftRadius: moderateScale(15),
-    borderBottomRightRadius: moderateScale(15),
+    backgroundColor: 'rgba(74, 77, 255, 0.15)',
+    borderBottomLeftRadius: moderateScale(20),
+    borderBottomRightRadius: moderateScale(20),
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: moderateScale(15),
-    borderBottomWidth: 1,
+    paddingHorizontal: moderateScale(18),
+    borderBottomWidth: 1.5,
     borderBottomColor: '#4A4DFF',
+    shadowColor: '#4A4DFF',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
   },
   homeBarLogo: {
-    width: moderateScale(60),
-    height: moderateScale(60),
+    width: moderateScale(65),
+    height: moderateScale(65),
   },
   searchButton: {
-    padding: moderateScale(10),
-    backgroundColor: 'rgba(99, 102, 241, 0.1)',
-    borderRadius: moderateScale(12),
+    padding: moderateScale(12),
+    backgroundColor: 'rgba(99, 102, 241, 0.2)',
+    borderRadius: moderateScale(15),
+    borderWidth: 1,
+    borderColor: 'rgba(99, 102, 241, 0.3)',
   },
   onboardingContainer: {
-    marginTop: moderateScale(20),
-    marginBottom: moderateScale(30),
+    marginTop: moderateScale(25),
+    marginBottom: moderateScale(35),
+    paddingHorizontal: moderateScale(10),
   },
   sectionTitleContainer: {
-    marginBottom: moderateScale(15),
+    marginBottom: moderateScale(18),
     paddingHorizontal: moderateScale(15),
   },
   sectionTitle: {
-    fontSize: moderateScale(24),
+    fontSize: moderateScale(26),
     fontWeight: '700',
     color: '#FFFFFF',
-    marginBottom: moderateScale(8),
+    marginBottom: moderateScale(10),
+    letterSpacing: 0.5,
   },
   titleUnderline: {
-    height: 3,
-    width: '30%',
+    height: 4,
+    width: '35%',
     backgroundColor: '#6366F1',
-    borderRadius: moderateScale(2),
+    borderRadius: moderateScale(4),
   },
   trendingSection: {
-    marginBottom: moderateScale(30),
+    marginBottom: moderateScale(35),
   },
   trendingContent: {
     paddingHorizontal: moderateScale(15),
   },
   newReleaseSection: {
-    marginBottom: moderateScale(20),
+    marginBottom: moderateScale(25),
   },
   newReleaseContainer: {
     paddingHorizontal: moderateScale(15),

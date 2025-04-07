@@ -31,14 +31,14 @@ const options = [
     description: 'Share your stories',
     gradient: ['#4E65FF', '#92EFFD']
   },
-  // {
-  //   id: '3',
-  //   title: 'Narrator',
-  //   icon: '🎙️',
-  //   role: 'NARRATOR',
-  //   description: 'Voice stories',
-  //   gradient: ['#6B4EFF', '#B592FD']
-  // }
+  {
+    id: '3',
+    title: 'Guest',
+    icon: '🎙️',
+    role: 'GUEST',
+    description: 'Explore the platform',
+    gradient: ['#6B4EFF', '#B592FD']
+  }
 ];
 
 const App = () => {
@@ -47,12 +47,14 @@ const App = () => {
   const [buttonAnim] = useState(new Animated.Value(0));
 
   useEffect(() => {
-    // Animate cards in on mount
+    // Animate cards in on mount with a more natural spring configuration
     options.forEach((_, index) => {
       Animated.spring(animations[index], {
         toValue: 1,
-        delay: index * 100,
+        delay: index * 150, // Increased delay for more distinct animations
         useNativeDriver: true,
+        tension: 50,  // Added for smoother animation
+        friction: 7,  // Added for smoother animation
       }).start();
     });
   }, []);
@@ -100,7 +102,8 @@ const App = () => {
         <Animated.View style={[
           styles.card,
           cardStyle,
-          otherSelected && styles.cardDimmed
+          otherSelected && styles.cardDimmed,
+          { transform: [...cardStyle.transform] }
         ]}>
             <LinearGradient
               colors={item.gradient}
@@ -111,11 +114,14 @@ const App = () => {
                 isSelected && styles.selectedCard
               ]}
             >
-              <Text style={styles.cardIcon}>{item.icon}</Text>
-              <Text style={styles.cardTitle}>{item.title}</Text>
-              <Text style={styles.cardDescription}>{item.description}</Text>
+              <View style={styles.cardContent}>
+                <Text style={styles.cardIcon}>{item.icon}</Text>
+                <View style={styles.cardTextContainer}>
+                  <Text style={styles.cardTitle}>{item.title}</Text>
+                  <Text style={styles.cardDescription}>{item.description}</Text>
+                </View>
+              </View>
             </LinearGradient>
-
         </Animated.View>
       </TouchableWithoutFeedback>
     );
@@ -144,7 +150,14 @@ const App = () => {
             styles.buttonContainer,
             { transform: [{ translateY: buttonTranslateY }] }
           ]}>
-            <TouchableWithoutFeedback onPress={() => router.push(`/(authenticate)/${selectedId}`)}>
+            <TouchableWithoutFeedback onPress={() => {
+              if(selectedId === "GUEST") {
+              router.push(`/(authenticate)/guestLogin`)
+              }
+              else if(selectedId) {
+                router.push(`/(authenticate)/login?role=${selectedId}`);
+              }
+            }}>
               <LinearGradient
                 colors={selectedId ? options.find((item) => item.role === selectedId).gradient : ['#000', '#000']}
                 start={{ x: 0, y: 0 }}
@@ -171,92 +184,104 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: height * 0.08,
+    paddingHorizontal: 24, // Increased padding
+    paddingTop: height * 0.1, // More space at top
   },
   heading: {
     fontFamily: FONT.notoBold,
     color: '#fff',
-    fontSize: 32, // Reduced heading size
-    marginBottom: 8,
+    fontSize: 36,
+    marginBottom: 12,
+    letterSpacing: 0.5,
   },
   subheading: {
     fontFamily: FONT.notoRegular,
-    color: 'rgba(255,255,255,0.7)',
-    fontSize: 16, // Reduced subheading size
-    marginBottom: height * 0.04,
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 18,
+    marginBottom: height * 0.06,
+    letterSpacing: 0.3,
   },
   cardsContainer: {
     alignItems: 'center',
     justifyContent: 'center',
   },
   card: {
-    width: width * 0.8, // Reduced width
-    height: height * 0.18, // Reduced height
-    marginBottom: 15, // Reduced margin between cards
-    borderRadius: 18, // Reduced border radius
+    width: width * 0.85,
+    height: height * 0.15,
+    marginBottom: 20,
+    borderRadius: 24,
     overflow: 'hidden',
-  },
-  cardBlur: {
-    flex: 1,
-    overflow: 'hidden',
-    borderRadius: 18,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 8,
+    },
+    shadowOpacity: 0.44,
+    shadowRadius: 10.32,
+    elevation: 16,
   },
   cardGradient: {
     flex: 1,
-    padding: 20, // Reduced padding inside card
+    padding: 24,
+    borderRadius: 24,
+  },
+  cardContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 18,
+  },
+  cardTextContainer: {
+    flex: 1,
+    marginLeft: 20,
   },
   cardDimmed: {
-    opacity: 0.5,
-    transform: [{ scale: 0.95 }],
+    opacity: 0.4,
+    transform: [{ scale: 0.92 }],
   },
   selectedCard: {
-    borderWidth: 2,
+    borderWidth: 3,
     borderColor: '#fff',
   },
   cardIcon: {
-    fontSize: 32, // Reduced icon size
-    marginRight: 16, // Reduced space between icon and text
+    fontSize: 38,
   },
   cardTitle: {
     fontFamily: FONT.notoBold,
     color: '#fff',
-    fontSize: 20, // Reduced title size
-    marginBottom: 4,
+    fontSize: 24,
+    marginBottom: 6,
+    letterSpacing: 0.5,
   },
   cardDescription: {
     fontFamily: FONT.notoRegular,
     color: 'rgba(255,255,255,0.9)',
-    fontSize: 14, // Reduced description size
+    fontSize: 16,
+    letterSpacing: 0.3,
   },
   buttonContainer: {
     position: 'absolute',
-    bottom: 30, // Adjusted position for the button
-    left: 20,
-    right: 20,
+    bottom: 40,
+    left: 24,
+    right: 24,
   },
   button: {
-    height: 50, // Reduced button height
-    borderRadius: 25, // Adjusted border radius
+    height: 56,
+    borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: 4,
+      height: 8,
     },
-
-    shadowRadius: 4.65,
-    elevation: 8,
+    shadowOpacity: 0.44,
+    shadowRadius: 10.32,
+    elevation: 16,
   },
   buttonText: {
     fontFamily: FONT.notoBold,
     color: '#fff',
-    fontSize: 16, // Reduced button text size
-    letterSpacing: 0.5,
+    fontSize: 18,
+    letterSpacing: 1,
   },
 });
 

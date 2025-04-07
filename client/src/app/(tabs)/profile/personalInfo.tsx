@@ -16,8 +16,18 @@ const PersonalInfo = () => {
     const getId = async () => {
       try {
         const id = JSON.parse(await SecureStore.getItemAsync('userDetails'));
-        const getUserDetails = await axios.get(`${ipURL}/api/auth/get-user/${id['userId']}`);
-        setUserData(getUserDetails.data["user"]);
+        if(id.role === "GUEST") {
+          setUserData({
+            name: "Guest User",
+            email: "N/A",
+
+          });
+        }
+        else{
+
+          const getUserDetails = await axios.get(`${ipURL}/api/auth/get-user/${id['userId']}`);
+          setUserData(getUserDetails.data["user"]);
+        }
       } catch (error) {
         console.error('Error fetching user details:', error);
       } finally {
@@ -26,6 +36,9 @@ const PersonalInfo = () => {
     }
     getId();
   }, [])
+
+  console.log(userData["name"],'userdata in guest');
+  
 
   const renderInfoField = (label, value, icon) => (
     <View style={styles.infoField}>

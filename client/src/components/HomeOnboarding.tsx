@@ -7,10 +7,19 @@ import { horizontalScale, moderateScale, verticalScale } from '@/utils/responsiv
 
 const BenefitCard = ({ title, description, icon }) => {
   const scaleValue = new Animated.Value(1);
+  const opacityValue = new Animated.Value(0);
+  
+  React.useEffect(() => {
+    Animated.timing(opacityValue, {
+      toValue: 1,
+      duration: 500,
+      useNativeDriver: true,
+    }).start();
+  }, []);
 
   const handlePressIn = () => {
     Animated.spring(scaleValue, {
-      toValue: 0.95,
+      toValue: 0.97,
       useNativeDriver: true,
     }).start();
   };
@@ -28,9 +37,17 @@ const BenefitCard = ({ title, description, icon }) => {
       onPressOut={handlePressOut}
       style={styles.cardPressable}
     >
-      <Animated.View style={[styles.cardContainer, { transform: [{ scale: scaleValue }] }]}>
+      <Animated.View 
+        style={[
+          styles.cardContainer, 
+          { 
+            transform: [{ scale: scaleValue }],
+            opacity: opacityValue 
+          }
+        ]}
+      >
         <LinearGradient
-          colors={['rgba(255,255,255,0.15)', 'rgba(255,255,255,0.05)']}
+          colors={['rgba(255,255,255,0.2)', 'rgba(255,255,255,0.05)']}
           style={styles.cardGradient}
         >
           <View style={styles.cardIcon}>
@@ -68,14 +85,17 @@ const HomeOnboarding = () => {
   return (
     <View style={styles.container}>
       <LinearGradient
-        colors={['rgba(101,1,1,0.15)', 'rgba(101,1,1,0.05)']}
+        colors={['rgba(101,1,1,0.2)', 'rgba(101,1,1,0.05)']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.gradient}
       >
         <View style={styles.headerContainer}>
-          <Text style={styles.headerTitle}>Premium Benefits</Text>
-          <Text style={styles.headerSubtitle}>Members get even more</Text>
+          <Text style={styles.headerBadge}>Premium Benefits</Text>
+          <Text style={styles.headerTitle}>Members get even more</Text>
+          <Text style={styles.headerDescription}>
+            Unlock exclusive content and features with our premium membership
+          </Text>
         </View>
 
         <View style={styles.benefitsContainer}>
@@ -96,10 +116,11 @@ const HomeOnboarding = () => {
             end={{ x: 1, y: 0 }}
             style={styles.ctaGradient}
           >
-            <Text style={styles.ctaText}>Start Free Trial</Text>
+            <Text style={styles.ctaText}>Start 7-Day Free Trial</Text>
             <Feather name="arrow-right" size={20} color="white" />
           </LinearGradient>
         </Pressable>
+        <Text style={styles.disclaimerText}>Cancel anytime. No credit card required.</Text>
       </LinearGradient>
     </View>
   );
@@ -108,49 +129,62 @@ const HomeOnboarding = () => {
 const styles = StyleSheet.create({
   container: {
     marginHorizontal: horizontalScale(16),
+    marginVertical: verticalScale(16),
     borderRadius: moderateScale(20),
     overflow: 'hidden',
-    elevation: 5,
+    elevation: 8,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-
-    shadowRadius: 3.84,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
   },
   gradient: {
-    padding: moderateScale(24),
+    padding: moderateScale(28),
     borderRadius: moderateScale(20),
   },
   headerContainer: {
     alignItems: 'center',
-    marginBottom: verticalScale(24),
+    marginBottom: verticalScale(28),
   },
-  headerTitle: {
-    fontSize: FONTSIZE.large,
+  headerBadge: {
+    fontSize: FONTSIZE.small,
     fontFamily: FONT.notoBold,
     color: COLORS.primary,
-    marginBottom: verticalScale(8),
+    marginBottom: verticalScale(12),
     textTransform: 'uppercase',
-    letterSpacing: 1,
+    letterSpacing: 1.5,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    paddingHorizontal: horizontalScale(12),
+    paddingVertical: verticalScale(6),
+    borderRadius: moderateScale(20),
   },
-  headerSubtitle: {
+  headerTitle: {
     fontSize: FONTSIZE.xxLarge,
     fontFamily: FONT.notoBold,
     color: COLORS.text,
     textAlign: 'center',
+    marginBottom: verticalScale(12),
+  },
+  headerDescription: {
+    fontSize: FONTSIZE.medium,
+    fontFamily: FONT.notoRegular,
+    color: 'rgba(255,255,255,0.8)',
+    textAlign: 'center',
+    maxWidth: '90%',
   },
   benefitsContainer: {
     gap: verticalScale(16),
   },
   cardPressable: {
-    borderRadius: moderateScale(12),
+    borderRadius: moderateScale(16),
     overflow: 'hidden',
   },
   cardContainer: {
-    borderRadius: moderateScale(12),
+    borderRadius: moderateScale(16),
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-
+    shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 4,
   },
@@ -160,10 +194,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cardIcon: {
-    width: moderateScale(40),
-    height: moderateScale(40),
-    borderRadius: moderateScale(20),
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    width: moderateScale(48),
+    height: moderateScale(48),
+    borderRadius: moderateScale(24),
+    backgroundColor: 'rgba(255,255,255,0.15)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: horizontalScale(16),
@@ -175,23 +209,24 @@ const styles = StyleSheet.create({
     fontSize: FONTSIZE.medium,
     fontFamily: FONT.notoBold,
     color: COLORS.text,
-    marginBottom: verticalScale(4),
+    marginBottom: verticalScale(6),
   },
   cardDescription: {
     fontSize: FONTSIZE.small,
     fontFamily: FONT.notoRegular,
-    color: 'rgba(255,255,255,0.7)',
+    color: 'rgba(255,255,255,0.8)',
+    lineHeight: moderateScale(18),
   },
   ctaButton: {
-    marginTop: verticalScale(24),
-    borderRadius: moderateScale(12),
+    marginTop: verticalScale(32),
+    borderRadius: moderateScale(16),
     overflow: 'hidden',
   },
   ctaGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: moderateScale(16),
+    padding: moderateScale(18),
     gap: horizontalScale(8),
   },
   ctaText: {
@@ -199,6 +234,13 @@ const styles = StyleSheet.create({
     fontFamily: FONT.notoBold,
     color: COLORS.white,
     textAlign: 'center',
+  },
+  disclaimerText: {
+    fontSize: FONTSIZE.xSmall,
+    fontFamily: FONT.notoRegular,
+    color: 'rgba(255,255,255,0.6)',
+    textAlign: 'center',
+    marginTop: verticalScale(12),
   },
 });
 

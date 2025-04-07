@@ -49,6 +49,8 @@ const TrendingRelease = ({ bookData }) => {
       durationInMinutes,
       releaseDate,
       categories,
+      listens = 0,
+      isNew = false,
     } = item;
 
     return (
@@ -60,12 +62,19 @@ const TrendingRelease = ({ bookData }) => {
           activeOpacity={0.9}
         >
           <View style={styles.cardContainer}>
-            {/* Cover Image */}
-            <Image
-              source={{ uri: coverImage || 'https://via.placeholder.com/150' }}
-              style={styles.coverImage}
-              resizeMode="cover"
-            />
+            {/* Cover Image with Gradient Overlay */}
+            <View style={styles.imageContainer}>
+              <Image
+                source={{ uri: coverImage || 'https://via.placeholder.com/150' }}
+                style={styles.coverImage}
+                resizeMode="cover"
+              />
+              {isNew && (
+                <View style={styles.newBadge}>
+                  <Text style={styles.newBadgeText}>NEW</Text>
+                </View>
+              )}
+            </View>
 
             {/* Book Details */}
             <View style={styles.detailsContainer}>
@@ -76,34 +85,44 @@ const TrendingRelease = ({ bookData }) => {
                 {authorName || 'Unknown Author'}
               </Text>
 
-              {/* Duration */}
-              <Text style={styles.durationText}>
-                ⏳ {`${durationInHours || 0}h ${durationInMinutes || 0}m`}
-              </Text>
-
-              {/* Rating Section */}
+              {/* Rating Section with improved visual */}
               <View style={styles.ratingContainer}>
                 {[...Array(5)].map((_, index) => (
                   <Ionicons
                     key={index}
                     name={index < Math.floor(rating || 0) ? 'star' : 'star-outline'}
-                    size={moderateScale(16)}
-                    color={index < Math.floor(rating || 0) ? '#FFD700' : '#BDC3C7'}
+                    size={moderateScale(14)}
+                    color={index < Math.floor(rating || 0) ? '#FFD700' : '#555'}
                   />
                 ))}
                 <Text style={styles.ratingText}>
-                  {rating ? `${rating.toFixed(1)} / 5` : 'No ratings'}
+                  {rating ? `${rating.toFixed(1)}` : 'N/A'}
                 </Text>
               </View>
 
-              {/* Release Date and Categories */}
-              <View style={styles.metaContainer}>
-                <Text style={styles.metaText}>
-                  📅 {releaseDate || 'Unknown Date'}
-                </Text>
-                <Text style={styles.metaText} numberOfLines={1}>
-                  📚 {categories || 'Unknown Category'}
-                </Text>
+              {/* Info Row */}
+              <View style={styles.infoRow}>
+                <View style={styles.infoItem}>
+                  <Ionicons name="time-outline" size={moderateScale(14)} color="#3498db" />
+                  <Text style={styles.infoText}>
+                    {`${durationInHours || 0}h ${durationInMinutes || 0}m`}
+                  </Text>
+                </View>
+                <View style={styles.infoItem}>
+                  <Ionicons name="headset-outline" size={moderateScale(14)} color="#9b59b6" />
+                  <Text style={styles.infoText}>
+                    {listens > 999 ? `${(listens/1000).toFixed(1)}K` : listens}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Categories as Tags */}
+              <View style={styles.categoryContainer}>
+                {categories && categories.split(',').slice(0, 2).map((category, index) => (
+                  <View key={index} style={styles.categoryTag}>
+                    <Text style={styles.categoryText}>{category.trim()}</Text>
+                  </View>
+                ))}
               </View>
             </View>
           </View>
@@ -127,65 +146,100 @@ const styles = StyleSheet.create({
   cardContainer: {
     width: horizontalScale(180),
     margin: moderateScale(10),
-    borderRadius: moderateScale(12),
-
+    borderRadius: moderateScale(16),
+    backgroundColor: '#1E1E1E',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 5 },
-
+    shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 7,
     overflow: 'hidden',
   },
-  coverImage: {
+  imageContainer: {
+    position: 'relative',
     width: '100%',
     height: verticalScale(220),
-    borderTopLeftRadius: moderateScale(12),
-    borderTopRightRadius: moderateScale(12),
+  },
+  coverImage: {
+    width: '100%',
+    height: '100%',
+    borderTopLeftRadius: moderateScale(16),
+    borderTopRightRadius: moderateScale(16),
+  },
+  newBadge: {
+    position: 'absolute',
+    top: moderateScale(10),
+    right: moderateScale(10),
+    backgroundColor: '#FF3B30',
+    paddingHorizontal: moderateScale(8),
+    paddingVertical: moderateScale(4),
+    borderRadius: moderateScale(12),
+  },
+  newBadgeText: {
+    color: 'white',
+    fontSize: moderateScale(10),
+    fontFamily: FONT.notoBold,
   },
   detailsContainer: {
     padding: moderateScale(12),
-    backgroundColor: '#111',
-    borderBottomLeftRadius: moderateScale(12),
-    borderBottomRightRadius: moderateScale(12),
+    backgroundColor: '#1E1E1E',
+    borderBottomLeftRadius: moderateScale(16),
+    borderBottomRightRadius: moderateScale(16),
   },
   bookTitle: {
     fontSize: moderateScale(16),
     fontFamily: FONT.notoBold,
-    color: '#2c3e50',
+    color: '#FFFFFF',
     marginBottom: moderateScale(2),
   },
   bookAuthor: {
     fontSize: moderateScale(14),
     fontFamily: FONT.notoMedium,
-    color: '#7f8c8d',
-    marginBottom: moderateScale(6),
-  },
-  durationText: {
-    fontSize: moderateScale(12),
-    fontFamily: FONT.notoRegular,
-    color: '#3498db',
-    marginBottom: moderateScale(6),
+    color: '#BBBBBB',
+    marginBottom: moderateScale(8),
   },
   ratingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: moderateScale(6),
+    marginBottom: moderateScale(8),
   },
   ratingText: {
     fontSize: moderateScale(12),
-    fontFamily: FONT.notoMedium,
-    color: '#34495e',
+    fontFamily: FONT.notoBold,
+    color: '#FFD700',
     marginLeft: moderateScale(6),
   },
-  metaContainer: {
+  infoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    marginBottom: moderateScale(10),
+  },
+  infoItem: {
+    flexDirection: 'row',
     alignItems: 'center',
+  },
+  infoText: {
+    fontSize: moderateScale(12),
+    fontFamily: FONT.notoMedium,
+    color: '#DDDDDD',
+    marginLeft: moderateScale(4),
+  },
+  categoryContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     marginTop: moderateScale(4),
   },
-  metaText: {
-    fontSize: moderateScale(12),
-    fontFamily: FONT.notoRegular,
-    color: '#7f8c8d',
+  categoryTag: {
+    backgroundColor: 'rgba(52, 152, 219, 0.2)',
+    paddingHorizontal: moderateScale(8),
+    paddingVertical: moderateScale(4),
+    borderRadius: moderateScale(12),
+    marginRight: moderateScale(6),
+    marginBottom: moderateScale(4),
+  },
+  categoryText: {
+    fontSize: moderateScale(10),
+    fontFamily: FONT.notoMedium,
+    color: '#3498db',
   },
 });

@@ -37,7 +37,6 @@ model User{
 enum Role{
   LISTENER
   NARRATOR
-  ADMIN
   PUBLISHER
 }
 
@@ -130,5 +129,20 @@ pdfURL String?
 rightsHolder Boolean?
 
 
+
+}
+
+model Admin {
+id String @id @default(cuid())
+  name String
+  email String @unique
+  password String
+  role String? 
+  emailVerificationToken String?
+  emailVerified Boolean @default(false)
+  firstTimeLogin Boolean @default(true)
+  
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
 
 }

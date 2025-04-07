@@ -7,10 +7,14 @@ import { ipURL } from '@/utils/backendURL';
 import axios from 'axios';
 import { MaterialIcons } from '@expo/vector-icons';
 import { A } from '@expo/html-elements';
+import { WebView } from 'react-native-webview';
+import { Audio } from 'expo-av';
 
 const PublisherDetailsSingle = () => {
   const { publisherDetailsSingle } = useLocalSearchParams();
   const [singleData, setSingleData] = useState(null);
+  const [sound, setSound] = useState(null);
+  const [isPlaying, setIsPlaying] = useState(false);
 
   useEffect(() => {
     const getSingleDataAuthor = async () => {
@@ -31,6 +35,36 @@ const PublisherDetailsSingle = () => {
 
     getSingleDataAuthor();
   }, []);
+
+  useEffect(() => {
+    return sound
+      ? () => {
+          sound.unloadAsync();
+        }
+      : undefined;
+  }, [sound]);
+
+  const playPauseSound = async () => {
+    if (sound) {
+      if (isPlaying) {
+        await sound.pauseAsync();
+      } else {
+        await sound.playAsync();
+      }
+      setIsPlaying(!isPlaying);
+    } else if (singleData?.audioSampleURL) {
+      try {
+        const { sound: newSound } = await Audio.Sound.createAsync(
+          { uri: singleData.audioSampleURL },
+          { shouldPlay: true }
+        );
+        setSound(newSound);
+        setIsPlaying(true);
+      } catch (error) {
+        console.error('Error loading audio:', error);
+      }
+    }
+  };
 
   if (!singleData) {
     return (
@@ -75,17 +109,39 @@ const PublisherDetailsSingle = () => {
         </View>
 
         <View style={styles.detailCard}>
-          <Text style={styles.cardTitle}>Audio Sample URL:</Text>
-          <A href={singleData?.audioSampleURL || '#'} style={styles.link}>
-            <Text style={styles.linkText}>Audio Sample</Text>
-          </A>
+          <Text style={styles.cardTitle}>Audio Sample:</Text>
+          {singleData?.audioSampleURL ? (
+            <TouchableOpacity 
+              style={styles.audioButton} 
+              onPress={playPauseSound}
+            >
+              <MaterialIcons 
+                name={isPlaying ? "pause" : "play-arrow"} 
+                size={24} 
+                color="#FFFFFF" 
+              />
+              <Text style={styles.audioButtonText}>
+                {isPlaying ? 'Pause Audio' : 'Play Audio'}
+              </Text>
+            </TouchableOpacity>
+          ) : (
+            <Text style={styles.cardContent}>No audio sample available</Text>
+          )}
         </View>
 
         <View style={styles.detailCard}>
-          <Text style={styles.cardTitle}>PDF URL:</Text>
-          <A href={singleData?.pdfURL || '#'} style={styles.link}>
-            <Text style={styles.linkText}>PDF Sample</Text>
-          </A>
+          <Text style={styles.cardTitle}>PDF Preview:</Text>
+          {singleData?.pdfURL ? (
+            <View style={styles.pdfContainer}>
+              <WebView
+                source={{ uri: singleData.pdfURL }}
+                style={styles.pdfView}
+                javaScriptEnabled={true}
+              />
+            </View>
+          ) : (
+            <Text style={styles.cardContent}>No PDF available</Text>
+          )}
         </View>
 
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
@@ -163,6 +219,30 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 18,
     fontWeight: '600',
+  },
+  audioButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#4A4DFF',
+    padding: 10,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  audioButtonText: {
+    color: '#FFFFFF',
+    marginLeft: 8,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  pdfContainer: {
+    height: 400,
+    marginTop: 8,
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  pdfView: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
   },
 });
 

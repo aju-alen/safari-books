@@ -17,6 +17,8 @@ const COLORS = {
   secondary: '#A5A6F6',
   background: '#000000',
   text: '#FFFFFF',
+  accent: '#FF9500',
+  success: '#4CAF50',
 };
 
 const SingleBookPage = () => {
@@ -25,6 +27,8 @@ const SingleBookPage = () => {
   const [isModalVisible, setModalVisible] = useState(false);
   const [sound, setSound] = useState(null);
   const [isPlayerVisible, setPlayerVisible] = useState(false);
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [showFullSummary, setShowFullSummary] = useState(false);
 
   console.log(singleBookData,'singleBookData');
   
@@ -84,6 +88,10 @@ const SingleBookPage = () => {
     return stars;
   };
 
+  const toggleBookmark = () => {
+    setIsBookmarked(!isBookmarked);
+  };
+
   return (
     <ScrollView style={[defaultStyles.container, { backgroundColor: COLORS.background }]}>
       <SafeAreaView>
@@ -92,6 +100,19 @@ const SingleBookPage = () => {
           colors={[`#${singleBookData[0]?.colorCode}`, COLORS.background]}
           end={{ x: 0.5, y: 0.4 }}
         >
+          <View style={styles.header}>
+            <TouchableOpacity style={styles.backButton}>
+              <Ionicons name="arrow-back" size={24} color={COLORS.text} />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.bookmarkButton} onPress={toggleBookmark}>
+              <Ionicons 
+                name={isBookmarked ? "bookmark" : "bookmark-outline"} 
+                size={24} 
+                color={isBookmarked ? COLORS.accent : COLORS.text} 
+              />
+            </TouchableOpacity>
+          </View>
+
           <View style={styles.imageContainer}>
             <Image
               source={{ uri: singleBookData[0]?.coverImage }}
@@ -131,25 +152,67 @@ const SingleBookPage = () => {
               </View>
             </View>
 
-            <TouchableOpacity
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity
                 style={styles.primaryButton}
                 onPress={() => setPlayerVisible(true)}
               >
                 <Ionicons name="play" size={20} color={COLORS.text} />
                 <Text style={styles.buttonText}>Listen to Sample</Text>
               </TouchableOpacity>
-
-{/* <TouchableOpacity
-    style={styles.primaryButton}
-    onPress={handlePlaySample}
-  >
-    <Ionicons name="play" size={20} color={COLORS.text} />
-    <Text style={styles.buttonText}>Listen to Sample</Text>
-  </TouchableOpacity> */}
+              
+              <TouchableOpacity style={styles.buyButton}>
+                <Text style={styles.buyButtonText}>Buy for $14.99</Text>
+              </TouchableOpacity>
+              
+              <View style={styles.shareContainer}>
+                <TouchableOpacity style={styles.iconButton}>
+                  <Ionicons name="share-social-outline" size={22} color={COLORS.text} />
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.iconButton}>
+                  <Ionicons name="gift-outline" size={22} color={COLORS.text} />
+                </TouchableOpacity>
+              </View>
+            </View>
 
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Summary</Text>
-              <Text style={styles.sectionText}>{singleBookData[0]?.summary}</Text>
+              <Text style={styles.sectionText} numberOfLines={showFullSummary ? undefined : 5}>
+                {singleBookData[0]?.summary}
+              </Text>
+              {singleBookData[0]?.summary?.length > 150 && (
+                <TouchableOpacity 
+                  style={styles.readMoreButton} 
+                  onPress={() => setShowFullSummary(!showFullSummary)}
+                >
+                  <Text style={styles.readMoreText}>
+                    {showFullSummary ? 'Show less' : 'Read more'}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>What Listeners Say</Text>
+              <View style={styles.reviewCard}>
+                <View style={styles.reviewHeader}>
+                  <View style={styles.reviewerInfo}>
+                    <View style={styles.reviewerAvatar}>
+                      <Text style={styles.avatarText}>JD</Text>
+                    </View>
+                    <Text style={styles.reviewerName}>John Doe</Text>
+                  </View>
+                  <View style={styles.stars}>
+                    {renderRatingStars(5)}
+                  </View>
+                </View>
+                <Text style={styles.reviewText}>
+                  "This audiobook completely changed my perspective. The narration is exceptional and brings the story to life!"
+                </Text>
+              </View>
+              <TouchableOpacity style={styles.allReviewsButton}>
+                <Text style={styles.allReviewsText}>See all reviews</Text>
+              </TouchableOpacity>
             </View>
 
             <View style={styles.section}>
@@ -167,12 +230,28 @@ const SingleBookPage = () => {
                   <Text style={styles.detailLabel}>Publisher</Text>
                   <Text style={styles.detailValue}>{singleBookData[0]?.publisher}</Text>
                 </View>
+                <View style={styles.detailItem}>
+                  <Text style={styles.detailLabel}>Categories</Text>
+                  <Text style={styles.detailValue}>Fiction, Thriller</Text>
+                </View>
               </View>
+            </View>
+            
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>You May Also Like</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.recommendationsScroll}>
+                {eBookData.slice(0, 5).map((book, index) => (
+                  <View key={index} style={styles.recommendationItem}>
+                    <Image source={{ uri: book.coverImage }} style={styles.recommendationCover} />
+                    <Text style={styles.recommendationTitle} numberOfLines={1}>{book.title}</Text>
+                    <Text style={styles.recommendationAuthor} numberOfLines={1}>{book.authorName}</Text>
+                  </View>
+                ))}
+              </ScrollView>
             </View>
           </View>
         </LinearGradient>
 
-        {/* Audio Player Modal */}
         <Modal visible={isModalVisible} transparent animationType="slide">
           <View style={styles.modalContainer}>
             <View style={styles.modalContent}>
@@ -212,8 +291,9 @@ const styles = StyleSheet.create({
         borderRadius: moderateScale(12),
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 4 },
-
-        shadowRadius: 8
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 5,
       },
       titleContainer: {
         alignItems: 'center',
@@ -292,9 +372,10 @@ const styles = StyleSheet.create({
         paddingVertical: verticalScale(16),
         paddingHorizontal: horizontalScale(32),
         borderRadius: moderateScale(30),
-        marginTop: verticalScale(32),
-        width: '100%',
-        alignItems: 'center'
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: horizontalScale(8),
       },
       buttonText: {
         color: COLORS.text,
@@ -353,6 +434,128 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     marginTop: verticalScale(20),
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    paddingHorizontal: horizontalScale(20),
+    marginTop: verticalScale(10),
+    marginBottom: verticalScale(20),
+  },
+  backButton: {
+    padding: moderateScale(8),
+    borderRadius: moderateScale(20),
+    backgroundColor: 'rgba(0,0,0,0.3)',
+  },
+  bookmarkButton: {
+    padding: moderateScale(8),
+    borderRadius: moderateScale(20),
+    backgroundColor: 'rgba(0,0,0,0.3)',
+  },
+  buttonContainer: {
+    width: '100%',
+    marginTop: verticalScale(24),
+    gap: verticalScale(12),
+  },
+  buyButton: {
+    backgroundColor: COLORS.accent,
+    paddingVertical: verticalScale(16),
+    paddingHorizontal: horizontalScale(32),
+    borderRadius: moderateScale(30),
+    alignItems: 'center',
+  },
+  buyButtonText: {
+    color: COLORS.text,
+    fontSize: moderateScale(16),
+    fontWeight: '700',
+  },
+  shareContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: horizontalScale(20),
+    marginTop: verticalScale(8),
+  },
+  iconButton: {
+    padding: moderateScale(10),
+    borderRadius: moderateScale(20),
+    backgroundColor: 'rgba(255,255,255,0.1)',
+  },
+  readMoreButton: {
+    marginTop: verticalScale(8),
+    alignSelf: 'flex-start',
+  },
+  readMoreText: {
+    color: COLORS.primary,
+    fontWeight: '600',
+  },
+  reviewCard: {
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: moderateScale(12),
+    padding: moderateScale(16),
+    marginVertical: verticalScale(8),
+  },
+  reviewHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: verticalScale(10),
+  },
+  reviewerInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: horizontalScale(10),
+  },
+  reviewerAvatar: {
+    width: moderateScale(36),
+    height: moderateScale(36),
+    borderRadius: moderateScale(18),
+    backgroundColor: COLORS.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarText: {
+    color: COLORS.text,
+    fontWeight: '600',
+  },
+  reviewerName: {
+    color: COLORS.text,
+    fontWeight: '600',
+  },
+  reviewText: {
+    color: COLORS.secondary,
+    fontStyle: 'italic',
+    lineHeight: moderateScale(22),
+  },
+  allReviewsButton: {
+    marginTop: verticalScale(12),
+    alignSelf: 'center',
+  },
+  allReviewsText: {
+    color: COLORS.primary,
+    fontWeight: '600',
+  },
+  recommendationsScroll: {
+    marginTop: verticalScale(12),
+  },
+  recommendationItem: {
+    width: horizontalScale(120),
+    marginRight: horizontalScale(16),
+  },
+  recommendationCover: {
+    width: horizontalScale(120),
+    height: verticalScale(180),
+    borderRadius: moderateScale(8),
+    marginBottom: verticalScale(8),
+  },
+  recommendationTitle: {
+    color: COLORS.text,
+    fontSize: moderateScale(14),
+    fontWeight: '600',
+  },
+  recommendationAuthor: {
+    color: COLORS.secondary,
+    fontSize: moderateScale(12),
   },
 });
 
