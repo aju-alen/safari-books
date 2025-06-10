@@ -11,6 +11,7 @@ const AuthenticateLayout = () =>{
             <Stack.Screen name='login' options={{ headerShown: false }} />
             <Stack.Screen name='chooseRole' options={{ headerShown: false }} />
             <Stack.Screen name='guestLogin' options={{ headerShown: false }} />
+            <Stack.Screen name='adminLogin' options={{ headerShown: false }} />
         </Stack>
         </View>
     )

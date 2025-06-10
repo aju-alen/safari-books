@@ -42,20 +42,28 @@ enum Role{
 
 model Book{
 
-  id String @id @default(cuid())
-  title String
-  description String
-  durationInHours Int
+ id                String   @id @default(cuid())
+  title             String  // delete this
+  description       String  // delete this
+  durationInHours   Int
   durationInMinutes Int
-  coverImage String
-  authorName String
-  narratorName String
-  summary String @db.LongText
-  releaseDate DateTime
-  language String
-  publisher String
-  rating Int
-  colorCode String
+  coverImage        String  // delete this
+  authorName        String  // delete this
+  narratorName      String  // delete this
+  summary           String   @db.LongText
+  releaseDate       DateTime 
+  language          String  // delete this
+  publisher         String  // delete this
+  rating            Int
+  colorCode         String
+  sampleAudioURL    String?  // delete this
+
+  // Add either a company or author as the creator
+  companyId         String? 
+  authorId          String?
+
+  company           Company? @relation(fields: [companyId], references: [id])
+  author            Author?  @relation(fields: [authorId], references: [id])
 }
 
 model Company{
@@ -67,6 +75,7 @@ companyRegNo String
 kraPin String
 companyRegNoPdfUrl String
 kraPinPdfUrl String
+isVerified Boolean @default(false)
 
 // Add a foreign key to reference the user
   userId                String   
@@ -91,7 +100,8 @@ narrationStyleOratoric Boolean?
 audioSampleURL String?
 pdfURL String?
 rightsHolder Boolean?
-  
+coverImage String?
+books               Book[]
 }
 
 model Author{
@@ -104,6 +114,7 @@ idppPdfUrl String
 kraPin String
 kraPinPdfUrl String
 writersGuildNo String?
+isVerified Boolean @default(false)
 
   // Add a foreign key to reference the user
 userId                String   
@@ -127,8 +138,8 @@ narrationStyleOratoric Boolean?
 audioSampleURL String?
 pdfURL String?
 rightsHolder Boolean?
-
-
+coverImage String?
+books               Book[]
 
 }
 

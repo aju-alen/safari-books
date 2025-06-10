@@ -4,11 +4,11 @@ import { router } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import React, { useState } from 'react';
 import { Alert, Pressable, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View, ActivityIndicator } from 'react-native';
-import Button from '../../components/Button.tsx';
-import { COLORS, FONT, welcomeCOLOR } from '../../constants/tokens.ts';
-import { defaultStyles } from '../../styles/index.ts';
-import { ipURL } from '../../utils/backendURL.ts';
-import { horizontalScale, moderateScale, verticalScale } from '../../utils/responsiveSize.ts';
+
+import { COLORS, FONT, welcomeCOLOR } from '../../constants/tokens';
+import { defaultStyles } from '../../styles/index';
+import { ipURL } from '../../utils/backendURL';
+import { horizontalScale, moderateScale, verticalScale } from '../../utils/responsiveSize';
 
 
 const LoginPage = () => {
@@ -17,7 +17,6 @@ const LoginPage = () => {
     const [password, setPassword] = useState('');
     const [isPasswordShown, setIsPasswordShown] = useState(true);
     const [loading, setLoading] = useState(false);
-    const [clickCount, setClickCount] = useState(0);
 
     // useEffect(() => {
     //     const checkLogin = async () => {
@@ -37,21 +36,9 @@ const LoginPage = () => {
 
 
 
-const handleAdminLogin = () => {
-  // Increment click count
-  const newCount = clickCount + 1;
-  setClickCount(prev=> prev + 1);
-  
-  // Check if we've reached 7 clicks
-  if (clickCount >= 7) {
-    // Reset the count and call the admin login function
-    setClickCount(0);
-    router.replace('/(authenticate)/adminLogin');
-  }
-};
-console.log(clickCount, 'this is click count');
 
-    const handleLogin = async () => {
+
+    const handleAdminLoin = async () => {
         const user = {
             email,
             password,
@@ -59,7 +46,7 @@ console.log(clickCount, 'this is click count');
         try {
             setLoading(true);
             console.log(user, 'user');
-            const resp = await axios.post(`${ipURL}/api/auth/login`, user)
+            const resp = await axios.post(`${ipURL}/api/auth/admin`, user)
             console.log(resp.data, 'Logged in succesfully');
             
             await SecureStore.setItemAsync("authToken",JSON.stringify({token:resp.data.token}));
@@ -67,13 +54,14 @@ console.log(clickCount, 'this is click count');
             const result = await SecureStore.getItemAsync("authToken");
             const userDetails = await SecureStore.getItemAsync("userDetails");
 
-            if (resp.data.role === 'LISTENER') {
-                router.replace('/(onboarding)/listeneronboarding');
+            console.log(result, 'this is token');
+            console.log(JSON.parse(userDetails), 'this is userDetails');
+            
+
+            if (resp.data.role === 'ADMIN') {
+                router.replace('/(admin)/home');
             }
-            else if (resp.data.role === 'PUBLISHER') {
-                router.replace('/(onboarding)/publisheronboarding');
-                    
-            }
+            
             setLoading(false);
         }
         catch (err) {
@@ -101,7 +89,7 @@ console.log(clickCount, 'this is click count');
                                 marginVertical: verticalScale(12),
                                 color: welcomeCOLOR.white
                             }}>
-                                Login to your account
+                                Admin Portal
                             </Text>
 
 
@@ -205,7 +193,7 @@ console.log(clickCount, 'this is click count');
                             backgroundColor: COLORS.secondary,
                             borderRadius: moderateScale(8),
                         }}
-                        onPress={handleLogin}
+                        onPress={handleAdminLoin}
                     >
                         {loading?
                          <ActivityIndicator/>
@@ -222,43 +210,12 @@ console.log(clickCount, 'this is click count');
 
 
 
-                    <View style={{
-                        flexDirection: "row",
-                        justifyContent: "center",
-                        marginVertical: verticalScale(22)
-                    }}>
-                        <Text style={{ 
-                            fontSize: moderateScale(16),
-                             color: welcomeCOLOR.white,
-                                fontFamily:FONT.RobotoLight
-                             }}>Don't have an account?</Text>
-                        <Pressable
-                            onPress={() => router.replace('/(authenticate)/chooseRole')}
-                        >
-                            <Text style={{
-                                fontSize: moderateScale(16),
-                                color: COLORS.primary,
-                                fontWeight: "bold",
-                                marginLeft: horizontalScale(6)
-                            }}>Register</Text>
-                          
-                        </Pressable>
-                    </View>
+                  
                     
                     </View>
                     
                 </View>
-                <Pressable
-                    onPress={handleAdminLogin}
-                    >
-                <Text style={{
-                                alignSelf: "center",
-                                fontSize: moderateScale(10),
-                                color: COLORS.primary,
-                                fontWeight: "bold",
-                                marginLeft: horizontalScale(6)
-                            }}>Admin Panel</Text>
-                </Pressable>
+             
         </SafeAreaView>
     )
 };

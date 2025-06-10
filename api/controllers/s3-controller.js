@@ -15,7 +15,7 @@ const s3 = new S3({
 export const postProfileImageS3 = async (req, res,next) => {
 //    const userId = req.params.userId;
 console.log(req.files,'files');
-console.log(req.body,'body');
+
 const {id,userId,publishingType} = req.body;
 const files = req.files;
 const uploadPromises = [];
@@ -64,5 +64,39 @@ export const postAudioS3 = async (req, res) => {
   } catch (err) {
       console.error(err);
       res.status(500).json({ error: 'Error uploading file' });
+  }
+}
+
+export const postImageS3 = async (req, res) => {
+  console.log(req.body, 'this is body req');
+  const { id, userId } = req.body;
+  const file = req.file;
+  
+  console.log('req body:', req.body, 'file:', file);
+  
+  try {
+    const fileContent = file.buffer;
+    
+    // Set up S3 upload parameters
+    const params = {
+      Bucket: process.env.S3_BUCKET_NAME,
+      Key: `${userId}/${id}/verificationfiles/${file.originalname}`, // File name you want to save as in S3
+      Body: fileContent,
+      ContentType: file.mimetype,
+    };
+    
+    console.log(params, 'params');
+    
+    // Uploading files to the bucket
+    const uploadResult = await new Upload({
+      client: s3,
+      params,
+    }).done();
+    
+    console.log(`File uploaded successfully. ${uploadResult.Location}`);
+    res.status(200).json({ message: 'File uploaded successfully', data: uploadResult.Location });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error uploading file' });
   }
 }

@@ -34,7 +34,7 @@ const options = [
   {
     id: '3',
     title: 'Guest',
-    icon: '🎙️',
+    icon: '👶🏻',
     role: 'GUEST',
     description: 'Explore the platform',
     gradient: ['#6B4EFF', '#B592FD']

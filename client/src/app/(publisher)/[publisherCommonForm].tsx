@@ -8,9 +8,11 @@ import * as DocumentPicker from 'expo-document-picker'
 import { router, useLocalSearchParams } from 'expo-router'
 import * as SecureStore from 'expo-secure-store'
 import React, { useEffect, useState } from 'react'
-import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View,ActivityIndicator } from 'react-native'
+import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View,ActivityIndicator, Alert } from 'react-native'
 import { Audio } from 'react-native-compressor'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import * as ImagePicker from 'expo-image-picker'
+import * as ImageManipulator from 'expo-image-manipulator'
 
 
 const publisherCommonForm = () => {
@@ -31,7 +33,8 @@ const publisherCommonForm = () => {
     const [narrationStyleCasual, setNarrationStyleCasual] = useState(false)
     const [narrationStyleStatic, setNarrationStyleStatic] = useState(false)
     const [narrationStyleOratoric, setNarrationStyleOratoric] = useState(false)
-
+    const [image, setImage] = useState(null);
+    const [imageURL, setImageURL] = useState('');
     const [audioSample, setAudioSample] = useState({})
     const [audioCompressURL, setAudioCompressURL] = useState('')
 
@@ -199,6 +202,71 @@ console.log(publisherCommonForm,'companyId in document submit');
         }
     };
 
+    const pickImage = async () => {
+        const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    
+        if (permissionResult.granted === false) {
+          Alert.alert('Permission to access the gallery is required!');
+          return;
+        }
+    
+        const result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          allowsEditing: true,
+          quality: 1,
+        });
+    
+        if (!result.canceled) {
+          const manipResult = await ImageManipulator.manipulateAsync(
+            result.assets[0].uri,
+            [{ resize: { width: 800 } }], // Resize the image
+            { compress: 0.0, format: ImageManipulator.SaveFormat.WEBP } // Compress the image
+          );
+          setImage(manipResult.uri);
+        }
+      };
+    
+      const uploadImageToBe = async () => {
+        if (!image) return;
+    
+        const uriParts = image.split('.');
+        const fileType = uriParts[uriParts.length - 1];
+    
+        const formData = new FormData();
+        formData.append('image', {
+          uri: image,
+          name: `photo.${fileType}`,
+          type: `image/${fileType}`,
+        });
+        formData.append('id', publisherCommonForm);
+        formData.append('userId', token);
+    
+        try {
+          console.log(formData, 'form data');
+          
+          const response = await axios.post(`${ipURL}/api/s3/upload-to-aws-image`, formData, {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+          });
+          console.log('Image uploaded successfully', response.data.data.Location);
+    
+          // Update the form data with the image URL
+          const imageURL = response.data.data;
+          setImageURL(imageURL)
+          
+          // You can either update the state with the image URL or proceed with form submission
+          Alert.alert('Image uploaded successfully');
+          
+          // If you want to include the image URL in the form submission, you can store it in state
+          // setImageURL(imageURL);
+          
+        } catch (error) {
+          console.error('Image upload failed', error);
+          Alert.alert('Image upload failed', error.message);
+        }
+      };
+
     const handleSubmit = async () => {
         try{
             setLoading(true);
@@ -223,7 +291,8 @@ console.log(publisherCommonForm,'companyId in document submit');
                 narrationStyleOratoric: narrationStyleOratoric,
                 audioSampleURL: audioData.data,
                 pdfURL: docData.data[0],
-                rightsHolder: rightsHolder
+                rightsHolder: rightsHolder,
+                coverImage: imageURL
             }
     
             console.log(data, 'data');
@@ -389,6 +458,26 @@ console.log(publisherCommonForm,'companyId in document submit');
                                   {doc1?.name || 'Upload PDF Document'}
                               </Text>
                           </TouchableOpacity>
+                          
+                          <TouchableOpacity 
+                              style={styles.uploadButton} 
+                              onPress={pickImage}
+                          >
+                              <Text style={styles.uploadButtonText}>
+                                  {image ? 'Image Selected' : 'Upload Cover Image'}
+                              </Text>
+                          </TouchableOpacity>
+                          
+                          {image && (
+                              <TouchableOpacity 
+                                  style={[styles.uploadButton, styles.uploadButtonPrimary]} 
+                                  onPress={uploadImageToBe}
+                              >
+                                  <Text style={styles.uploadButtonText}>
+                                      Submit Image
+                                  </Text>
+                              </TouchableOpacity>
+                          )}
                       </View>
 
                       <View style={styles.rightsHolder}>
@@ -570,6 +659,10 @@ const styles = StyleSheet.create({
       color: '#FFFFFF',
       fontSize: moderateScale(16),
       fontWeight: '600',
+  },
+  uploadButtonPrimary: {
+    backgroundColor: '#4A4DFF',
+    borderColor: '#4A4DFF',
   },
 });
 

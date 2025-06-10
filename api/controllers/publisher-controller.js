@@ -87,6 +87,7 @@ export const publisherCompanyUpdate = async (req, res) => {
                     audioSampleURL:req.body.audioSampleURL,
                     pdfURL:req.body.pdfURL,
                     rightsHolder:req.body.rightsHolder,
+                    coverImage:req.body.coverImage
                 }
             });
         }
@@ -112,6 +113,7 @@ export const publisherCompanyUpdate = async (req, res) => {
                     audioSampleURL:req.body.audioSampleURL,
                     pdfURL:req.body.pdfURL,
                     rightsHolder:req.body.rightsHolder,
+                    coverImage:req.body.coverImage
                 }
             });
         }
@@ -206,4 +208,28 @@ export const getSingleCompanyData = async (req, res) => {
 
     }
 
+}
+
+export const publishBook = async (req, res) => {
+    const {durationInHours,durationInMinutes,summary,releaseDate,rating,colorCode} = req.body;
+    try {
+        const publishBook = await prisma.book.create({
+            data: {
+                durationInHours,
+                durationInMinutes,
+                summary,
+                releaseDate,
+                rating,
+                colorCode,
+                
+            }
+        });
+        await prisma.$disconnect();
+        res.status(201).json({ message: "Book published successfully", publishBook });
+    }
+    catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "Internal server error", error });
+    }
+    
 }

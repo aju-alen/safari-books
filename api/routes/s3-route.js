@@ -1,6 +1,6 @@
 import express from "express";
 const router = express.Router()
-import { postProfileImageS3,postAudioS3} from '../controllers/s3-controller.js';
+import { postProfileImageS3,postAudioS3,postImageS3} from '../controllers/s3-controller.js';
 import multer from 'multer';
   // Configure multer for file upload
   const upload = multer();
@@ -13,5 +13,6 @@ router.post('/upload-to-aws', upload.fields([
 ]), postProfileImageS3);
 
 router.post('/upload-to-aws-audio', upload.single('audio1'), postAudioS3);
+router.post('/upload-to-aws-image', upload.single('image'), postImageS3);
 
 export default router;

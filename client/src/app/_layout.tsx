@@ -49,8 +49,8 @@ const MainLayout = () => {
     <Stack.Screen name='(tabs)' options={{ headerShown: false }} />
     <Stack.Screen name='(authenticate)' options={{ headerShown: false }} />
     <Stack.Screen name='(publisher)' options={{ headerShown: false }} />
-    <Stack.Screen name='(onboarding)' options={{
-       headerShown: false }} />
+    <Stack.Screen name='(onboarding)' options={{headerShown: false }} />
+    <Stack.Screen name='(admin)' options={{headerShown: false }} />
   </Stack>
   </AudioProvider>
   )

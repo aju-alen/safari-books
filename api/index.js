@@ -3,6 +3,7 @@ import bodyParser from 'body-parser';
 import authRoute from './routes/auth-route.js';
 import s3Route from './routes/s3-route.js';
 import publisherRoute from './routes/publisher-route.js';
+import adminRoute from './routes/admin-route.js';
 import cors from 'cors';
 
 
@@ -23,6 +24,7 @@ app.use(bodyParser.json());
 app.use('/api/auth', authRoute);
 app.use('/api/s3',s3Route);
 app.use('/api/publisher',publisherRoute);
+app.use('/api/admin',adminRoute);
 
 const port = process.env.PORT || 3001;
 app.listen(port, () => {

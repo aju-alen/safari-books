@@ -214,6 +214,38 @@ export const login = async (req, res, next) => {
        next(err);
     }
 }
+export const loginAdmin = async (req, res, next) => {
+    console.log(req.body, 'req.body');
+    
+    try {
+        const { email,password } = req.body;
+        console.log(email, password,'email, password');
+        
+        const user = await prisma.admin.findUnique({
+            where: {
+                email
+            }
+        });
+        console.log(user, 'user');
+       
+        if (!user) {
+            return res.status(400).json({ message: "No account exists. Please register" });
+        }
+        if (!user.emailVerified) {
+            return res.status(400).json({ message: "Please verify your email" });
+        }
+        let isCorrect = bcrypt.compareSync(password, user.password)
+        if (!isCorrect) {
+            return res.status(400).json({ message: "Invalid email or password" });
+        }
+        const token = jwt.sign({ userId: user.id, role:user.role, }, process.env.SECRET_KEY);
+        res.status(200).json({ message: "Login successful", token, role:user.role, id:user.id, name:user.name, email:user.email });
+    }
+    catch (err) {
+        console.log(err);
+       next(err);
+    }
+}
 
 export const getUserById = async (req, res) => {
     try{

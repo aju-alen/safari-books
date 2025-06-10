@@ -11,6 +11,7 @@ export const verifyToken = (req,res,next)=>{
         req.userId = payload.userId;
         req.isTeacher = payload.isTeacher;
         req.isAdmin = payload.isAdmin;
+        req.middlewareRole = payload.role;
         console.log(req.userId,req.isTeacher,req.isAdmin,'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz');
         next()
     });

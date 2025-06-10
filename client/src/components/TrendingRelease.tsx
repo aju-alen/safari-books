@@ -62,7 +62,7 @@ const TrendingRelease = ({ bookData }) => {
           activeOpacity={0.9}
         >
           <View style={styles.cardContainer}>
-            {/* Cover Image with Gradient Overlay */}
+            {/* Cover Image */}
             <View style={styles.imageContainer}>
               <Image
                 source={{ uri: coverImage || 'https://via.placeholder.com/150' }}
@@ -78,12 +78,14 @@ const TrendingRelease = ({ bookData }) => {
 
             {/* Book Details */}
             <View style={styles.detailsContainer}>
-              <Text style={styles.bookTitle} numberOfLines={1}>
-                {title || 'Unknown Title'}
-              </Text>
-              <Text style={styles.bookAuthor} numberOfLines={1}>
-                {authorName || 'Unknown Author'}
-              </Text>
+              <View style={styles.titleContainer}>
+                <Text style={styles.bookTitle} numberOfLines={1}>
+                  {title || 'Unknown Title'}
+                </Text>
+                <Text style={styles.bookAuthor} numberOfLines={1}>
+                  {authorName || 'Unknown Author'}
+                </Text>
+              </View>
 
               {/* Rating Section with improved visual */}
               <View style={styles.ratingContainer}>
@@ -135,7 +137,6 @@ const TrendingRelease = ({ bookData }) => {
     <FlatlistDynamic
       renderItem={renderItem}
       bookData={bookData}
-      keyExtractor={(item) => item.id.toString()}
     />
   );
 };
@@ -174,6 +175,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: moderateScale(8),
     paddingVertical: moderateScale(4),
     borderRadius: moderateScale(12),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 3,
   },
   newBadgeText: {
     color: 'white',
@@ -186,6 +192,9 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: moderateScale(16),
     borderBottomRightRadius: moderateScale(16),
   },
+  titleContainer: {
+    marginBottom: moderateScale(8),
+  },
   bookTitle: {
     fontSize: moderateScale(16),
     fontFamily: FONT.notoBold,
@@ -196,12 +205,16 @@ const styles = StyleSheet.create({
     fontSize: moderateScale(14),
     fontFamily: FONT.notoMedium,
     color: '#BBBBBB',
-    marginBottom: moderateScale(8),
   },
   ratingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: moderateScale(8),
+    backgroundColor: 'rgba(255, 215, 0, 0.1)',
+    paddingVertical: moderateScale(4),
+    paddingHorizontal: moderateScale(8),
+    borderRadius: moderateScale(12),
+    alignSelf: 'flex-start',
   },
   ratingText: {
     fontSize: moderateScale(12),
@@ -213,6 +226,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: moderateScale(10),
+    backgroundColor: 'rgba(52, 152, 219, 0.1)',
+    padding: moderateScale(8),
+    borderRadius: moderateScale(12),
   },
   infoItem: {
     flexDirection: 'row',
