@@ -155,7 +155,7 @@ const App = () => {
               router.push(`/(authenticate)/guestLogin`)
               }
               else if(selectedId) {
-                router.push(`/(authenticate)/login?role=${selectedId}`);
+                router.push(`/(authenticate)/${selectedId}`);
               }
             }}>
               <LinearGradient

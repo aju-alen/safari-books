@@ -10,6 +10,7 @@ import React, { useEffect, useState } from 'react';
 import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ipURL } from '@/utils/backendURL';
+
 import axios from 'axios';
 
 type BookData = {
