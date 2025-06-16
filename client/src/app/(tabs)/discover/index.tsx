@@ -25,7 +25,6 @@ const DiscoverPage = () => {
     <SafeAreaView style={defaultStyles.container}>
 <ScrollView showsVerticalScrollIndicator={false}>
     <View>
-      <Text style={defaultStyles.text}>DiscoverPage</Text>
 
       <View>
         <Text style={defaultStyles.mainText}>Top listens across categories</Text>
