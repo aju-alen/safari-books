@@ -87,7 +87,7 @@ const App = () => {
       if (!userDetail) return;
       const userData = JSON.parse(userDetail);
       if (userData.role === 'PUBLISHER') {
-        router.push('/(publisher)/publisherhome');
+        router.push('/(publisher)/:home');
       } else if (userData.role === 'LISTENER') {
         router.push('/(tabs)/home');
       }

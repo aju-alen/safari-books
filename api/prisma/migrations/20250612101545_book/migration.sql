@@ -1,0 +1,8 @@
+-- AlterTable
+ALTER TABLE `Author` ADD COLUMN `amount` INTEGER NOT NULL DEFAULT 0;
+
+-- AlterTable
+ALTER TABLE `Book` ADD COLUMN `amount` INTEGER NOT NULL DEFAULT 0;
+
+-- AlterTable
+ALTER TABLE `Company` ADD COLUMN `amount` INTEGER NOT NULL DEFAULT 0;

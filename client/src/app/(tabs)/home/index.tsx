@@ -2,24 +2,55 @@ import HomeOnboarding from '@/components/HomeOnboarding';
 import ImageGrid from '@/components/ImageGrid';
 import TrendingRelease from '@/components/TrendingRelease';
 import { defaultStyles } from '@/styles';
+
 import { eBookData } from '@/utils/flatlistData';
 import { moderateScale, verticalScale } from '@/utils/responsiveSize';
 import { EvilIcons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { ipURL } from '@/utils/backendURL';
+import axios from 'axios';
+
+type BookData = {
+  books: {
+    id: string;
+    title: string;
+    coverImage: string;
+    authorName: string;
+    rating: number;
+    durationInHours: number;
+    durationInMinutes: number;
+    releaseDate: string;
+    categories: string[];
+    listens?: number;
+    isNew?: boolean;
+  }
+};
 
 const HomePage = () => {
-  const [bookData, setBookData] = useState([]);
+  const [bookData, setBookData] = useState<BookData>();
   const [latestRelease, setLatestRelease] = useState([]);
 
-  useEffect(() => {
-    setBookData(eBookData);
-    setLatestRelease(eBookData.map((book) => ({
+  // useEffect(() => {
+  //   setBookData(eBookData);
+  //   setLatestRelease(eBookData.map((book) => ({
+  //     coverImage: book.coverImage,
+  //     id: book.id
+  //   })).slice(5, 9));
+  // }, []);
+
+  const getBooksData = async()=>{
+    const resp = await axios.get(`${ipURL}/api/listeners//books-data`);
+    setBookData(resp.data);
+    setLatestRelease(resp.data.books.map((book ) => ({
       coverImage: book.coverImage,
       id: book.id
-    })).slice(5, 9));
-  }, []);
+    })));
+  }
+  useEffect(()=>{
+    getBooksData();
+  },[])
 
   const SectionTitle = ({ title }) => (
     <View style={styles.sectionTitleContainer}>
@@ -55,7 +86,7 @@ const HomePage = () => {
         <View style={styles.trendingSection}>
           <SectionTitle title="Trending Release" />
           <View style={styles.trendingContent}>
-            <TrendingRelease bookData={bookData} />
+            <TrendingRelease bookData={bookData?.books} />
           </View>
         </View>
 

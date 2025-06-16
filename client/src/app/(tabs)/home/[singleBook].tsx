@@ -11,6 +11,11 @@ import { Audio } from 'expo-av';
 import AudioPlayer from '@/components/AudioPlayer';
 import AudioPlayerModal from '@/components/AudioPlayerModal';
 import { useAudio } from '@/store/AudioContext';
+import { ipURL } from '@/utils/backendURL';
+import { BookCategoryLabels } from '@/utils/categoriesdata';
+import axios from 'axios';
+import { useRevenueCat } from '../../../../providers/RevenueCat';
+import RevenueCatUI, { PAYWALL_RESULT } from 'react-native-purchases-ui';
 
 const COLORS = {
   primary: '#6366F1',
@@ -29,12 +34,26 @@ const SingleBookPage = () => {
   const [isPlayerVisible, setPlayerVisible] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [showFullSummary, setShowFullSummary] = useState(false);
+  const { isPro } = useRevenueCat();
 
   console.log(singleBookData,'singleBookData');
   
+  // useEffect(() => {
+  //   const book = eBookData.find((book) => book.id === singleBook);
+  //   setSingleBookData([book]);
+  // }, []);
+
+  const getSingleBookData = async () => {
+    try {
+      const resp = await axios.get(`${ipURL}/api/listeners/book-data/${singleBook}`);
+      setSingleBookData([resp.data]);
+    } catch (error) {
+      console.error('Error fetching single book data:', error);
+    }
+  };
+
   useEffect(() => {
-    const book = eBookData.find((book) => book.id === singleBook);
-    setSingleBookData([book]);
+    getSingleBookData();
   }, []);
 
   const { playTrack } = useAudio();
@@ -92,6 +111,21 @@ const SingleBookPage = () => {
     setIsBookmarked(!isBookmarked);
   };
 
+  console.log('singleBookData', singleBookData);
+
+  const handlePurchase = async() => {
+    if (isPro) {
+      // Logic for already subscribed users
+      console.log('User is already subscribed');
+    } else {
+      // Logic for purchasing the book
+      console.log('Proceed to purchase the book');
+      const paywallResult: PAYWALL_RESULT = await RevenueCatUI.presentPaywall({});
+      
+    }
+  };
+
+
   return (
     <ScrollView style={[defaultStyles.container, { backgroundColor: COLORS.background }]}>
       <SafeAreaView>
@@ -128,7 +162,7 @@ const SingleBookPage = () => {
               <View style={styles.durationContainer}>
                 <Ionicons name="time-outline" size={20} color={COLORS.secondary} />
                 <Text style={styles.infoText}>
-                  {singleBookData[0]?.durationInHours} {singleBookData[0]?.durationInMinutes}
+                  {singleBookData[0]?.durationInHours} hours {singleBookData[0]?.durationInMinutes} minutes
                 </Text>
               </View>
 
@@ -161,8 +195,8 @@ const SingleBookPage = () => {
                 <Text style={styles.buttonText}>Listen to Sample</Text>
               </TouchableOpacity>
               
-              <TouchableOpacity style={styles.buyButton}>
-                <Text style={styles.buyButtonText}>Buy for $14.99</Text>
+              <TouchableOpacity style={styles.buyButton} onPress={handlePurchase}>
+                <Text style={styles.buyButtonText}>{isPro ? 'Listen Now' : `Buy for AED ${(singleBookData[0]?.amount / 100).toFixed(2)}`}</Text>
               </TouchableOpacity>
               
               <View style={styles.shareContainer}>
@@ -192,7 +226,7 @@ const SingleBookPage = () => {
               )}
             </View>
 
-            <View style={styles.section}>
+            {/* <View style={styles.section}>
               <Text style={styles.sectionTitle}>What Listeners Say</Text>
               <View style={styles.reviewCard}>
                 <View style={styles.reviewHeader}>
@@ -213,14 +247,14 @@ const SingleBookPage = () => {
               <TouchableOpacity style={styles.allReviewsButton}>
                 <Text style={styles.allReviewsText}>See all reviews</Text>
               </TouchableOpacity>
-            </View>
+            </View> */}
 
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Product Details</Text>
               <View style={styles.detailsGrid}>
                 <View style={styles.detailItem}>
                   <Text style={styles.detailLabel}>Release Date</Text>
-                  <Text style={styles.detailValue}>{singleBookData[0]?.releaseDate}</Text>
+                  <Text style={styles.detailValue}>{new Date(singleBookData[0]?.releaseDate).toLocaleDateString()}</Text>
                 </View>
                 <View style={styles.detailItem}>
                   <Text style={styles.detailLabel}>Language</Text>
@@ -232,7 +266,7 @@ const SingleBookPage = () => {
                 </View>
                 <View style={styles.detailItem}>
                   <Text style={styles.detailLabel}>Categories</Text>
-                  <Text style={styles.detailValue}>Fiction, Thriller</Text>
+                  <Text style={styles.detailValue}>{BookCategoryLabels[singleBookData[0]?.categories]}</Text>
                 </View>
               </View>
             </View>
@@ -266,7 +300,7 @@ const SingleBookPage = () => {
       <AudioPlayerModal
         isVisible={isPlayerVisible}
         onClose={() => setPlayerVisible(false)}
-        audioUrl={singleBookData[0]?.sampleAudio}
+        audioUrl={singleBookData[0]?.sampleAudioURL}
         bookCover={singleBookData[0]?.coverImage}
         title={singleBookData[0]?.title}
         author={singleBookData[0]?.authorName}

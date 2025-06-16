@@ -26,14 +26,17 @@ const PublisherDetailsData = () => {
         getAllData();
     }, []);
 
-    const renderBookItem = (item, index, type) => (
+    const renderBookItem = (item, index, type) => {
+        console.log(item,'renderEach book item');
+        
+        return(
         <View key={index} style={styles.bookCard}>
             <View style={styles.bookInfo}>
                 <Text style={styles.bookTitle}>{item.title}</Text>
                 <View style={styles.detailRow}>
                     <View style={styles.statusContainer}>
-                        <MaterialIcons name="pending" size={16} color="#6366F1" />
-                        <Text style={styles.statusText}>Pending Approval</Text>
+                        <MaterialIcons name={item.isVerified?"done": "pending"} size={16} color="#6366F1" />
+                        <Text style={styles.statusText}>{item.isVerified?"Approved": "Pending Approval"}</Text>
                     </View>
                     {type === 'company' && (
                         <Text style={styles.companyName}>{item.companyName}</Text>
@@ -47,7 +50,7 @@ const PublisherDetailsData = () => {
                 <MaterialIcons name="arrow-forward" size={24} color="white" />
             </TouchableOpacity>
         </View>
-    );
+    )};
 
     return (
         <SafeAreaView style={[defaultStyles.container, styles.container]}>

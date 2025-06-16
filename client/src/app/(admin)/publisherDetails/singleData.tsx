@@ -15,6 +15,8 @@ import {
   Linking,
   Image,
   RefreshControl,
+  Modal,
+  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { axiosWithAuth } from '@/utils/customAxios';
@@ -28,6 +30,15 @@ const PublisherDetails = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [publisherData, setPublisherData] = useState(null);
   const [error, setError] = useState(null);
+  
+  // Modal states
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
+  const [durationHours, setDurationHours] = useState('');
+  const [durationMinutes, setDurationMinutes] = useState('');
+  const [completeAudioSample, setCompleteAudioSample] = useState('');
+  const [narratorName, setNarratorName] = useState('');
+  const [colorCode, setColorCode] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const fetchPublisherDetails = async () => {
     try {
@@ -60,42 +71,80 @@ const PublisherDetails = () => {
 
   const handleRejectPublisher = (id) => {}
 
+  const resetModalFields = () => {
+    setDurationHours('');
+    setDurationMinutes('');
+    setCompleteAudioSample('');
+  };
+
   const handleVerifyPublisher = (id) => {
-    Alert.alert(
-      'Verify Publisher',
-      'Are you sure you want to verify this publisher?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Verify',
-          onPress: async () => {
-            try {
-              // Make API call to verify the publisher
-              await axiosWithAuth.post(`${ipURL}/api/admin/verify-publisher/${id}`, {
-                type: isCompanyBoolean ? 'company' : 'author'
-              });
-              
-              Alert.alert('Success', 'Publisher has been verified successfully');
-              router.back();
-            } catch (error) {
-              console.error('Verification error:', error);
-              Alert.alert('Error', 'Failed to verify publisher');
-            }
-          },
-        },
-        {
-          text: 'Reject',
-          style: 'destructive',
-          onPress: () => {
-            // API call to reject the publisher would go here
-            Alert.alert('Rejected', 'Publisher has been rejected');
-          },
-        }
-      ]
-    );
+    setShowVerificationModal(true);
+  };
+
+  const handleModalCancel = () => {
+    setShowVerificationModal(false);
+    resetModalFields();
+  };
+
+  const validateInputs = () => {
+    const hours = parseInt(durationHours) || 0;
+    const minutes = parseInt(durationMinutes) || 0;
+    
+    if (hours < 0 || minutes < 0 || minutes >= 60) {
+      Alert.alert('Invalid Input', 'Please enter valid duration values (minutes should be 0-59)');
+      return false;
+    }
+    
+    if (hours === 0 && minutes === 0) {
+      Alert.alert('Invalid Input', 'Duration cannot be zero');
+      return false;
+    }
+    
+    if (!completeAudioSample.trim()) {
+      Alert.alert('Missing Field', 'Please provide the complete audio sample URL');
+      return false;
+    }
+    
+    // Basic URL validation
+    const urlPattern = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/;
+    if (!urlPattern.test(completeAudioSample.trim())) {
+      Alert.alert('Invalid URL', 'Please enter a valid URL for the audio sample');
+      return false;
+    }
+    
+    return true;
+  };
+
+  const handleSubmitVerification = async () => {
+    if (!validateInputs()) {
+      return;
+    }
+    
+    setIsSubmitting(true);
+    
+    try {
+      const verificationData = {
+        type: isCompanyBoolean ? 'company' : 'author',
+        durationHours: parseInt(durationHours) || 0,
+        durationMinutes: parseInt(durationMinutes) || 0,
+        completeAudioSample: completeAudioSample.trim(),
+        narratorName: narratorName.trim(),
+        colorCode: colorCode.trim(),
+      };
+      
+      // Make API call to verify the publisher with additional data
+      await axiosWithAuth.post(`${ipURL}/api/admin/verify-publisher/${id}`, verificationData);
+      
+      setShowVerificationModal(false);
+      resetModalFields();
+      Alert.alert('Success', 'Publisher has been verified successfully');
+      router.back();
+    } catch (error) {
+      console.error('Verification error:', error);
+      Alert.alert('Error', 'Failed to verify publisher. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleOpenDocument = (url) => {
@@ -501,6 +550,133 @@ const PublisherDetails = () => {
     );
   };
 
+  const renderVerificationModal = () => {
+    return (
+      <Modal
+        visible={showVerificationModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={handleModalCancel}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Verify Publisher</Text>
+              <TouchableOpacity onPress={handleModalCancel} style={styles.modalCloseButton}>
+                <Ionicons name="close" size={24} color="#94A3B8" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
+              <Text style={styles.modalDescription}>
+                Please provide the following information to complete the verification process:
+              </Text>
+
+              {/* Duration Hours Input */}
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Duration (Hours)</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={durationHours}
+                  onChangeText={setDurationHours}
+                  placeholder="Enter hours (e.g., 2)"
+                  placeholderTextColor="#64748B"
+                  keyboardType="numeric"
+                  maxLength={3}
+                />
+              </View>
+
+              {/* Duration Minutes Input */}
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Duration (Minutes)</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={durationMinutes}
+                  onChangeText={setDurationMinutes}
+                  placeholder="Enter minutes (0-59)"
+                  placeholderTextColor="#64748B"
+                  keyboardType="numeric"
+                  maxLength={2}
+                />
+              </View>
+
+              {/* Complete Audio Sample URL Input */}
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Complete Audio Sample URL</Text>
+                <TextInput
+                  style={[styles.textInput, styles.textAreaInput]}
+                  value={completeAudioSample}
+                  onChangeText={setCompleteAudioSample}
+                  placeholder="Enter the complete audio sample URL"
+                  placeholderTextColor="#64748B"
+                  multiline={true}
+                  numberOfLines={3}
+                  textAlignVertical="top"
+                />
+              </View>
+
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Narrator Name</Text>
+                <TextInput
+                  style={[styles.textInput, styles.textAreaInput]}
+                  value={narratorName}
+                  onChangeText={setNarratorName}
+                  placeholder="Enter the narrator name"
+                  placeholderTextColor="#64748B"
+                  numberOfLines={1}
+                  textAlignVertical="top"
+                />
+              </View>
+
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Enter Colour Code</Text>
+                <TextInput
+                  style={[styles.textInput, styles.textAreaInput]}
+                  value={colorCode}
+                  onChangeText={setColorCode}
+                  placeholder="Enter the color code"
+                  placeholderTextColor="#64748B"
+                  numberOfLines={1}
+                  textAlignVertical="top"
+                />
+              </View>
+
+             
+
+              {/* Display calculated total duration */}
+
+            </ScrollView>
+
+            <View style={styles.modalFooter}>
+              <TouchableOpacity 
+                style={styles.modalCancelButton} 
+                onPress={handleModalCancel}
+                disabled={isSubmitting}
+              >
+                <Text style={styles.modalCancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.modalSubmitButton} 
+                onPress={handleSubmitVerification}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <>
+                    <MaterialIcons name="verified" size={20} color="white" />
+                    <Text style={styles.modalSubmitButtonText}>Verify</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    );
+  };
+
   return (
     <SafeAreaView style={[defaultStyles.container, styles.container]}>
       <View style={styles.header}>
@@ -590,9 +766,13 @@ const PublisherDetails = () => {
           )}
         </ScrollView>
       )}
+
+      {/* Verification Modal */}
+      {renderVerificationModal()}
     </SafeAreaView>
   );
 };
+
 
 const styles = StyleSheet.create({
   container: {
@@ -883,6 +1063,134 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: '600',
     marginRight: 8,
+  },
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContainer: {
+    backgroundColor: '#1E293B',
+    borderRadius: 16,
+    width: '100%',
+    maxWidth: 400,
+    maxHeight: '80%',
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 10,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#E2E8F0',
+  },
+  modalCloseButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  modalContent: {
+    padding: 20,
+    maxHeight: 400,
+  },
+  modalDescription: {
+    fontSize: 14,
+    color: '#94A3B8',
+    lineHeight: 20,
+    marginBottom: 20,
+  },
+  inputContainer: {
+    marginBottom: 16,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#E2E8F0',
+    marginBottom: 8,
+  },
+  textInput: {
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 14,
+    color: '#E2E8F0',
+    minHeight: 44,
+  },
+  textAreaInput: {
+    minHeight: 80,
+    paddingTop: 12,
+  },
+  durationPreview: {
+    backgroundColor: 'rgba(79, 70, 229, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(79, 70, 229, 0.3)',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 8,
+    alignItems: 'center',
+  },
+  durationPreviewText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#4F46E5',
+  },
+  modalFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: 20,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.1)',
+    gap: 12,
+  },
+  modalCancelButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalCancelButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#94A3B8',
+  },
+  modalSubmitButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#4F46E5',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    gap: 8,
+  },
+  modalSubmitButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
 });
 

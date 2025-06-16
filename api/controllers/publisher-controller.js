@@ -87,7 +87,8 @@ export const publisherCompanyUpdate = async (req, res) => {
                     audioSampleURL:req.body.audioSampleURL,
                     pdfURL:req.body.pdfURL,
                     rightsHolder:req.body.rightsHolder,
-                    coverImage:req.body.coverImage
+                    coverImage:req.body.coverImage,
+                    amount:req.body.amount * 100, 
                 }
             });
         }
@@ -113,7 +114,8 @@ export const publisherCompanyUpdate = async (req, res) => {
                     audioSampleURL:req.body.audioSampleURL,
                     pdfURL:req.body.pdfURL,
                     rightsHolder:req.body.rightsHolder,
-                    coverImage:req.body.coverImage
+                    coverImage:req.body.coverImage,
+                    amount:req.body.amount * 100
                 }
             });
         }
@@ -140,6 +142,7 @@ export const getAllAuthorData = async (req, res) => {
            select: {
             id: true,
             title: true,
+            isVerified:true
            }
         });
         await prisma.$disconnect();

@@ -77,8 +77,9 @@ catch(error){
 
 export const verifyPublisher = async (req, res) => {
     const {id} = req.params;
-    const {type} = req.body;
-
+    const {type, durationHours, durationMinutes, completeAudioSample, narratorName, colorCode} = req.body;
+    console.log(req.body, 'this is body data');
+    
     if(req.middlewareRole !== 'ADMIN'){
         return res.status(403).json({message: "You are not authorized to access this resource"});
     }
@@ -90,13 +91,36 @@ export const verifyPublisher = async (req, res) => {
                     id: id
                 },
                 data: {
-                    isVerified: false
+                    isVerified: true
                 },
             })
-
-            console.log(publisher, 'this is publisher -----------');
+            console.log(publisher,'updated company publisher data');
             
-            res.status(200).json({message: "Company verified successfully", publisher});
+
+            const addBook = await prisma.book.create({
+                data:{
+                    title:publisher.title,
+                    description:publisher.synopsis,
+                    durationInHours: durationHours,
+                    durationInMinutes: durationMinutes,
+                    coverImage: publisher.coverImage,
+                    authorName : publisher.companyName,
+                    narratorName: narratorName,
+                    summary: publisher.synopsis,
+                    releaseDate: publisher.date,
+                    language: publisher.language,
+                    publisher: publisher.companyName,
+                    rating: 0,
+                    categories: publisher.categories,
+                    colorCode: colorCode,
+                    sampleAudioURL: publisher.audioSampleURL,
+                    completeAudioUrl: completeAudioSample,
+                    companyId: publisher.id,
+                    isPublished: true,
+                    amount: publisher.amount
+                }
+            })
+            res.status(200).json({message: "Company verified successfully",});
         }
         else{
             const publisher = await prisma.author.update({
@@ -107,8 +131,34 @@ export const verifyPublisher = async (req, res) => {
                     isVerified: true
                 }
             })
-            res.status(200).json({message: "Author verified successfully", publisher});
+
+            console.log(publisher,'updated publisher data');
+
+            const addBook = await prisma.book.create({
+                data:{
+                    title:publisher.title,
+                    description:publisher.synopsis,
+                    durationInHours: durationHours,
+                    durationInMinutes: durationMinutes,
+                    coverImage: publisher.coverImage,
+                    authorName : publisher.fullName,
+                    narratorName: narratorName,
+                    summary: publisher.synopsis,
+                    releaseDate: publisher.date,
+                    language: publisher.language,
+                    publisher: publisher.fullName,
+                    rating: 0,
+                    categories: publisher.categories,
+                    colorCode: colorCode,
+                    sampleAudioURL: publisher.audioSampleURL,
+                    completeAudioUrl: completeAudioSample,
+                    authorId: publisher.id,
+                    isPublished: true,
+                    amount: publisher.amount
+                }})
+            res.status(200).json({message: "Company verified successfully", publisher});
         }
+      
     }
     catch(error){
         console.log(error);

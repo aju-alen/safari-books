@@ -53,6 +53,22 @@ const TrendingRelease = ({ bookData }) => {
       isNew = false,
     } = item;
 
+const checkIfNew = (releaseDate) => {
+  const newReleaseDate = new Date(releaseDate);
+  const now = new Date();
+
+  // Calculate difference in milliseconds
+  const diffInMs = now - newReleaseDate;
+
+  // One week in milliseconds
+  const oneWeekInMs = 7 * 24 * 60 * 60 * 1000;
+
+  const isOverAWeek = diffInMs > oneWeekInMs;
+
+  return !isOverAWeek
+}
+    
+
     return (
       <Animated.View style={{ transform: [{ scale: scaleValue }], opacity: opacityValue }}>
         <TouchableOpacity
@@ -69,7 +85,7 @@ const TrendingRelease = ({ bookData }) => {
                 style={styles.coverImage}
                 resizeMode="cover"
               />
-              {isNew && (
+              {checkIfNew(releaseDate) && (
                 <View style={styles.newBadge}>
                   <Text style={styles.newBadgeText}>NEW</Text>
                 </View>

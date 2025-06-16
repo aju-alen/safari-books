@@ -52,11 +52,15 @@ model Book{
   narratorName      String  // delete this
   summary           String   @db.LongText
   releaseDate       DateTime 
-  language          String  // delete this
-  publisher         String  // delete this
-  rating            Int
-  colorCode         String
+  language          String
+  publisher         String
+  rating            Int @default(0) // default rating is 0
+  categories        Categories
+  colorCode         String?
   sampleAudioURL    String?  // delete this
+  completeAudioUrl  String?
+  isPublished       Boolean @default(false) 
+  amount            Int @default(0) // default amount is 0
 
   // Add either a company or author as the creator
   companyId         String? 
@@ -66,6 +70,27 @@ model Book{
   author            Author?  @relation(fields: [authorId], references: [id])
 }
 
+enum Categories{
+  biographiesmemoirs
+  fiction
+  nonfiction
+  biography
+  selfhelp
+  history
+  fantasy
+  science
+  romance
+  thriller
+  mystery
+  poetry
+  children
+  youngadult
+  health
+  religion
+  business
+  education
+  travel
+}
 model Company{
 id String @id 
 companyName String
@@ -86,7 +111,7 @@ isVerified Boolean @default(false)
 
 title String?
 language String?
-categories String?
+categories Categories?
 date DateTime?
 ISBNDOIISRC String?
 synopsis String? @db.LongText
@@ -101,6 +126,7 @@ audioSampleURL String?
 pdfURL String?
 rightsHolder Boolean?
 coverImage String?
+amount Int @default(0) // default amount is 0
 books               Book[]
 }
 
@@ -114,6 +140,7 @@ idppPdfUrl String
 kraPin String
 kraPinPdfUrl String
 writersGuildNo String?
+amount Int  @default(0) // default amount is 0
 isVerified Boolean @default(false)
 
   // Add a foreign key to reference the user
@@ -124,7 +151,7 @@ user                  User     @relation(fields: [userId], references: [id])
 
 title String?
 language String?
-categories String?
+categories Categories?
 date DateTime?
 ISBNDOIISRC String?
 synopsis String? @db.LongText

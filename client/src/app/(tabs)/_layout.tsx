@@ -6,9 +6,11 @@ import MiniPlayer from '@/store/Miniplayer';
 import { AntDesign } from '@expo/vector-icons';
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
+import { RevenueCatProvider } from '../../../providers/RevenueCat';
 
 const TabsLayout = () => {
     return (
+        <RevenueCatProvider>
         <View style={styles.container}>
             {/* Bottom Tab Navigator */}
             <Tabs screenOptions={{
@@ -61,7 +63,8 @@ const TabsLayout = () => {
 
             {/* Mini Player Positioned on Top of the Tabs */}
             <MiniPlayer style={styles.miniPlayer} />
-        </View>
+        </View>     
+         </RevenueCatProvider>
     )
 }
 

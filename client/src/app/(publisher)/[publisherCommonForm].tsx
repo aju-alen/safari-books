@@ -13,6 +13,7 @@ import { Audio } from 'react-native-compressor'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import * as ImagePicker from 'expo-image-picker'
 import * as ImageManipulator from 'expo-image-manipulator'
+import {BookCategoryLabels} from '../../utils/categoriesdata'
 
 
 const publisherCommonForm = () => {
@@ -37,6 +38,7 @@ const publisherCommonForm = () => {
     const [imageURL, setImageURL] = useState('');
     const [audioSample, setAudioSample] = useState({})
     const [audioCompressURL, setAudioCompressURL] = useState('')
+    const [amount, setAmount] = useState('');
 
     const [doc1, setDoc1] = useState(null);
     const [rightsHolder, setRightsHolder] = useState(false)
@@ -292,7 +294,8 @@ console.log(publisherCommonForm,'companyId in document submit');
                 audioSampleURL: audioData.data,
                 pdfURL: docData.data[0],
                 rightsHolder: rightsHolder,
-                coverImage: imageURL
+                coverImage: imageURL,
+                amount: amount,
             }
     
             console.log(data, 'data');
@@ -343,8 +346,17 @@ console.log(publisherCommonForm,'companyId in document submit');
                                   style={styles.picker}
                                   selectedValue={categories}
                                   onValueChange={(itemValue) => setCategories(itemValue)}>
-                                  <Picker.Item style={styles.pickerItem} label="Select a category" value="none" />
-                                  <Picker.Item style={styles.pickerItem} label="Biographies & Memoirs" value="biographiesmemoirs" />
+                                  <Picker.Item style={styles.pickerItem} label="Select a category" value="none" color='white' />
+                                  {Object.entries(BookCategoryLabels).map(([value, label]) => (
+                                      <Picker.Item 
+                                        color='white'
+                                          key={value} 
+                                          style={styles.pickerItem} 
+                                          label={label} 
+                                          value={value} 
+
+                                      />
+                                  ))}
                                   {/* ... other picker items ... */}
                               </Picker>
                           </View>
@@ -393,6 +405,16 @@ console.log(publisherCommonForm,'companyId in document submit');
                               numberOfLines={4}
                               value={synopsis}
                               onChangeText={setSynopsis}
+                              style={styles.textArea}
+                          />
+                      </View>
+                      <View style={styles.inputContainer}>
+                          <Text style={styles.label}>Enter Your Price</Text>
+                          <TextInput
+                              placeholder="Enter Your Price"
+                              placeholderTextColor="#A0A0A0"
+                              value={amount}
+                              onChangeText={setAmount}
                               style={styles.textArea}
                           />
                       </View>
