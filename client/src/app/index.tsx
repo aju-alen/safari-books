@@ -1,84 +1,15 @@
 import { StatusBar } from "expo-status-bar";
-import { StyleSheet, Text, Animated, View, Pressable, Image, Dimensions } from 'react-native';
+import { StyleSheet, Text, View, Pressable, Dimensions } from 'react-native';
 import { router } from "expo-router";
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import * as SecureStore from 'expo-secure-store';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 
 const { width, height } = Dimensions.get('window');
 
 const App = () => {
-  const scaleValue = useRef(new Animated.Value(1)).current;
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const gradientAnim = useRef(new Animated.Value(0)).current;
-
-  // Enhanced button animation
-  const animateButton = () => {
-    Animated.sequence([
-      Animated.spring(scaleValue, {
-        toValue: 0.95,
-        useNativeDriver: true,
-        damping: 15,
-        stiffness: 300,
-      }),
-      Animated.spring(scaleValue, {
-        toValue: 1,
-        useNativeDriver: true,
-        damping: 15,
-        stiffness: 300,
-      }),
-    ]).start(() => {
-      router.replace('/(authenticate)/chooseRole');
-    });
-  };
-
-  // Fade-in animation for text
-  useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 1000,
-      useNativeDriver: true,
-    }).start();
-  }, []);
-
-  // Add gradient animation
-  useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(gradientAnim, {
-          toValue: 1,
-          duration: 3000,
-          useNativeDriver: false,
-        }),
-        Animated.timing(gradientAnim, {
-          toValue: 0,
-          duration: 3000,
-          useNativeDriver: false,
-        }),
-      ])
-    ).start();
-  }, []);
-
-  // Add pulse animation to app name
-  useEffect(() => {
-    const pulseAnimation = Animated.loop(
-      Animated.sequence([
-        Animated.timing(scaleValue, {
-          toValue: 1.05,
-          duration: 1500,
-          useNativeDriver: true,
-        }),
-        Animated.timing(scaleValue, {
-          toValue: 1,
-          duration: 1500,
-          useNativeDriver: true,
-        }),
-      ])
-    );
-    pulseAnimation.start();
-  }, []);
-
   // Check user role
   useEffect(() => {
     const checkUser = async () => {
@@ -95,6 +26,10 @@ const App = () => {
     checkUser();
   }, []);
 
+  const handleGetStarted = () => {
+    router.replace('/(authenticate)/chooseRole');
+  };
+
   return (
     <SafeAreaProvider>
       <StatusBar style="light" />
@@ -103,73 +38,34 @@ const App = () => {
         locations={[0, 0.4, 1]}
         style={styles.container}
       >
-        <Animated.View style={[{ transform: [{ scale: scaleValue }] }, styles.content]}>
-          {/* App Logo */}
-          {/* <Image
-            source={require('@/assets/images/safari-books-logo.png')} // Replace with your logo
-            style={styles.logo}
-          /> */}
+        <View style={styles.content}>
+          {/* App Name */}
+          <Text style={styles.appName}>Safari Books</Text>
+          <Text style={styles.tagline}>Audiobooks for Everyone</Text>
 
-          {/* App Name with scale animation */}
-          <Animated.Text style={[styles.appName, { opacity: fadeAnim }]}>
-            Safari Books
-          </Animated.Text>
+          {/* App Description */}
+          <Text style={styles.description}>
+            Discover, listen, and publish audiobooks. Safari Books is your gateway to a world of stories and knowledge.
+          </Text>
 
-          {/* Tagline */}
-          <Animated.Text style={[styles.tagline, { opacity: fadeAnim }]}>
-            Where Stories Come to Life
-          </Animated.Text>
-
-          {/* Updated Features Section */}
+          {/* Features */}
           <View style={styles.featuresContainer}>
-            {[
-              { icon: '🎙️', title: 'Publish', desc: 'Share your stories with the world' },
-              { icon: '🎧', title: 'Listen', desc: 'Dive into a world of audio stories' },
-              { icon: '🎭', title: 'Narrate', desc: 'Bring stories to life with your voice' }
-            ].map((feature, index) => {
-              const fadeInAnim = useRef(new Animated.Value(0)).current;
-              
-              useEffect(() => {
-                Animated.timing(fadeInAnim, {
-                  toValue: 1,
-                  duration: 1000,
-                  delay: 400 * index,
-                  useNativeDriver: true,
-                }).start();
-              }, []);
-
-              return (
-                <Animated.View 
-                  key={index}
-                  style={[
-                    styles.featureCard,
-                    {
-                      opacity: fadeInAnim,
-                      transform: [{
-                        translateY: fadeInAnim.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: [50, 0]
-                        })
-                      }]
-                    }
-                  ]}
-                >
-                  <Text style={styles.featureIcon}>{feature.icon}</Text>
-                  <Text style={styles.featureTitle}>{feature.title}</Text>
-                  <Text style={styles.featureDescription}>{feature.desc}</Text>
-                </Animated.View>
-              );
-            })}
+            <View style={styles.featureCard}>
+              <Ionicons name="mic-outline" size={28} color="#6366F1" style={{ marginBottom: 6 }} />
+              <Text style={styles.featureTitle}>Publish</Text>
+            </View>
+            <View style={styles.featureCard}>
+              <Ionicons name="headset-outline" size={28} color="#6366F1" style={{ marginBottom: 6 }} />
+              <Text style={styles.featureTitle}>Listen</Text>
+            </View>
+            <View style={styles.featureCard}>
+              <MaterialCommunityIcons name="account-voice" size={28} color="#6366F1" style={{ marginBottom: 6 }} />
+              <Text style={styles.featureTitle}>Narrate</Text>
+            </View>
           </View>
 
-          {/* Enhanced Get Started Button */}
-          <Pressable 
-            onPress={animateButton}
-            style={({pressed}) => [
-              styles.button,
-              pressed && styles.buttonPressed
-            ]}
-          >
+          {/* Get Started Button */}
+          <Pressable onPress={handleGetStarted} style={styles.button}>
             <LinearGradient
               colors={['#4F46E5', '#6366F1']}
               start={{x: 0, y: 0}}
@@ -179,7 +75,7 @@ const App = () => {
               <Text style={styles.buttonText}>Get Started</Text>
             </LinearGradient>
           </Pressable>
-        </Animated.View>
+        </View>
       </LinearGradient>
     </SafeAreaProvider>
   );
@@ -197,55 +93,49 @@ const styles = StyleSheet.create({
     paddingTop: height * 0.05,
     paddingBottom: 24,
   },
-  logo: {
-    width: 120,
-    height: 120,
-    marginBottom: 20,
-  },
   appName: {
-    fontSize: 44,
+    fontSize: 40,
     fontWeight: '800',
     color: '#FFFFFF',
-    marginBottom: 16,
+    marginBottom: 8,
     letterSpacing: 0.5,
     textAlign: 'center',
   },
   tagline: {
-    fontSize: 20,
-    color: '#E0E7FF',
+    fontSize: 18,
+    color: '#A5B4FC',
     textAlign: 'center',
-    marginBottom: 40,
+    marginBottom: 18,
     fontWeight: '500',
   },
-  featuresContainer: {
-    width: '100%',
-    marginBottom: 32,
-    paddingHorizontal: 16,
-  },
-  featureCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderRadius: 20,
-    padding: 16,
-    marginBottom: 12,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  featureIcon: {
-    fontSize: 32,
-    marginBottom: 12,
-  },
-  featureTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    marginBottom: 6,
-  },
-  featureDescription: {
-    fontSize: 14,
+  description: {
+    fontSize: 15,
     color: '#E0E7FF',
     textAlign: 'center',
-    lineHeight: 20,
+    marginBottom: 32,
+    lineHeight: 22,
+  },
+  featuresContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginBottom: 36,
+    width: '100%',
+  },
+  featureCard: {
+    flex: 1,
+    alignItems: 'center',
+    marginHorizontal: 8,
+    backgroundColor: 'rgba(255,255,255,0.07)',
+    borderRadius: 14,
+    paddingVertical: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.09)',
+  },
+  featureTitle: {
+    fontSize: 15,
+    color: '#FFFFFF',
+    fontWeight: '600',
+    marginTop: 2,
   },
   button: {
     width: '85%',
@@ -257,9 +147,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
-  },
-  buttonPressed: {
-    opacity: 0.9,
   },
   buttonGradient: {
     paddingVertical: 16,
