@@ -1,3 +1,4 @@
+import { COLORS, welcomeCOLOR } from '@/constants/tokens'
 import { defaultStyles } from '@/styles'
 import { FontAwesome5, MaterialIcons } from '@expo/vector-icons'
 import { router } from 'expo-router'
@@ -58,8 +59,8 @@ const PublisherHome = () => {
           <Text style={styles.welcomeText}>Welcome Back</Text>
           <Text style={styles.publisherName}>Publisher Dashboard</Text>
         </View>
-        <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
-          <MaterialIcons name="logout" size={22} color="white" />
+        <TouchableOpacity onPress={() => router.push(`/(publisher)/settings`)} style={styles.logoutButton}>
+          <MaterialIcons name="settings" size={22} color={welcomeCOLOR.white} />
         </TouchableOpacity>
       </View>
 
@@ -155,7 +156,7 @@ const PublisherHome = () => {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#0F172A', // Darker blue background
+    backgroundColor: COLORS.background, // Darker blue background
   },
   header: {
     flexDirection: 'row',

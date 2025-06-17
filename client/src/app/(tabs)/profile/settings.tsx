@@ -1,5 +1,5 @@
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { defaultStyles } from '@/styles'
 import * as SecureStore from 'expo-secure-store';
@@ -8,6 +8,19 @@ import {  Ionicons } from '@expo/vector-icons';
 import { COLORS } from '@/constants/tokens';
 
 const SettingsPage = () => {
+
+  const [userData, setUserData] = useState<any>(null);
+
+  useEffect(() => {
+    const checkUser = async () => {
+      let userDetail = await SecureStore.getItemAsync('userDetails');
+      if (!userDetail) return;
+      const userData = JSON.parse(userDetail);
+      setUserData(userData);
+    };
+    checkUser();
+  }, []);
+
   const menuItems = [
     {
       title: 'Personal Information',
@@ -55,6 +68,18 @@ const SettingsPage = () => {
             </View>
           </TouchableOpacity>
         ))}
+        {userData?.role === 'PUBLISHER' && <TouchableOpacity 
+            style={styles.menuItem}
+            onPress={() => router.replace('/(publisher)/publisherhome')}
+          >
+            <View style={styles.menuItemContent}>
+              <View style={styles.menuItemLeft}>
+                <Ionicons name="person-outline" size={24} color="rgba(255, 255, 255, 0.7)" />
+                <Text style={styles.menuItemText}>Switch to Publisher</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="rgba(255, 255, 255, 0.4)" />
+            </View>
+          </TouchableOpacity>}
       </View>
 
       <View style={styles.logoutContainer}>

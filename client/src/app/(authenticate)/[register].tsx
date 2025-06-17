@@ -22,7 +22,7 @@ import { ipURL } from '../../utils/backendURL';
 import { horizontalScale, moderateScale, verticalScale } from '../../utils/responsiveSize';
 
 const RegisterPage = () => {
-  const { register } = useLocalSearchParams();
+  const { register } = useLocalSearchParams<{ register: string }>();
   const [formAnimation] = useState(new Animated.Value(0));
 
   const [formData, setFormData] = useState({
@@ -162,7 +162,7 @@ const RegisterPage = () => {
             ]}>
               <Text style={styles.headerTitle}>Create Account</Text>
               <Text style={styles.headerSubtitle}>
-                Join our community of {register.toLowerCase()}s
+                Join our community of {register?.toLowerCase() || ''}s
               </Text>
             </Animated.View>
 
@@ -188,7 +188,7 @@ const RegisterPage = () => {
                 onPress={handleRegister}
               >
                   {loading? 
-                  <ActivityIndicator/>
+                  <ActivityIndicator color={welcomeCOLOR.white}/>
                   :
                   <Text style={styles.buttonText}>Create Account</Text>
                   }

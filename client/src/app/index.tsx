@@ -29,7 +29,7 @@ const App = () => {
         stiffness: 300,
       }),
     ]).start(() => {
-      router.push('/(authenticate)/chooseRole');
+      router.replace('/(authenticate)/chooseRole');
     });
   };
 
@@ -87,9 +87,9 @@ const App = () => {
       if (!userDetail) return;
       const userData = JSON.parse(userDetail);
       if (userData.role === 'PUBLISHER') {
-        router.push('/(publisher)/:home');
+        router.replace('/(publisher)/publisherhome');
       } else if (userData.role === 'LISTENER') {
-        router.push('/(tabs)/home');
+        router.replace('/(tabs)/home');
       }
     };
     checkUser();
