@@ -71,28 +71,58 @@ const sendVerificationEmail = async (email, verificationToken, name) => {
         to: email,
         subject: 'Verify Your Email Address',
         html: `
-    <html>
-    <body>
-        <div>
-
-          
-            <p>Safari Books</p>
-
-        </div>
-        <div>
-            <p>Hi ${name},</p>
-            <p>You're almost there.</p>
-            <br>
-            <p>We just need to verify your email address before you can access your Safari Books account. Verifying your email address helps secure your account.</p>
-            <br>
-            <p><a href="${backendUrl}/api/auth/verify/${verificationToken}">VERIFY YOUR EMAIL</a></p>
-            <br>
-            <p>Cannot verify your email by clicking the button? Copy and paste the URL into your browser to verify your email.</p>
-            <br>
-            <p>${backendUrl}/api/auth/verify/${verificationToken}</p>
-        </div>
-    </body>
-    </html>`
+<html>
+  <body style="margin:0;padding:0;background:#f6f8fa;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background:#f6f8fa;padding:40px 0;">
+      <tr>
+        <td align="center">
+          <table width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.07);padding:32px;">
+            <tr>
+              <td align="center" style="padding-bottom:24px;">
+                <img src="https://safari-books-mobile.s3.ap-south-1.amazonaws.com/Assets/sbLogo.png" alt="Safari Books" width="60" style="border-radius:8px;" />
+                <h2 style="font-family:sans-serif;color:#4A4DFF;margin:16px 0 0 0;">Safari Books</h2>
+              </td>
+            </tr>
+            <tr>
+              <td style="font-family:sans-serif;color:#222;font-size:18px;padding-bottom:8px;">
+                Hi ${name},
+              </td>
+            </tr>
+            <tr>
+              <td style="font-family:sans-serif;color:#444;font-size:16px;padding-bottom:16px;">
+                You're almost there!<br>
+                Please verify your email address to activate your Safari Books account.
+              </td>
+            </tr>
+            <tr>
+              <td align="center" style="padding-bottom:24px;">
+                <a href="${backendUrl}/api/auth/verify/${verificationToken}" 
+                   style="display:inline-block;padding:14px 32px;background:#4A4DFF;color:#fff;font-size:16px;font-weight:bold;border-radius:6px;text-decoration:none;letter-spacing:1px;">
+                  VERIFY YOUR EMAIL
+                </a>
+              </td>
+            </tr>
+            <tr>
+              <td style="font-family:sans-serif;color:#888;font-size:14px;padding-bottom:8px;">
+                If the button above doesn't work, copy and paste this link into your browser:
+              </td>
+            </tr>
+            <tr>
+              <td style="font-family:monospace;color:#4A4DFF;font-size:13px;word-break:break-all;">
+                ${backendUrl}/api/auth/verify/${verificationToken}
+              </td>
+            </tr>
+            <tr>
+              <td style="font-family:sans-serif;color:#bbb;font-size:12px;padding-top:32px;text-align:center;">
+                &copy; ${new Date().getFullYear()} Safari Books. All rights reserved.
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`
     }
 
     //send the mail
@@ -132,7 +162,30 @@ export const verifyEmail = async (req, res) => {
         await prisma.$disconnect()
             sendWelcomeEmail(updatedUser.email, updatedUser.name);
         console.log(updatedUser, 'updatedUser');
-        res.status(200).send("Your email has been verified!")
+        res.status(200).send(`
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Account Verified | Safari Books</title>
+</head>
+<body style="background:#f6f8fa;margin:0;padding:0;font-family:'Segoe UI','Roboto',Arial,sans-serif;">
+  <div style="max-width:400px;margin:60px auto;background:#fff;border-radius:16px;box-shadow:0 2px 12px rgba(74,77,255,0.08);padding:40px 32px 32px 32px;text-align:center;">
+    <div style="font-size:56px;color:#4A4DFF;margin-bottom:16px;">✅</div>
+    <div style="font-size:2rem;color:#222;margin-bottom:8px;font-weight:700;">Account Verified!</div>
+    <div style="color:#555;font-size:1.1rem;margin-bottom:32px;">
+      Your email has been successfully verified.<br>
+      You can now log in and start exploring Safari Books.
+    </div>
+   
+    <div style="margin-top:32px;color:#bbb;font-size:0.9rem;">
+      &copy; <span id="year">${new Date().getFullYear()}</span> Safari Books. All rights reserved.
+    </div>
+  </div>
+</body>
+</html>
+`)
     }
     catch (err) {
         console.log(err);
@@ -148,30 +201,66 @@ const sendWelcomeEmail = async (email,name) => {
         to: email,
         subject: 'Welcome to Safari Books',
         html: `
-    <html>
-    <body>
-        <div>
-
-           
-            <p>Safari Books</p>
-
-        </div>
-        <div>
-            <p>welcome ${name},</p>
-            <p>With your Safari Books account you can sign in, create forms and send it to anyone you like without them having to sign up. It is that simple!.</p>
-            <br>
-            <p>The Safari Books Team</p>
-            <br>
-            <p><a href="${process.env.FRONTEND_URL}">View Your Safari Books Account</a></p>
-            <br>
-            <p>--------------------</p>
-            <p>Copyright © 2024, Safari Books, its licensors and distributors. All rights are reserved, including those for text and data mining.</p>
-            <br>
-            
-            <p>We use cookies to help provide and enhance our service. By continuing you agree to the use of cookies.</p>
-        </div>
-    </body>
-    </html>`
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Welcome to Safari Books</title>
+</head>
+<body style="background:#f6f8fa;margin:0;padding:0;font-family:'Segoe UI','Roboto',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f6f8fa;padding:40px 0;">
+    <tr>
+      <td align="center">
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.07);padding:32px;">
+          <tr>
+            <td align="center" style="padding-bottom:24px;">
+              <img src="https://safari-books-mobile.s3.ap-south-1.amazonaws.com/Assets/sbLogo.png" alt="Safari Books" width="60" style="border-radius:8px;" />
+              <h2 style="font-family:sans-serif;color:#4A4DFF;margin:16px 0 0 0;">Safari Books</h2>
+            </td>
+          </tr>
+          <tr>
+            <td style="font-family:sans-serif;color:#222;font-size:20px;padding-bottom:8px;">
+              Welcome, ${name}!
+            </td>
+          </tr>
+          <tr>
+            <td style="font-family:sans-serif;color:#444;font-size:16px;padding-bottom:16px;">
+              We're excited to have you join Safari Books.<br>
+              With your account, you can sign in, discover audiobooks, and enjoy a world of knowledge and stories.
+            </td>
+          </tr>
+          <tr>
+            <td align="center" style="padding-bottom:24px;">
+              <a href="${process.env.FRONTEND_URL}" 
+                 style="display:inline-block;padding:14px 32px;background:#4A4DFF;color:#fff;font-size:16px;font-weight:bold;border-radius:6px;text-decoration:none;letter-spacing:1px;">
+                View Your Safari Books Account
+              </a>
+            </td>
+          </tr>
+          <tr>
+            <td style="font-family:sans-serif;color:#888;font-size:14px;padding-bottom:8px;">
+              If the button above doesn't work, copy and paste this link into your browser:
+            </td>
+          </tr>
+          <tr>
+            <td style="font-family:monospace;color:#4A4DFF;font-size:13px;word-break:break-all;">
+              ${process.env.FRONTEND_URL}
+            </td>
+          </tr>
+          <tr>
+            <td style="font-family:sans-serif;color:#bbb;font-size:12px;padding-top:32px;text-align:center;">
+              &copy; ${new Date().getFullYear()} Safari Books. All rights reserved.<br>
+              We use cookies to help provide and enhance our service. By continuing you agree to the use of cookies.
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+`
     }
 
     //send the mail
