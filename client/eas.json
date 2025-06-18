@@ -21,21 +21,31 @@
     },
     "production": {
       "ios": {
-        "resourceClass": "m1-medium",
-        "distribution": "store"
+        "image": "macos-sequoia-15.3-xcode-16.2",
+        "autoIncrement": true
       },
       "android": {
         "buildType": "app-bundle"
       }
+    },
+    "development": {
+      "developmentClient": true
     }
   },
   "submit": {
     "production": {
+      "android": {
+        "serviceAccountKeyPath": "./expo-SB-ServiceAccount.json",
+        "track": "internal"
+      },
       "ios": {
         "appleId": "rightintellectual@gmail.com",
         "ascAppId": "6741313582",
         "appleTeamId": "46LHZT8BN9"
       }
     }
+  },
+  "cli": {
+    "appVersionSource": "local"
   }
 }

@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react';
-import { Platform } from 'react-native';
+import { Platform, View } from 'react-native';
 import Purchases, { LOG_LEVEL } from 'react-native-purchases';
 import { CustomerInfo } from 'react-native-purchases';
 
@@ -24,8 +24,6 @@ export const RevenueCatProvider = ({ children }: any) => {
     const init = async () => {
        console.log(APIKeys.apple,'api apple key');
       if (Platform.OS === 'android') {
-       
-        
         await Purchases.configure({ apiKey: APIKeys.google });
       } else {
         await Purchases.configure({ apiKey: APIKeys.apple });
@@ -55,7 +53,7 @@ export const RevenueCatProvider = ({ children }: any) => {
   };
 
   // Return empty fragment if provider is not ready (Purchase not yet initialised)
-  if (!isReady) return <></>;
+  if (!isReady) return <View></View>;
 
   return <RevenueCatContext.Provider value={value}>{children}</RevenueCatContext.Provider>;
 };
