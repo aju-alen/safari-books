@@ -3,11 +3,18 @@ import React from 'react'
 import { onboardingListenerData } from '@/utils/onboardingData'
 import OnboardingPublisherItem from '@/components/OnboardingPublisherItem'
 import { horizontalScale, moderateScale, verticalScale } from '@/utils/responsiveSize'
+import * as SecureStore from 'expo-secure-store'
 import Pageinator from '@/components/Pageinator'
 import { router } from 'expo-router'
 import { COLORS } from '@/constants/tokens'
 
 const listeneronboarding = () => {
+
+  const handleSkipOnboarding = async () => {
+    await SecureStore.setItemAsync('sb-onboarding', 'false');
+    router.push('/(tabs)/home');
+  }
+
   return (
     <View style ={styles.container}>
         <FlatList data={onboardingListenerData} 
@@ -20,7 +27,7 @@ const listeneronboarding = () => {
 
         />
         <Pageinator data={onboardingListenerData} />
-        <TouchableOpacity style={styles.buttonContainer} onPress={()=>router.push(`/(tabs)/home`)}>
+        <TouchableOpacity style={styles.buttonContainer} onPress={handleSkipOnboarding}>
             <Text>Skip Onboarding</Text>
         </TouchableOpacity>
     </View>

@@ -287,7 +287,7 @@ const styles = StyleSheet.create({
     elevation: 10,
     shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.3,
+
     shadowRadius: 8,
   },
   gradient: {
@@ -395,7 +395,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
+
     shadowRadius: 6,
     elevation: 5,
   },
@@ -461,7 +461,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
+
     shadowRadius: 6,
     elevation: 6,
   },

@@ -8,10 +8,10 @@ import {
   Dimensions,
   TouchableWithoutFeedback
 } from 'react-native';
+import { verticalScale, horizontalScale ,moderateScale} from "@/utils/responsiveSize";
 import { FONT } from '@/constants/tokens';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-
 const { width, height } = Dimensions.get('window');
 
 const options = [
@@ -34,9 +34,9 @@ const options = [
   {
     id: '3',
     title: 'Guest',
-    icon: '👶🏻',
+    icon: '👤',
     role: 'GUEST',
-    description: 'Explore the platform',
+    description: 'Explore the platform with limited features',
     gradient: ['#6B4EFF', '#B592FD']
   }
 ];
@@ -184,21 +184,21 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: 24, // Increased padding
-    paddingTop: height * 0.1, // More space at top
+    paddingHorizontal: horizontalScale(24), // Increased padding
+    paddingTop: verticalScale(height * 0.1), // More space at top
   },
   heading: {
     fontFamily: FONT.notoBold,
     color: '#fff',
-    fontSize: 36,
-    marginBottom: 12,
+    fontSize: moderateScale(36),
+    marginBottom: verticalScale(12),
     letterSpacing: 0.5,
   },
   subheading: {
     fontFamily: FONT.notoRegular,
     color: 'rgba(255,255,255,0.8)',
-    fontSize: 18,
-    marginBottom: height * 0.06,
+    fontSize: moderateScale(18),
+    marginBottom: verticalScale(height * 0.06),
     letterSpacing: 0.3,
   },
   cardsContainer: {
@@ -206,24 +206,24 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   card: {
-    width: width * 0.85,
-    height: height * 0.15,
-    marginBottom: 20,
-    borderRadius: 24,
+    width: horizontalScale(width * 0.85),
+    height: verticalScale(height * 0.15),
+    marginBottom: verticalScale(20),
+    borderRadius: moderateScale(24),
     overflow: 'hidden',
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 8,
     },
-    shadowOpacity: 0.44,
+    
     shadowRadius: 10.32,
     elevation: 16,
   },
   cardGradient: {
     flex: 1,
-    padding: 24,
-    borderRadius: 24,
+    padding: moderateScale(24),
+    borderRadius: moderateScale(24),
   },
   cardContent: {
     flexDirection: 'row',
@@ -231,7 +231,7 @@ const styles = StyleSheet.create({
   },
   cardTextContainer: {
     flex: 1,
-    marginLeft: 20,
+    marginLeft: horizontalScale(20),
   },
   cardDimmed: {
     opacity: 0.4,
@@ -239,33 +239,33 @@ const styles = StyleSheet.create({
   },
   selectedCard: {
     borderWidth: 3,
-    borderColor: '#fff',
+
   },
   cardIcon: {
-    fontSize: 38,
+    fontSize: moderateScale(38),
   },
   cardTitle: {
     fontFamily: FONT.notoBold,
     color: '#fff',
-    fontSize: 24,
-    marginBottom: 6,
+    fontSize: moderateScale(24),
+    marginBottom: verticalScale(6),
     letterSpacing: 0.5,
   },
   cardDescription: {
     fontFamily: FONT.notoRegular,
     color: 'rgba(255,255,255,0.9)',
-    fontSize: 16,
+    fontSize: moderateScale(16),
     letterSpacing: 0.3,
   },
   buttonContainer: {
     position: 'absolute',
-    bottom: 40,
-    left: 24,
-    right: 24,
+    bottom: verticalScale(40),
+    left: horizontalScale(24),
+    right: horizontalScale(24),
   },
   button: {
-    height: 56,
-    borderRadius: 28,
+    height: verticalScale(56),
+    borderRadius: moderateScale(28),
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: "#000",
@@ -273,15 +273,15 @@ const styles = StyleSheet.create({
       width: 0,
       height: 8,
     },
-    shadowOpacity: 0.44,
+    
     shadowRadius: 10.32,
     elevation: 16,
   },
   buttonText: {
     fontFamily: FONT.notoBold,
     color: '#fff',
-    fontSize: 18,
-    letterSpacing: 1,
+    fontSize: moderateScale(18),
+    letterSpacing: moderateScale(1),
   },
 });
 

@@ -6,8 +6,14 @@ import { horizontalScale, moderateScale, verticalScale } from '@/utils/responsiv
 import Pageinator from '@/components/Pageinator'
 import { router } from 'expo-router'
 import { COLORS } from '@/constants/tokens'
+import * as SecureStore from 'expo-secure-store'
 
 const publisheronboarding = () => {
+
+  const handleSkipOnboarding = async () => {
+    await SecureStore.setItemAsync('sb-onboarding', 'false');
+    router.push('/(publisher)/publisherHome');
+  }
   return (
     <View style ={styles.container}>
         <FlatList data={onboardingPublisherData} 
@@ -20,7 +26,7 @@ const publisheronboarding = () => {
 
         />
         <Pageinator data={onboardingPublisherData} />
-        <TouchableOpacity style={styles.buttonContainer} onPress={()=>router.push(`/(publisher)/publisherhome`)}>
+        <TouchableOpacity style={styles.buttonContainer} onPress={handleSkipOnboarding}>
             <Text>Skip Onboarding</Text>
         </TouchableOpacity>
     </View>

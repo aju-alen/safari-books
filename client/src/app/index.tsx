@@ -6,6 +6,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import * as SecureStore from 'expo-secure-store';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { verticalScale, horizontalScale ,moderateScale} from "@/utils/responsiveSize";
 
 const { width, height } = Dimensions.get('window');
 
@@ -51,15 +52,15 @@ const App = () => {
           {/* Features */}
           <View style={styles.featuresContainer}>
             <View style={styles.featureCard}>
-              <Ionicons name="mic-outline" size={28} color="#6366F1" style={{ marginBottom: 6 }} />
+              <Ionicons name="mic-outline" size={moderateScale(28)} color="#6366F1" style={{ marginBottom: 6 }} />
               <Text style={styles.featureTitle}>Publish</Text>
             </View>
             <View style={styles.featureCard}>
-              <Ionicons name="headset-outline" size={28} color="#6366F1" style={{ marginBottom: 6 }} />
+              <Ionicons name="headset-outline" size={moderateScale(28)} color="#6366F1" style={{ marginBottom: 6 }} />
               <Text style={styles.featureTitle}>Listen</Text>
             </View>
             <View style={styles.featureCard}>
-              <MaterialCommunityIcons name="account-voice" size={28} color="#6366F1" style={{ marginBottom: 6 }} />
+              <MaterialCommunityIcons name="account-voice" size={moderateScale(28)} color="#6366F1" style={{ marginBottom: 6 }} />
               <Text style={styles.featureTitle}>Narrate</Text>
             </View>
           </View>
@@ -89,74 +90,73 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingTop: height * 0.05,
-    paddingBottom: 24,
+    paddingHorizontal: horizontalScale(24),
+    paddingTop: verticalScale(height * 0.05),
+    paddingBottom: verticalScale(24),
   },
   appName: {
-    fontSize: 40,
+    fontSize: moderateScale(40),
     fontWeight: '800',
     color: '#FFFFFF',
-    marginBottom: 8,
+    marginBottom: verticalScale(8),
     letterSpacing: 0.5,
     textAlign: 'center',
   },
   tagline: {
-    fontSize: 18,
+    fontSize: moderateScale(18),
     color: '#A5B4FC',
     textAlign: 'center',
-    marginBottom: 18,
+    marginBottom: verticalScale(18),
     fontWeight: '500',
   },
   description: {
-    fontSize: 15,
+    fontSize: moderateScale(15),
     color: '#E0E7FF',
     textAlign: 'center',
-    marginBottom: 32,
-    lineHeight: 22,
+    marginBottom: verticalScale(32),
+    lineHeight: verticalScale(22),
   },
   featuresContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginBottom: 36,
+    marginBottom: verticalScale(36),
     width: '100%',
   },
   featureCard: {
     flex: 1,
     alignItems: 'center',
-    marginHorizontal: 8,
+    marginHorizontal: horizontalScale(8),
     backgroundColor: 'rgba(255,255,255,0.07)',
-    borderRadius: 14,
-    paddingVertical: 18,
+    borderRadius: moderateScale(14),
+    paddingVertical: verticalScale(18),
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.09)',
   },
   featureTitle: {
-    fontSize: 15,
+    fontSize: moderateScale(15),
     color: '#FFFFFF',
     fontWeight: '600',
-    marginTop: 2,
+    marginTop: verticalScale(2),
   },
   button: {
     width: '85%',
-    maxWidth: 280,
-    borderRadius: 25,
+    maxWidth: horizontalScale(280),
+    borderRadius: moderateScale(25),
     overflow: 'hidden',
-    elevation: 8,
+    elevation: moderateScale(8),
     shadowColor: '#4338CA',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    shadowRadius: moderateScale(8),
   },
   buttonGradient: {
-    paddingVertical: 16,
+    paddingVertical: verticalScale(16),
     alignItems: 'center',
   },
-  buttonText: {
-    fontSize: 18,
+  buttonText: { 
+    fontSize: moderateScale(18),
     fontWeight: '700',
     color: '#FFFFFF',
-    letterSpacing: 0.5,
+    letterSpacing: moderateScale(0.5),
   },
 });
 

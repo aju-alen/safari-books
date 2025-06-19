@@ -196,7 +196,7 @@ const SingleBookPage = () => {
               </TouchableOpacity>
               
               <TouchableOpacity style={styles.buyButton} onPress={handlePurchase}>
-                <Text style={styles.buyButtonText}>{isPro ? 'Listen Now' : `Buy for AED ${(singleBookData[0]?.amount / 100).toFixed(2)}`}</Text>
+                <Text style={styles.buyButtonText}>{isPro ? 'Listen Now' : `Subscribe to Listen`}</Text>
               </TouchableOpacity>
               
               <View style={styles.shareContainer}>
@@ -325,7 +325,7 @@ const styles = StyleSheet.create({
         borderRadius: moderateScale(12),
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
+
         shadowRadius: 8,
         elevation: 5,
       },

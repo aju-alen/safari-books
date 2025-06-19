@@ -327,7 +327,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
+
     shadowRadius: 30,
     elevation: 25,
     zIndex: -1,
@@ -400,7 +400,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
+
     shadowRadius: 15,
     elevation: 10,
   },

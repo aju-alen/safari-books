@@ -4,7 +4,6 @@ import { router } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import React, { useState } from 'react';
 import { Alert, Pressable, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View, ActivityIndicator } from 'react-native';
-import Button from '../../components/Button.tsx';
 import { COLORS, FONT, welcomeCOLOR } from '../../constants/tokens.ts';
 import { defaultStyles } from '../../styles/index.ts';
 import { ipURL } from '../../utils/backendURL.ts';
@@ -64,23 +63,31 @@ console.log(clickCount, 'this is click count');
             
             await SecureStore.setItemAsync("authToken",JSON.stringify({token:resp.data.token}));
             await SecureStore.setItemAsync("userDetails",JSON.stringify({role:resp.data.role,userId:resp.data.id,email:resp.data.email}));
-            const result = await SecureStore.getItemAsync("authToken");
-            const userDetails = await SecureStore.getItemAsync("userDetails");
 
-            if (resp.data.role === 'LISTENER') {
+            const sbOnboarding = await SecureStore.getItemAsync("sb-onboarding");
+            console.log(sbOnboarding, 'sbOnboarding');
+
+            if (resp.data.role === 'LISTENER' && sbOnboarding === null) {
                 router.replace('/(onboarding)/listeneronboarding');
             }
-            else if (resp.data.role === 'PUBLISHER') {
-                router.replace('/(onboarding)/publisheronboarding');
-                    
+            else if (resp.data.role === 'LISTENER' && sbOnboarding === 'false') {
+                router.replace('/(tabs)/home');
             }
+
+            else if (resp.data.role === 'PUBLISHER' && sbOnboarding === null) {
+                router.replace('/(onboarding)/publisheronboarding');
+            }
+            else if (resp.data.role === 'PUBLISHER' && sbOnboarding === 'false') {
+                router.replace('/(publisher)/publisherhome');
+            }
+
             setLoading(false);
         }
         catch (err) {
+            console.log('this is error');
             setLoading(false);
             console.log(err);
-            Alert.alert(err.response)
-            return;
+            Alert.alert(err.response.data.message)
         }
     }
 
