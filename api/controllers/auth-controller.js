@@ -231,12 +231,7 @@ const sendWelcomeEmail = async (email,name) => {
             </td>
           </tr>
           <tr>
-            <td align="center" style="padding-bottom:24px;">
-              <a href="${process.env.FRONTEND_URL}" 
-                 style="display:inline-block;padding:14px 32px;background:#4A4DFF;color:#fff;font-size:16px;font-weight:bold;border-radius:6px;text-decoration:none;letter-spacing:1px;">
-                View Your Safari Books Account
-              </a>
-            </td>
+          
           </tr>
           <tr>
             <td style="font-family:sans-serif;color:#888;font-size:14px;padding-bottom:8px;">
@@ -244,9 +239,7 @@ const sendWelcomeEmail = async (email,name) => {
             </td>
           </tr>
           <tr>
-            <td style="font-family:monospace;color:#4A4DFF;font-size:13px;word-break:break-all;">
-              ${process.env.FRONTEND_URL}
-            </td>
+          
           </tr>
           <tr>
             <td style="font-family:sans-serif;color:#bbb;font-size:12px;padding-top:32px;text-align:center;">
