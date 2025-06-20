@@ -132,12 +132,12 @@ export const publisherCompanyUpdate = async (req, res) => {
 }
 
 export const getAllAuthorData = async (req, res) => {
-    console.log(req.body.userId);
+    console.log(req.params.userId);
     
     try {
         const authorData = await prisma.author.findMany({
             where: {
-                userId: req.body.userId,
+                userId: req.params.userId,
             },
            select: {
             id: true,

@@ -65,9 +65,10 @@ model Book{
   // Add either a company or author as the creator
   companyId         String? 
   authorId          String?
+  featuredBook      Boolean @default(false)
 
-  company           Company? @relation(fields: [companyId], references: [id])
-  author            Author?  @relation(fields: [authorId], references: [id])
+  company           Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  author            Author?  @relation(fields: [authorId], references: [id], onDelete: Cascade)
 }
 
 enum Categories{
@@ -106,7 +107,7 @@ isVerified Boolean @default(false)
   userId                String   
 
   // Define the relationship with the User model
-  user                  User     @relation(fields: [userId], references: [id])
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
 
 title String?
@@ -147,7 +148,7 @@ isVerified Boolean @default(false)
 userId                String   
 
   // Define the relationship with the User model
-user                  User     @relation(fields: [userId], references: [id])
+user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
 title String?
 language String?

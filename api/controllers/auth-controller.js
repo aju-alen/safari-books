@@ -330,17 +330,68 @@ export const loginAdmin = async (req, res, next) => {
 }
 
 export const getUserById = async (req, res) => {
-    try{
+    try {
+        const { id } = req.params;
         const user = await prisma.user.findUnique({
-            where: {
-                id: req.params.id
+            where: { id },
+            select: {
+                id: true,
+                name: true,
+                email: true,
+                role: true,
+                emailVerified: true,
+                firstTimeLogin: true,
+                createdAt: true,
+                updatedAt: true
             }
         });
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
         await prisma.$disconnect();
-        res.status(200).json({ message: "User data fetched successfully", user });
+        res.status(200).json(user);
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "An error occurred while fetching user data" });
     }
-    catch(err){
-        console.log(err);
-        res.status(500).json({ message: "Internal server error", err });
+};
+
+export const deleteAccount = async (req, res) => {
+    try {
+        const { password } = req.body;
+        const userId = req.userId; // Get userId from JWT middleware
+
+        if (!password) {
+            return res.status(400).json({ message: "Password is required" });
+        }
+
+        // Find the user
+        const user = await prisma.user.findUnique({
+            where: { id: userId }
+        });
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        // Verify password
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+        if (!isPasswordValid) {
+            return res.status(401).json({ message: "Invalid password" });
+        }
+
+        // Delete the user (this will cascade delete companies, authors, and books)
+        await prisma.user.delete({
+            where: { id: userId }
+        });
+
+        await prisma.$disconnect();
+        
+        res.status(200).json({ message: "Account deleted successfully" });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "An error occurred while deleting the account" });
     }
-}
+};
