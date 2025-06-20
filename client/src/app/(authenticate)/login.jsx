@@ -5,13 +5,14 @@ import * as SecureStore from 'expo-secure-store';
 import React, { useState } from 'react';
 import { Alert, Pressable, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View, ActivityIndicator } from 'react-native';
 import { COLORS, FONT, welcomeCOLOR } from '../../constants/tokens.ts';
+import { useTheme } from '@/providers/ThemeProvider';
 import { defaultStyles } from '../../styles/index.ts';
 import { ipURL } from '../../utils/backendURL.ts';
 import { horizontalScale, moderateScale, verticalScale } from '../../utils/responsiveSize.ts';
 
 
 const LoginPage = () => {
-
+    const {theme} = useTheme()
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isPasswordShown, setIsPasswordShown] = useState(true);
@@ -93,7 +94,7 @@ console.log(clickCount, 'this is click count');
 
     return (
        
-        <SafeAreaView style={defaultStyles.container }>
+        <SafeAreaView style={[defaultStyles.container, { backgroundColor: theme.background }]}>
           
                 <View style={{ flex: 1, 
                     marginHorizontal: horizontalScale(22),
@@ -106,7 +107,7 @@ console.log(clickCount, 'this is click count');
                                 fontSize: moderateScale(22),
                                 fontWeight: 'bold',
                                 marginVertical: verticalScale(12),
-                                color: welcomeCOLOR.white
+                                color: theme.text
                             }}>
                                 Login to your account
                             </Text>
@@ -121,7 +122,7 @@ console.log(clickCount, 'this is click count');
                                 fontSize: moderateScale(16),
                                 fontWeight: "200",
                                 marginVertical: verticalScale(8),
-                                color: welcomeCOLOR.black,
+                                color: theme.text,
                                 fontFamily:FONT.RobotoLight
                                 
                             }}>Email address</Text>
@@ -129,23 +130,24 @@ console.log(clickCount, 'this is click count');
                             <View style={[{
                                 width: "100%",
                                 height: verticalScale(48),
-                                borderColor: welcomeCOLOR.black,
+                                borderColor: theme.border,
                                 borderWidth: moderateScale(1),
                                 borderRadius: moderateScale(8),
                                 alignItems: "center",
                                 justifyContent: "center",
-                                paddingLeft: horizontalScale(22)
+                                paddingLeft: horizontalScale(22),
+                                backgroundColor: theme.inputBackground
                             },]}>
                                 <TextInput
                                     placeholder="Enter Your Email"
-                                    placeholderTextColor="gray"
+                                    placeholderTextColor={theme.textMuted}
                                     autoCapitalize="none"
                                     value={email}
                                     onChangeText={setEmail}
                                     keyboardType='email-address'
                                     style={{
                                         width: "100%",
-                                        color: COLORS.white
+                                        color: theme.text
                                     }}
                                 />
                             </View>
@@ -157,28 +159,30 @@ console.log(clickCount, 'this is click count');
                             <Text style={{
                                 fontSize: moderateScale(16),
                                 fontWeight: "400",
-                                marginVertical: verticalScale(8)
+                                marginVertical: verticalScale(8),
+                                color: theme.text
                             }}>Password</Text>
 
                             <View style={[{
                                 width: "100%",
                                 height: verticalScale(48),
-                                borderColor: welcomeCOLOR.black,
+                                borderColor: theme.border,
                                 borderWidth: moderateScale(1),
                                 borderRadius: moderateScale(8),
                                 alignItems: "center",
                                 justifyContent: "center",
-                                paddingLeft: horizontalScale(22)
+                                paddingLeft: horizontalScale(22),
+                                backgroundColor: theme.inputBackground
                             },]}>
                                 <TextInput
                                     placeholder='Enter your password'
                                     value={password}
                                     onChangeText={setPassword}
-                                    placeholderTextColor="gray"
+                                    placeholderTextColor={theme.textMuted}
                                     secureTextEntry={isPasswordShown}
                                     style={{
                                         width: "100%",
-                                        color: COLORS.white
+                                        color: theme.text
                                     }}
                                 />
 
@@ -191,9 +195,9 @@ console.log(clickCount, 'this is click count');
                                 >
                                     {
                                         isPasswordShown == true ? (
-                                            <Ionicons name="eye-off" size={24} color={COLORS.secondary} />
+                                            <Ionicons name="eye-off" size={24} color={theme.primary} />
                                         ) : (
-                                            <Ionicons name="eye" size={24} color={COLORS.white} />
+                                            <Ionicons name="eye" size={24} color={theme.text} />
                                         )
                                     }
 
@@ -205,22 +209,22 @@ console.log(clickCount, 'this is click count');
                     <TouchableOpacity
 
                         filled
-                        color={COLORS.secondary
+                        color={theme.primary
                         }
                         style={{
                             padding: moderateScale(12),
-                            backgroundColor: COLORS.secondary,
+                            backgroundColor: theme.primary,
                             borderRadius: moderateScale(8),
                         }}
                         onPress={handleLogin}
                     >
                         {loading?
-                         <ActivityIndicator/>
+                         <ActivityIndicator color={theme.text}/>
                          :
                         <Text style={{
                             fontSize: moderateScale(16),
                             fontWeight: "bold",
-                            color: welcomeCOLOR.white,
+                            color: theme.white,
                         textAlign: "center"
                         }}>Login</Text>
                         }
@@ -236,7 +240,7 @@ console.log(clickCount, 'this is click count');
                     }}>
                         <Text style={{ 
                             fontSize: moderateScale(16),
-                             color: welcomeCOLOR.white,
+                             color: theme.text,
                                 fontFamily:FONT.RobotoLight
                              }}>Don't have an account?</Text>
                         <Pressable
@@ -244,7 +248,7 @@ console.log(clickCount, 'this is click count');
                         >
                             <Text style={{
                                 fontSize: moderateScale(16),
-                                color: COLORS.primary,
+                                color: theme.primary,
                                 fontWeight: "bold",
                                 marginLeft: horizontalScale(6)
                             }}>Register</Text>
@@ -261,7 +265,7 @@ console.log(clickCount, 'this is click count');
                 <Text style={{
                                 alignSelf: "center",
                                 fontSize: moderateScale(10),
-                                color: COLORS.primary,
+                                color: theme.primary,
                                 fontWeight: "bold",
                                 marginLeft: horizontalScale(6)
                             }}>Admin Panel</Text>
@@ -299,21 +303,18 @@ const styles = StyleSheet.create({
         paddingLeft: 10,
     },
     button: {
-        backgroundColor: '#1E90FF',
         padding: 10,
         borderRadius: 5,
         marginTop: 25,
         width: 150,
     },
     buttonText: {
-        color: 'white',
         fontWeight: 'bold',
         textAlign: 'center',
         fontSize: 22,
     },
     link: {
         marginTop: 10,
-        color: 'gray',
         textAlign: 'center',
         fontSize: 14,
     }

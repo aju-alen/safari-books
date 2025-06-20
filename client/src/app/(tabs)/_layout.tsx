@@ -1,4 +1,4 @@
-import { COLORS, FONTSIZE } from '@/constants/tokens';
+import {  FONTSIZE } from '@/constants/tokens';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -6,15 +6,17 @@ import MiniPlayer from '@/store/Miniplayer';
 import { AntDesign } from '@expo/vector-icons';
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { RevenueCatProvider } from '../../../providers/RevenueCat';
+import { RevenueCatProvider } from '../../providers/RevenueCat';
+import { useTheme } from '@/providers/ThemeProvider';
 
 const TabsLayout = () => {
+    const {theme} = useTheme()
     return (
         <RevenueCatProvider>
         <View style={styles.container}>
             {/* Bottom Tab Navigator */}
             <Tabs screenOptions={{
-                tabBarActiveTintColor: COLORS.primary,
+                tabBarActiveTintColor: theme.primary,
                 tabBarLabelStyle: {
                     fontSize: FONTSIZE.xSmall,
                     fontWeight: '500'
@@ -26,14 +28,14 @@ const TabsLayout = () => {
                     borderTopRightRadius: 20,
                     borderTopWidth: 0,
                     paddingTop: 8,
-                    backgroundColor: COLORS.background,
+                    backgroundColor: theme.background,
                 },
             }}>
                 <Tabs.Screen
                     name="home"
                     options={{
                         tabBarLabel: "Home",
-                        tabBarIcon: () => <AntDesign name="home" size={24} color={COLORS.primary} />
+                        tabBarIcon: () => <AntDesign name="home" size={24} color={theme.primary} />
                     }}
                 />
 
@@ -41,14 +43,14 @@ const TabsLayout = () => {
                     name="library"
                     options={{
                         tabBarLabel: "Library",
-                        tabBarIcon: () => <Ionicons name="library-outline" size={24} color={COLORS.primary} />
+                        tabBarIcon: () => <Ionicons name="library-outline" size={24} color={theme.primary} />
                     }}
                 />
                 <Tabs.Screen
                     name="discover"
                     options={{
                         tabBarLabel: "Discover",
-                        tabBarIcon: () => <AntDesign name="find" size={24} color={COLORS.primary} />
+                        tabBarIcon: () => <AntDesign name="find" size={24} color={theme.primary} />
                     }}
                 />
 
@@ -56,13 +58,13 @@ const TabsLayout = () => {
                     name="profile"
                     options={{
                         tabBarLabel: "Profile",
-                        tabBarIcon: () => <MaterialCommunityIcons name="face-man-profile" size={24} color={COLORS.primary} />
+                        tabBarIcon: () => <MaterialCommunityIcons name="face-man-profile" size={24} color={theme.primary} />
                     }}
                 />
             </Tabs>
 
             {/* Mini Player Positioned on Top of the Tabs */}
-            <MiniPlayer style={styles.miniPlayer} />
+            {/* <MiniPlayer style={styles.miniPlayer} /> */}
         </View>     
          </RevenueCatProvider>
     )

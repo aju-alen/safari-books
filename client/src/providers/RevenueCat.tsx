@@ -55,10 +55,17 @@ export const RevenueCatProvider = ({ children }: any) => {
   // Return empty fragment if provider is not ready (Purchase not yet initialised)
   if (!isReady) return <View></View>;
 
-  return <RevenueCatContext.Provider value={value}>{children}</RevenueCatContext.Provider>;
+  return (
+  <RevenueCatContext.Provider value={value}>
+    {children}
+  </RevenueCatContext.Provider>
+  )
 };
 
 // Export context for easy usage
 export const useRevenueCat = () => {
+  const context = useContext(RevenueCatContext);
+  console.log(context, 'context');
+  
   return useContext(RevenueCatContext) as RevenueCatProps;
 };

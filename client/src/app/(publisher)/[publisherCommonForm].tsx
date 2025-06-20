@@ -14,13 +14,20 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import * as ImagePicker from 'expo-image-picker'
 import * as ImageManipulator from 'expo-image-manipulator'
 import {BookCategoryLabels} from '../../utils/categoriesdata'
+import { useTheme } from '@/providers/ThemeProvider'
 
+interface AudioSample {
+  name: string;
+  size: number;
+  uri: string;
+  type: string;
+}
 
 const publisherCommonForm = () => {
     const {publisherCommonForm} = useLocalSearchParams()
     console.log(publisherCommonForm, 'params');
     const [token, setToken] = useState(null);
-
+    const {theme} = useTheme()
     const [title, setTitle] = useState('')
     const [language, setLanguage] = useState('')
     const [categories, setCategories] = useState({});
@@ -36,7 +43,7 @@ const publisherCommonForm = () => {
     const [narrationStyleOratoric, setNarrationStyleOratoric] = useState(false)
     const [image, setImage] = useState(null);
     const [imageURL, setImageURL] = useState('');
-    const [audioSample, setAudioSample] = useState({})
+    const [audioSample, setAudioSample] = useState<AudioSample | null>(null)
     const [audioCompressURL, setAudioCompressURL] = useState('')
     const [amount, setAmount] = useState('');
 
@@ -115,10 +122,10 @@ const publisherCommonForm = () => {
             uri: audioCompressURL,
             name: audioSample.name,
             type: audioSample.type
-        });
+        } as any);
         console.log(publisherCommonForm,'companyId');
         
-        formData.append('id', publisherCommonForm)
+        formData.append('id', publisherCommonForm as string)
 
         formData.append('userId', token)
 
@@ -173,9 +180,9 @@ const publisherCommonForm = () => {
         const url = `${ipURL}/api/s3/upload-to-aws`;
         const formData = new FormData();
         
-        if (doc1) formData.append('document1', { uri: doc1.uri, name: doc1.name, type: doc1.type });       
+        if (doc1) formData.append('document1', { uri: doc1.uri, name: doc1.name, type: doc1.type } as any);       
 
-        formData.append('id',publisherCommonForm,);
+        formData.append('id',publisherCommonForm as string);
 console.log(publisherCommonForm,'companyId in document submit');
 
         formData.append('userId',token);
@@ -239,8 +246,8 @@ console.log(publisherCommonForm,'companyId in document submit');
           uri: image,
           name: `photo.${fileType}`,
           type: `image/${fileType}`,
-        });
-        formData.append('id', publisherCommonForm);
+        } as any);
+        formData.append('id', publisherCommonForm as string);
         formData.append('userId', token);
     
         try {
@@ -313,11 +320,173 @@ console.log(publisherCommonForm,'companyId in document submit');
 
     }
 
-    
-
+    const styles = StyleSheet.create({
+      container: {
+          flex: 1,
+          backgroundColor: theme.background,
+      },
+      content: {
+          flex: 1,
+          padding: moderateScale(20),
+      },
+      headerContainer: {
+          marginBottom: verticalScale(30),
+      },
+      headerText: {
+          fontSize: moderateScale(28),
+          fontWeight: 'bold',
+          color: theme.text,
+          marginBottom: verticalScale(8),
+      },
+      subHeaderText: {
+          fontSize: moderateScale(16),
+          color: theme.textMuted,
+      },
+      formContainer: {
+          gap: verticalScale(20),
+      },
+      inputContainer: {
+          marginBottom: verticalScale(16),
+      },
+      label: {
+          fontSize: moderateScale(14),
+          color: theme.text,
+          marginBottom: verticalScale(8),
+          fontWeight: '500',
+      },
+      input: {
+          backgroundColor: theme.white,
+          borderRadius: moderateScale(8),
+          padding: moderateScale(12),
+          color: theme.text,
+          borderWidth: 1,
+          borderColor: theme.gray2,
+          fontSize: moderateScale(16),
+      },
+      textArea: {
+          backgroundColor: theme.white,
+          borderRadius: moderateScale(8),
+          padding: moderateScale(12),
+          color: theme.text,
+          height: verticalScale(100),
+          textAlignVertical: 'top',
+          borderWidth: 1,
+          borderColor: theme.gray2,
+          fontSize: moderateScale(16),
+      },
+      pickerContainer: {
+          backgroundColor: theme.white,
+          borderRadius: moderateScale(8),
+          borderWidth: 1,
+          borderColor: theme.gray2,   
+      },
+      picker: {
+          color: theme.text,
+      },
+      pickerItem: {
+          backgroundColor: theme.white,
+          color: theme.text,
+      },
+      checkboxGrid: {
+          gap: verticalScale(12),
+      },
+      checkboxRow: {
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          paddingHorizontal: horizontalScale(20),
+      },
+      checkboxItem: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: horizontalScale(8),
+      },
+      checkboxLabel: {
+          color: theme.text,
+          fontSize: moderateScale(14),
+      },
+      uploadSection: {
+          gap: verticalScale(12),
+      },
+      uploadButton: {
+          backgroundColor: theme.white,
+          padding: moderateScale(12),
+          borderRadius: moderateScale(8),
+          alignItems: 'center',
+          borderWidth: 1,
+          borderColor: theme.primary,
+          shadowColor: theme.text,
+          shadowOffset: {
+              width: 0,
+              height: 2,
+          },
+          shadowOpacity: 0.1,
+          shadowRadius: 3.84,
+          elevation: 5,
+      },
+      uploadButtonText: {
+          color: theme.text,
+          fontSize: moderateScale(14),
+          fontWeight: '500',
+      },
+      dateButton: {
+          backgroundColor: theme.white,
+          padding: moderateScale(12),
+          borderRadius: moderateScale(8),
+          alignItems: 'center',
+          borderWidth: 1,
+          borderColor: theme.gray2,
+          shadowColor: theme.text,
+          shadowOffset: {
+              width: 0,
+              height: 2,
+          },
+          shadowOpacity: 0.1,
+          shadowRadius: 3.84,
+          elevation: 5,
+      },
+      dateButtonText: {
+          color: theme.text,
+          fontSize: moderateScale(14),
+          fontWeight: '500',
+      },
+      rightsHolder: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: horizontalScale(8),
+          marginVertical: verticalScale(20),
+      },
+      rightsHolderText: {
+          color: theme.text,
+          fontSize: moderateScale(14),
+      },
+      submitButton: {
+          backgroundColor: theme.primary,
+          padding: moderateScale(16),
+          borderRadius: moderateScale(8),
+          alignItems: 'center',
+          marginTop: verticalScale(20),
+          shadowColor: theme.text,
+          shadowOffset: {
+              width: 0,
+              height: 2,
+          },
+          shadowOpacity: 0.25,
+          shadowRadius: 3.84,
+          elevation: 5,
+      },
+      submitButtonText: {
+          color: theme.white,
+          fontSize: moderateScale(16),
+          fontWeight: '600',
+      },
+      uploadButtonPrimary: {
+        backgroundColor: theme.primary,
+        borderColor: theme.primary,
+      },
+    });
 
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
           <ScrollView showsVerticalScrollIndicator={false}>
               <View style={styles.content}>
                   <View style={styles.headerContainer}>
@@ -342,14 +511,14 @@ console.log(publisherCommonForm,'companyId in document submit');
                           <View style={styles.pickerContainer}>
                               <Picker
                                   mode='dropdown'
-                                  dropdownIconColor="#FFFFFF"
+                                  dropdownIconColor={theme.text}
                                   style={styles.picker}
                                   selectedValue={categories}
                                   onValueChange={(itemValue) => setCategories(itemValue)}>
-                                  <Picker.Item style={styles.pickerItem} label="Select a category" value="none" color='white' />
+                                  <Picker.Item style={styles.pickerItem} label="Select a category" value="none" color={theme.text} />
                                   {Object.entries(BookCategoryLabels).map(([value, label]) => (
                                       <Picker.Item 
-                                        color='white'
+                                        color={theme.text}
                                           key={value} 
                                           style={styles.pickerItem} 
                                           label={label} 
@@ -400,7 +569,7 @@ console.log(publisherCommonForm,'companyId in document submit');
                           <Text style={styles.label}>Synopsis</Text>
                           <TextInput
                               placeholder="Enter Synopsis"
-                              placeholderTextColor="#A0A0A0"
+                              placeholderTextColor={theme.textMuted}
                               multiline={true}
                               numberOfLines={4}
                               value={synopsis}
@@ -412,7 +581,7 @@ console.log(publisherCommonForm,'companyId in document submit');
                           <Text style={styles.label}>Enter Your Price</Text>
                           <TextInput
                               placeholder="Enter Your Price"
-                              placeholderTextColor="#A0A0A0"
+                              placeholderTextColor={theme.textMuted}
                               value={amount}
                               onChangeText={setAmount}
                               style={styles.textArea}
@@ -468,7 +637,7 @@ console.log(publisherCommonForm,'companyId in document submit');
                               onPress={pickAudio}
                           >
                               <Text style={styles.uploadButtonText}>
-                                  {audioSample.name || 'Upload Audio Sample'}
+                                  {audioSample?.name || 'Upload Audio Sample'}
                               </Text>
                           </TouchableOpacity>
 
@@ -506,7 +675,7 @@ console.log(publisherCommonForm,'companyId in document submit');
                           <Checkbox
                               value={rightsHolder}
                               onValueChange={setRightsHolder}
-                              color={rightsHolder ? '#4A4DFF' : undefined}
+                              color={rightsHolder ? theme.primary : undefined}
                           />
                           <Text style={styles.rightsHolderText}>
                               I confirm that I am the rights holder
@@ -517,7 +686,7 @@ console.log(publisherCommonForm,'companyId in document submit');
                           style={styles.submitButton}
                           onPress={handleSubmit}
                       >
-                          {loading? <ActivityIndicator/>:
+                          {loading? <ActivityIndicator color={theme.white}/>:
                           <Text style={styles.submitButtonText}>
                               Submit Publication
                           </Text>}
@@ -529,163 +698,32 @@ console.log(publisherCommonForm,'companyId in document submit');
   )
 }
 
-const FormInput = ({ label, ...props }) => (
-  <View style={styles.inputContainer}>
-      <Text style={styles.label}>{label}</Text>
-      <TextInput
-          {...props}
-          placeholderTextColor="#A0A0A0"
-          style={styles.input}
-      />
-  </View>
-)
+const FormInput = ({ label, ...props }) => {
+  const {theme} = useTheme()
+  return (
+    <View style={{marginBottom: verticalScale(16)}}>
+        <Text style={{fontSize: moderateScale(14), color: theme.text, marginBottom: verticalScale(8), fontWeight: '500'}}>{label}</Text>
+        <TextInput
+            {...props}
+            placeholderTextColor={theme.textMuted}
+            style={{backgroundColor: theme.white, borderRadius: moderateScale(8), padding: moderateScale(12), color: theme.text, borderWidth: 1, borderColor: theme.gray2, fontSize: moderateScale(16)}}
+        />
+    </View>
+  )
+}
 
-const CheckboxItem = ({ label, value, onValueChange }) => (
-  <View style={styles.checkboxItem}>
-      <Checkbox
-          value={value}
-          onValueChange={onValueChange}
-          color={value ? '#4A4DFF' : undefined}
-      />
-      <Text style={styles.checkboxLabel}>{label}</Text>
-  </View>
-)
-
-const styles = StyleSheet.create({
-  container: {
-      flex: 1,
-      backgroundColor: '#000000',
-  },
-  content: {
-      flex: 1,
-      padding: moderateScale(20),
-  },
-  headerContainer: {
-      marginBottom: verticalScale(30),
-  },
-  headerText: {
-      fontSize: moderateScale(28),
-      fontWeight: 'bold',
-      color: '#FFFFFF',
-      marginBottom: verticalScale(8),
-  },
-  subHeaderText: {
-      fontSize: moderateScale(16),
-      color: '#A0A0A0',
-  },
-  formContainer: {
-      gap: verticalScale(20),
-  },
-  inputContainer: {
-      marginBottom: verticalScale(16),
-  },
-  label: {
-      fontSize: moderateScale(14),
-      color: '#FFFFFF',
-      marginBottom: verticalScale(8),
-      fontWeight: '500',
-  },
-  input: {
-      backgroundColor: '#1A1A1A',
-      borderRadius: moderateScale(8),
-      padding: moderateScale(12),
-      color: '#FFFFFF',
-      borderWidth: 1,
-      borderColor: '#333333',
-  },
-  textArea: {
-      backgroundColor: '#1A1A1A',
-      borderRadius: moderateScale(8),
-      padding: moderateScale(12),
-      color: '#FFFFFF',
-      height: verticalScale(100),
-      textAlignVertical: 'top',
-      borderWidth: 1,
-      borderColor: '#333333',
-  },
-  pickerContainer: {
-      backgroundColor: '#1A1A1A',
-      borderRadius: moderateScale(8),
-      borderWidth: 1,
-      borderColor: '#333333',
-  },
-  picker: {
-      color: '#FFFFFF',
-  },
-  pickerItem: {
-      backgroundColor: '#1A1A1A',
-      color: '#FFFFFF',
-  },
-  checkboxGrid: {
-      gap: verticalScale(12),
-  },
-  checkboxRow: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      paddingHorizontal: horizontalScale(20),
-  },
-  checkboxItem: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: horizontalScale(8),
-  },
-  checkboxLabel: {
-      color: '#FFFFFF',
-      fontSize: moderateScale(14),
-  },
-  uploadSection: {
-      gap: verticalScale(12),
-  },
-  uploadButton: {
-      backgroundColor: '#1A1A1A',
-      padding: moderateScale(12),
-      borderRadius: moderateScale(8),
-      alignItems: 'center',
-      borderWidth: 1,
-      borderColor: '#4A4DFF',
-  },
-  uploadButtonText: {
-      color: '#FFFFFF',
-      fontSize: moderateScale(14),
-  },
-  dateButton: {
-      backgroundColor: '#1A1A1A',
-      padding: moderateScale(12),
-      borderRadius: moderateScale(8),
-      alignItems: 'center',
-      borderWidth: 1,
-      borderColor: '#333333',
-  },
-  dateButtonText: {
-      color: '#FFFFFF',
-      fontSize: moderateScale(14),
-  },
-  rightsHolder: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: horizontalScale(8),
-      marginVertical: verticalScale(20),
-  },
-  rightsHolderText: {
-      color: '#FFFFFF',
-      fontSize: moderateScale(14),
-  },
-  submitButton: {
-      backgroundColor: '#4A4DFF',
-      padding: moderateScale(16),
-      borderRadius: moderateScale(8),
-      alignItems: 'center',
-      marginTop: verticalScale(20),
-  },
-  submitButtonText: {
-      color: '#FFFFFF',
-      fontSize: moderateScale(16),
-      fontWeight: '600',
-  },
-  uploadButtonPrimary: {
-    backgroundColor: '#4A4DFF',
-    borderColor: '#4A4DFF',
-  },
-});
+const CheckboxItem = ({ label, value, onValueChange }) => {
+  const {theme} = useTheme()
+  return (
+    <View style={{flexDirection: 'row', alignItems: 'center', gap: horizontalScale(8)}}>
+        <Checkbox
+            value={value}
+            onValueChange={onValueChange}
+            color={value ? theme.primary : undefined}
+        />
+        <Text style={{color: theme.text, fontSize: moderateScale(14)}}>{label}</Text>
+    </View>
+  )
+}
 
 export default publisherCommonForm;

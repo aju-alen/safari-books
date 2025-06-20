@@ -1,15 +1,17 @@
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { StyleSheet, Text, TouchableOpacity, View, Switch } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { defaultStyles } from '@/styles'
 import * as SecureStore from 'expo-secure-store';
 import { router } from 'expo-router';
 import {  Ionicons } from '@expo/vector-icons';
-import { COLORS } from '@/constants/tokens';
+import { COLORS, DARK_COLORS } from '@/constants/tokens';
+import { useTheme } from '@/providers/ThemeProvider';
 
 const SettingsPage = () => {
 
   const [userData, setUserData] = useState<any>(null);
+  const { theme, isDarkMode, toggleTheme } = useTheme();
 
   useEffect(() => {
     const checkUser = async () => {
@@ -36,6 +38,11 @@ const SettingsPage = () => {
       title: 'Analytics',
       icon: 'analytics-outline',
       onPress: () => {}
+    },
+    {
+      title: 'Delete Account',
+      icon: 'trash-outline',
+      onPress: () => router.push('/(tabs)/profile/deleteAccount')
     }
   ];
 
@@ -46,9 +53,9 @@ const SettingsPage = () => {
   }
 
   return (
-    <SafeAreaView style={[defaultStyles.container, styles.container]}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Settings</Text>
+    <SafeAreaView style={[defaultStyles.container, { backgroundColor: theme.background }]}>
+      <View style={[styles.header, { backgroundColor: theme.background }]}>
+        <Text style={[styles.headerTitle, { color: theme.text }]}>Settings</Text>
        
       </View>
 
@@ -56,28 +63,52 @@ const SettingsPage = () => {
         {menuItems.map((item, index) => (
           <TouchableOpacity 
             key={index}
-            style={styles.menuItem}
+            style={[styles.menuItem, { backgroundColor: theme.white }]}
             onPress={item.onPress}
           >
             <View style={styles.menuItemContent}>
               <View style={styles.menuItemLeft}>
-                <Ionicons name={item.icon} size={24} color="rgba(255, 255, 255, 0.7)" />
-                <Text style={styles.menuItemText}>{item.title}</Text>
+                <Ionicons name ={item.icon as keyof typeof Ionicons.glyphMap} size={24} color={theme.text} />
+                <Text style={[styles.menuItemText, { color: theme.text }]}>{item.title}</Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color="rgba(255, 255, 255, 0.4)" />
+              <Ionicons name="chevron-forward" size={20} color={theme.textMuted} />
             </View>
           </TouchableOpacity>
         ))}
+        
+        {/* Dark Mode Toggle */}
+        <View style={[styles.menuItem, { backgroundColor: theme.white }]}>
+          <View style={styles.menuItemContent}>
+            <View style={styles.menuItemLeft}>
+              <Ionicons 
+                name={isDarkMode ? "moon" : "sunny"} 
+                size={24} 
+                color={theme.text} 
+              />
+              <Text style={[styles.menuItemText, { color: theme.text }]}>
+                {isDarkMode ? 'Dark Mode' : 'Light Mode'}
+              </Text>
+            </View>
+            <Switch
+              value={isDarkMode}
+              onValueChange={toggleTheme}
+              trackColor={{ false: theme.gray2, true: theme.primary }}
+              thumbColor={isDarkMode ? theme.white : theme.white}
+              ios_backgroundColor={theme.gray2}
+            />
+          </View>
+        </View>
+
         {userData?.role === 'PUBLISHER' && <TouchableOpacity 
-            style={styles.menuItem}
+            style={[styles.menuItem, { backgroundColor: theme.white }]}
             onPress={() => router.replace('/(publisher)/publisherhome')}
           >
             <View style={styles.menuItemContent}>
               <View style={styles.menuItemLeft}>
-                <Ionicons name="person-outline" size={24} color="rgba(255, 255, 255, 0.7)" />
-                <Text style={styles.menuItemText}>Switch to Publisher</Text>
+                <Ionicons name="person-outline" size={24} color={theme.text} />
+                <Text style={[styles.menuItemText, { color: theme.text }]}>Switch to Publisher</Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color="rgba(255, 255, 255, 0.4)" />
+              <Ionicons name="chevron-forward" size={20} color={theme.textMuted} />
             </View>
           </TouchableOpacity>}
       </View>
@@ -85,10 +116,10 @@ const SettingsPage = () => {
       <View style={styles.logoutContainer}>
         <TouchableOpacity 
           onPress={handleLogout}
-          style={styles.logoutButton}
+          style={[styles.logoutButton, { backgroundColor: theme.primary, shadowColor: theme.primary }]}
         >
-          <Ionicons name="log-out-outline" size={20} color="#FFFFFF" style={styles.logoutIcon} />
-          <Text style={styles.logoutText}>Logout</Text>
+          <Ionicons name="log-out-outline" size={20} color={theme.white} style={styles.logoutIcon} />
+          <Text style={[styles.logoutText, { color: theme.white }]}>Logout</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -98,21 +129,16 @@ const SettingsPage = () => {
 export default SettingsPage
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: COLORS.background,
-  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 16,
-    backgroundColor: COLORS.background,
   },
   headerTitle: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#FFFFFF',
   },
   settingsButton: {
     padding: 8,
@@ -126,8 +152,15 @@ const styles = StyleSheet.create({
   menuItem: {
     marginBottom: 8,
     borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   menuItemContent: {
     flexDirection: 'row',
@@ -143,7 +176,6 @@ const styles = StyleSheet.create({
     marginLeft: 12,
     fontSize: 16,
     fontWeight: '500',
-    color: 'rgba(255, 255, 255, 0.9)',
   },
   logoutContainer: {
     flex: 1,
@@ -155,15 +187,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#6366F1',
     paddingVertical: 16,
     borderRadius: 28,
-    shadowColor: '#6366F1',
     shadowOffset: {
       width: 0,
       height: 4,
     },
-
     shadowRadius: 8,
     elevation: 5,
   },
@@ -171,7 +200,6 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   logoutText: {
-    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
   },

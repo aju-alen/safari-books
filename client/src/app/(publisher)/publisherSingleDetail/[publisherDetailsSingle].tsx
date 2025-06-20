@@ -9,8 +9,10 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { A } from '@expo/html-elements';
 import { WebView } from 'react-native-webview';
 import { Audio } from 'expo-av';
+import { useTheme } from '@/providers/ThemeProvider';
 
 const PublisherDetailsSingle = () => {
+  const { theme } = useTheme();
   const { publisherDetailsSingle } = useLocalSearchParams();
   const [singleData, setSingleData] = useState(null);
   const [sound, setSound] = useState(null);
@@ -66,50 +68,170 @@ const PublisherDetailsSingle = () => {
     }
   };
 
+  const styles = StyleSheet.create({
+    container: {
+      backgroundColor: theme.background,
+    },
+    contentContainer: {
+      padding: 20,
+    },
+    header: {
+      marginBottom: 20,
+    },
+    headerTitle: {
+      fontSize: 24,
+      fontWeight: 'bold',
+      color: theme.text,
+      textAlign: 'center',
+    },
+    detailCard: {
+      backgroundColor: theme.white,
+      borderRadius: 12,
+      padding: 16,
+      marginBottom: 12,
+      borderColor: theme.gray2,
+      borderWidth: 1,
+      shadowColor: theme.text,
+      shadowOffset: {
+        width: 0,
+        height: 2,
+      },
+      shadowOpacity: 0.1,
+      shadowRadius: 3.84,
+      elevation: 5,
+    },
+    cardTitle: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: theme.primary,
+      marginBottom: 4,
+    },
+    cardContent: {
+      fontSize: 14,
+      color: theme.text,
+      lineHeight: 20,
+    },
+    link: {
+      marginTop: 8,
+    },
+    linkText: {
+      color: theme.primary,
+      textDecorationLine: 'underline',
+      fontSize: 14,
+    },
+    backButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: theme.primary,
+      padding: 12,
+      borderRadius: 25,
+      marginTop: 20,
+      shadowColor: theme.primary,
+      shadowOffset: {
+        width: 0,
+        height: 2,
+      },
+      shadowOpacity: 0.25,
+      shadowRadius: 3.84,
+      elevation: 5,
+    },
+    backButtonText: {
+      color: theme.white,
+      fontSize: 16,
+      fontWeight: '600',
+      marginLeft: 8,
+    },
+    loadingContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    loadingText: {
+      color: theme.text,
+      fontSize: 18,
+      fontWeight: '600',
+    },
+    audioButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.primary,
+      padding: 10,
+      borderRadius: 8,
+      marginTop: 8,
+      shadowColor: theme.primary,
+      shadowOffset: {
+        width: 0,
+        height: 2,
+      },
+      shadowOpacity: 0.25,
+      shadowRadius: 3.84,
+      elevation: 5,
+    },
+    audioButtonText: {
+      color: theme.white,
+      marginLeft: 8,
+      fontSize: 14,
+      fontWeight: '500',
+    },
+    pdfContainer: {
+      height: 400,
+      marginTop: 8,
+      borderRadius: 8,
+      overflow: 'hidden',
+      borderWidth: 1,
+      borderColor: theme.gray2,
+    },
+    pdfView: {
+      flex: 1,
+      backgroundColor: theme.white,
+    },
+  });
+
   if (!singleData) {
     return (
-      <SafeAreaView style={[defaultStyles.container, styles.container]}>
+      <SafeAreaView style={[defaultStyles.container, styles.container, { backgroundColor: theme.background }]}>
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading Details...</Text>
+          <Text style={[styles.loadingText, { color: theme.text }]}>Loading Details...</Text>
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={[defaultStyles.container, styles.container]}>
+    <SafeAreaView style={[defaultStyles.container, styles.container, { backgroundColor: theme.background }]}>
       <ScrollView contentContainerStyle={styles.contentContainer}>
         <View style={styles.header}>
           {/* <Text style={styles.headerTitle}>Book Details</Text> */}
         </View>
 
         <View style={styles.detailCard}>
-          <Text style={styles.cardTitle}>Title:</Text>
-          <Text style={styles.cardContent}>{singleData?.title || 'N/A'}</Text>
+          <Text style={[styles.cardTitle, { color: theme.primary }]}>Title:</Text>
+          <Text style={[styles.cardContent, { color: theme.text }]}>{singleData?.title || 'N/A'}</Text>
         </View>
 
         <View style={styles.detailCard}>
-          <Text style={styles.cardTitle}>Language:</Text>
-          <Text style={styles.cardContent}>{singleData?.language || 'N/A'}</Text>
+          <Text style={[styles.cardTitle, { color: theme.primary }]}>Language:</Text>
+          <Text style={[styles.cardContent, { color: theme.text }]}>{singleData?.language || 'N/A'}</Text>
         </View>
 
         <View style={styles.detailCard}>
-          <Text style={styles.cardTitle}>Categories:</Text>
-          <Text style={styles.cardContent}>{singleData?.categories || 'N/A'}</Text>
+          <Text style={[styles.cardTitle, { color: theme.primary }]}>Categories:</Text>
+          <Text style={[styles.cardContent, { color: theme.text }]}>{singleData?.categories || 'N/A'}</Text>
         </View>
 
         <View style={styles.detailCard}>
-          <Text style={styles.cardTitle}>ISBN/DOI/ISRC:</Text>
-          <Text style={styles.cardContent}>{singleData?.ISBNDOIISRC || 'N/A'}</Text>
+          <Text style={[styles.cardTitle, { color: theme.primary }]}>ISBN/DOI/ISRC:</Text>
+          <Text style={[styles.cardContent, { color: theme.text }]}>{singleData?.ISBNDOIISRC || 'N/A'}</Text>
         </View>
 
         <View style={styles.detailCard}>
-          <Text style={styles.cardTitle}>Synopsis:</Text>
-          <Text style={styles.cardContent}>{singleData?.synopsis || 'N/A'}</Text>
+          <Text style={[styles.cardTitle, { color: theme.primary }]}>Synopsis:</Text>
+          <Text style={[styles.cardContent, { color: theme.text }]}>{singleData?.synopsis || 'N/A'}</Text>
         </View>
 
         <View style={styles.detailCard}>
-          <Text style={styles.cardTitle}>Audio Sample:</Text>
+          <Text style={[styles.cardTitle, { color: theme.primary }]}>Audio Sample:</Text>
           {singleData?.audioSampleURL ? (
             <TouchableOpacity 
               style={styles.audioButton} 
@@ -118,19 +240,19 @@ const PublisherDetailsSingle = () => {
               <MaterialIcons 
                 name={isPlaying ? "pause" : "play-arrow"} 
                 size={24} 
-                color="#FFFFFF" 
+                color={theme.white} 
               />
-              <Text style={styles.audioButtonText}>
+              <Text style={[styles.audioButtonText, { color: theme.white }]}>
                 {isPlaying ? 'Pause Audio' : 'Play Audio'}
               </Text>
             </TouchableOpacity>
           ) : (
-            <Text style={styles.cardContent}>No audio sample available</Text>
+            <Text style={[styles.cardContent, { color: theme.textMuted }]}>No audio sample available</Text>
           )}
         </View>
 
         <View style={styles.detailCard}>
-          <Text style={styles.cardTitle}>PDF Preview:</Text>
+          <Text style={[styles.cardTitle, { color: theme.primary }]}>PDF Preview:</Text>
           {singleData?.pdfURL ? (
             <View style={styles.pdfContainer}>
               <WebView
@@ -140,110 +262,17 @@ const PublisherDetailsSingle = () => {
               />
             </View>
           ) : (
-            <Text style={styles.cardContent}>No PDF available</Text>
+            <Text style={[styles.cardContent, { color: theme.textMuted }]}>No PDF available</Text>
           )}
         </View>
 
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <MaterialIcons name="arrow-back" size={24} color="#FFFFFF" />
-          <Text style={styles.backButtonText}>Go Back</Text>
+          <MaterialIcons name="arrow-back" size={24} color={theme.white} />
+          <Text style={[styles.backButtonText, { color: theme.white }]}>Go Back</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: '#000000',
-  },
-  contentContainer: {
-    padding: 20,
-  },
-  header: {
-    marginBottom: 20,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    textAlign: 'center',
-  },
-  detailCard: {
-    backgroundColor: '#1A1A1A',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    borderColor: '#2D2D2D',
-    borderWidth: 1,
-  },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#6366F1',
-    marginBottom: 4,
-  },
-  cardContent: {
-    fontSize: 14,
-    color: '#FFFFFF',
-  },
-  link: {
-    marginTop: 8,
-  },
-  linkText: {
-    color: '#4A4DFF',
-    textDecorationLine: 'underline',
-    fontSize: 14,
-  },
-  backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#4A4DFF',
-    padding: 12,
-    borderRadius: 25,
-    marginTop: 20,
-  },
-  backButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-    marginLeft: 8,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  audioButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#4A4DFF',
-    padding: 10,
-    borderRadius: 8,
-    marginTop: 8,
-  },
-  audioButtonText: {
-    color: '#FFFFFF',
-    marginLeft: 8,
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  pdfContainer: {
-    height: 400,
-    marginTop: 8,
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-  pdfView: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
-});
 
 export default PublisherDetailsSingle;

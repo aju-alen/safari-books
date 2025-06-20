@@ -4,6 +4,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import {  Stack } from 'expo-router'
 import { AudioProvider } from '@/store/AudioContext';
+import ThemeProvider from '@/providers/ThemeProvider';
 
 
 SplashScreen.preventAutoHideAsync();
@@ -43,6 +44,7 @@ const MainLayout = () => {
         return null;
       }
   return (
+      <ThemeProvider>
     <AudioProvider>
     <Stack>
     <Stack.Screen name='index' options={{ headerShown: false }} />
@@ -53,6 +55,7 @@ const MainLayout = () => {
     <Stack.Screen name='(admin)' options={{headerShown: false }} />
   </Stack>
   </AudioProvider>
+  </ThemeProvider>
   )
 }
 

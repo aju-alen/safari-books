@@ -5,7 +5,7 @@ import { defaultStyles } from '@/styles'
 import * as SecureStore from 'expo-secure-store';
 import { router } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { COLORS } from '@/constants/tokens';
+import { useTheme } from '@/providers/ThemeProvider';
 import { moderateScale, verticalScale } from '@/utils/responsiveSize';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -28,7 +28,7 @@ const { width } = Dimensions.get('window');
 
 const ProfilePage = () => {
   const [userDetails, setUserDetails] = useState(null);
-
+  const {theme} = useTheme()
   useEffect(() => {
     const getUserDetails = async () => {
       const details = await SecureStore.getItemAsync('authToken');
@@ -58,80 +58,86 @@ const ProfilePage = () => {
       icon: 'bookmark-outline', 
       label: 'My Library', 
       route: '/(tabs)/library',
-      color: '#4A4DFF'
+      color: theme.secondary
     },
     { 
       icon: 'heart-outline', 
       label: 'Favorites', 
       route: '/(tabs)/favorites',
-      color: '#FF3B30'
+      color: theme.tertiary
     },
     { 
       icon: 'download-outline', 
       label: 'Downloads', 
       route: '/(tabs)/downloads',
-      color: '#34C759'
+      color: theme.secondary2
     },
     { 
       icon: 'notifications-outline', 
       label: 'Notifications', 
       route: '/(tabs)/notifications',
-      color: '#FF9500'
+      color: theme.primary
     },
     { 
       icon: 'help-circle-outline', 
       label: 'Help & Support', 
       route: '/(tabs)/support',
-      color: '#5856D6'
+      color: theme.secondary
     },
   ];
 
   const SectionTitle = ({ title }: { title: string }) => (
     <View style={styles.sectionTitleContainer}>
-      <Text style={styles.sectionTitle}>{title}</Text>
-      <View style={styles.titleUnderline} />
+      <Text style={[styles.sectionTitle, { color: theme.text }]}>{title}</Text>
+      <View style={[styles.titleUnderline, { backgroundColor: theme.primary }]} />
     </View>
   );
 
   return (
-    <SafeAreaView style={[defaultStyles.container, styles.container]}>
+    <SafeAreaView style={[defaultStyles.container, { backgroundColor: theme.background }]}>
       <ScrollView 
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
         {/* Header with Gradient */}
-        <LinearGradient
-          colors={['rgba(74, 77, 255, 0.15)', 'rgba(74, 77, 255, 0.05)']}
-          style={styles.headerGradient}
+        <View
+
+          style={[styles.headerGradient, { backgroundColor: theme.background }]}
         >
           <View style={styles.header}>
-            <Text style={styles.headerTitle}>Profile</Text>
+            <Text style={[styles.headerTitle, { color: theme.text }]}>Profile</Text>
             <TouchableOpacity 
-              style={styles.settingsButton}
+              style={[styles.settingsButton, { 
+                backgroundColor: `${theme.primary}20`,
+                borderColor: `${theme.primary}30`
+              }]}
               onPress={() => router.push('/(tabs)/profile/settings')}
             >
-              <Ionicons name="settings-outline" size={24} color={COLORS.primary} />
+              <Ionicons name="settings-outline" size={24} color={theme.primary} />
             </TouchableOpacity>
           </View>
 
           {/* Profile Info */}
           <View style={styles.profileSection}>
             <View style={styles.profileInfo}>
-              <Text style={styles.userName}>{userDetails?.name || 'Guest User'}</Text>
-              <Text style={styles.userEmail}>{userDetails?.email || 'No Email'}</Text>
+              <Text style={[styles.userName, { color: theme.text }]}>{userDetails?.name || 'Guest User'}</Text>
+              <Text style={[styles.userEmail, { color: theme.textMuted }]}>{userDetails?.email || 'No Email'}</Text>
             </View>
           </View>
-        </LinearGradient>
+        </View>
 
         {/* Stats Cards */}
         <View style={styles.statsContainer}>
           {stats.map((stat, index) => (
-            <View key={index} style={styles.statCard}>
-              <View style={[styles.statIconContainer, { backgroundColor: `${COLORS.primary}20` }]}>
-                <Ionicons name={stat.icon} size={24} color={COLORS.primary} />
+            <View key={index} style={[styles.statCard, { 
+              backgroundColor: theme.white,
+              borderColor: theme.gray2
+            }]}>
+              <View style={[styles.statIconContainer, { backgroundColor: `${theme.primary}20` }]}>
+                <Ionicons name={stat.icon} size={24} color={theme.primary} />
               </View>
-              <Text style={styles.statValue}>{stat.value}</Text>
-              <Text style={styles.statLabel}>{stat.label}</Text>
+              <Text style={[styles.statValue, { color: theme.text }]}>{stat.value}</Text>
+              <Text style={[styles.statLabel, { color: theme.textMuted }]}>{stat.label}</Text>
             </View>
           ))}
         </View>
@@ -142,7 +148,10 @@ const ProfilePage = () => {
           {menuItems.map((item, index) => (
             <TouchableOpacity
               key={index}
-              style={styles.menuItem}
+              style={[styles.menuItem, { 
+                backgroundColor: theme.white,
+                borderColor: theme.gray2
+              }]}
               onPress={() => router.push(item.route)}
             >
               <View style={styles.menuItemContent}>
@@ -150,9 +159,9 @@ const ProfilePage = () => {
                   <View style={[styles.menuIconContainer, { backgroundColor: `${item.color}20` }]}>
                     <Ionicons name={item.icon} size={24} color={item.color} />
                   </View>
-                  <Text style={styles.menuItemText}>{item.label}</Text>
+                  <Text style={[styles.menuItemText, { color: theme.text }]}>{item.label}</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={24} color={COLORS.primary} />
+                <Ionicons name="chevron-forward" size={24} color={theme.primary} />
               </View>
             </TouchableOpacity>
           ))}
@@ -160,11 +169,14 @@ const ProfilePage = () => {
 
         {/* Logout Button */}
         <TouchableOpacity 
-          style={styles.logoutButton} 
+          style={[styles.logoutButton, { 
+            backgroundColor: `${theme.tertiary}20`,
+            borderColor: `${theme.tertiary}30`
+          }]} 
           onPress={handleLogout}
         >
-          <MaterialCommunityIcons name="logout" size={24} color="#FFFFFF" style={styles.logoutIcon} />
-          <Text style={styles.logoutText}>Logout</Text>
+          <MaterialCommunityIcons name="logout" size={24} color={theme.tertiary} style={styles.logoutIcon} />
+          <Text style={[styles.logoutText, { color: theme.tertiary }]}>Logout</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -174,9 +186,6 @@ const ProfilePage = () => {
 export default ProfilePage
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: '#000000',
-  },
   scrollContent: {
     paddingBottom: moderateScale(30),
   },
@@ -196,14 +205,11 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: moderateScale(28),
     fontWeight: '700',
-    color: '#FFFFFF',
   },
   settingsButton: {
     padding: moderateScale(12),
-    backgroundColor: 'rgba(99, 102, 241, 0.2)',
     borderRadius: moderateScale(15),
     borderWidth: 1,
-    borderColor: 'rgba(99, 102, 241, 0.3)',
   },
   profileSection: {
     paddingHorizontal: moderateScale(20),
@@ -214,12 +220,10 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: moderateScale(24),
     fontWeight: '600',
-    color: '#FFFFFF',
     marginBottom: moderateScale(4),
   },
   userEmail: {
     fontSize: moderateScale(16),
-    color: 'rgba(255, 255, 255, 0.6)',
   },
   statsContainer: {
     flexDirection: 'row',
@@ -230,12 +234,18 @@ const styles = StyleSheet.create({
   },
   statCard: {
     width: (width - moderateScale(60)) / 3,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderRadius: moderateScale(16),
     padding: moderateScale(15),
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   statIconContainer: {
     width: moderateScale(40),
@@ -248,12 +258,10 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: moderateScale(18),
     fontWeight: '600',
-    color: '#FFFFFF',
     marginBottom: moderateScale(4),
   },
   statLabel: {
     fontSize: moderateScale(12),
-    color: 'rgba(255, 255, 255, 0.6)',
     textAlign: 'center',
   },
   sectionTitleContainer: {
@@ -263,13 +271,11 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: moderateScale(24),
     fontWeight: '700',
-    color: '#FFFFFF',
     marginBottom: moderateScale(10),
   },
   titleUnderline: {
     height: 4,
     width: '25%',
-    backgroundColor: COLORS.primary,
     borderRadius: moderateScale(4),
   },
   menuContainer: {
@@ -278,9 +284,15 @@ const styles = StyleSheet.create({
   menuItem: {
     marginBottom: moderateScale(12),
     borderRadius: moderateScale(16),
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   menuItemContent: {
     flexDirection: 'row',
@@ -303,25 +315,21 @@ const styles = StyleSheet.create({
   menuItemText: {
     fontSize: moderateScale(16),
     fontWeight: '500',
-    color: '#FFFFFF',
   },
   logoutButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255, 59, 48, 0.2)',
     marginHorizontal: moderateScale(20),
     marginTop: moderateScale(20),
     paddingVertical: moderateScale(16),
     borderRadius: moderateScale(16),
     borderWidth: 1,
-    borderColor: 'rgba(255, 59, 48, 0.3)',
   },
   logoutIcon: {
     marginRight: moderateScale(8),
   },
   logoutText: {
-    color: '#FF3B30',
     fontSize: moderateScale(16),
     fontWeight: '600',
   },
