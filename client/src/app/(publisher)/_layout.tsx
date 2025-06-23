@@ -1,11 +1,12 @@
 import { defaultStyles } from '@/styles';
 import { View } from 'react-native';
 import { Stack } from 'expo-router';
+import { useTheme } from '@/providers/ThemeProvider';
 
 const PublisherLayout = () =>{
-
+    const {theme} = useTheme()
     return(
-        <View style={defaultStyles.container}>
+        <View style={[defaultStyles.container, { backgroundColor: theme.background }]}>
         <Stack>
             <Stack.Screen name='publisherhome' options={{ headerShown: false }} />
             <Stack.Screen name='publisherauthorForm' options={{ headerShown: false }} />

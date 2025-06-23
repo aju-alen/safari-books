@@ -20,8 +20,10 @@ import {
 import { COLORS, welcomeCOLOR } from '../../constants/tokens';
 import { ipURL } from '../../utils/backendURL';
 import { horizontalScale, moderateScale, verticalScale } from '../../utils/responsiveSize';
+import { useTheme } from '@/providers/ThemeProvider';
 
 const RegisterPage = () => {
+  const {theme} = useTheme()
   const { register } = useLocalSearchParams<{ register: string }>();
   const [formAnimation] = useState(new Animated.Value(0));
 
@@ -95,26 +97,33 @@ const RegisterPage = () => {
           opacity: formAnimation
         }
       ]}>
-        <Text style={styles.inputLabel}>
+        <Text style={[styles.inputLabel, { color: theme.textMuted }]}>
           {placeholder}
         </Text>
         <View style={[
           styles.inputContainer,
-          isFocused && styles.inputContainerFocused
+          { 
+            backgroundColor: theme.background,
+            borderColor: theme.textMuted
+          },
+          isFocused && {
+            borderColor: theme.primary,
+            backgroundColor: theme.white
+          }
         ]}>
           <Ionicons 
             name={icon} 
             size={20} 
-            color={isFocused ? COLORS.primary : welcomeCOLOR.grey} 
+            color={isFocused ? theme.primary : theme.textMuted} 
             style={styles.inputIcon}
           />
           <TextInput
             value={formData[field]}
             onChangeText={(value) => handleInputChange(field, value)}
             placeholder={`Enter your ${field.toLowerCase()}`}
-            placeholderTextColor={welcomeCOLOR.grey}
+            placeholderTextColor={theme.textMuted}
             secureTextEntry={isPassword && isPasswordShown}
-            style={styles.input}
+            style={[styles.input, { color: theme.text }]}
             autoCapitalize={field === 'email' ? 'none' : 'words'}
             keyboardType={field === 'email' ? 'email-address' : 'default'}
             onFocus={() => setFocusedField(field)}
@@ -128,7 +137,7 @@ const RegisterPage = () => {
               <Ionicons 
                 name={isPasswordShown ? "eye-off" : "eye"} 
                 size={24} 
-                color={welcomeCOLOR.grey}
+                color={theme.textMuted}
               />
             </TouchableOpacity>
           )}
@@ -138,7 +147,7 @@ const RegisterPage = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
@@ -160,8 +169,8 @@ const RegisterPage = () => {
                 opacity: formAnimation
               }
             ]}>
-              <Text style={styles.headerTitle}>Create Account</Text>
-              <Text style={styles.headerSubtitle}>
+              <Text style={[styles.headerTitle, { color: theme.text }]}>Create Account</Text>
+              <Text style={[styles.headerSubtitle, { color: theme.textMuted }]}>
                 Join our community of {register?.toLowerCase() || ''}s
               </Text>
             </Animated.View>
@@ -184,20 +193,20 @@ const RegisterPage = () => {
               }
             ]}>
               <TouchableOpacity
-                style={styles.registerButton}
+                style={[styles.registerButton, { backgroundColor: theme.primary }]}
                 onPress={handleRegister}
               >
                   {loading? 
-                  <ActivityIndicator color={welcomeCOLOR.white}/>
+                  <ActivityIndicator color={theme.white}/>
                   :
-                  <Text style={styles.buttonText}>Create Account</Text>
+                  <Text style={[styles.buttonText, { color: theme.white }]}>Create Account</Text>
                   }
               </TouchableOpacity>
 
               <View style={styles.loginContainer}>
-                <Text style={styles.loginText}>Already have an account?</Text>
+                <Text style={[styles.loginText, { color: theme.textMuted }]}>Already have an account?</Text>
                 <Pressable onPress={() => router.replace('/(authenticate)/login')}>
-                  <Text style={styles.loginLink}>Login</Text>
+                  <Text style={[styles.loginLink, { color: theme.primary }]}>Login</Text>
                 </Pressable>
               </View>
             </Animated.View>
@@ -211,7 +220,6 @@ const RegisterPage = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
   },
   keyboardView: {
     flex: 1,
@@ -229,42 +237,32 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: moderateScale(32),
     fontWeight: 'bold',
-    color: welcomeCOLOR.white,
     marginBottom: verticalScale(8),
   },
   headerSubtitle: {
     fontSize: moderateScale(16),
-    color: welcomeCOLOR.grey,
   },
   inputWrapper: {
     marginBottom: verticalScale(20),
   },
   inputLabel: {
     fontSize: moderateScale(14),
-    color: welcomeCOLOR.grey,
     marginBottom: verticalScale(8),
     marginLeft: horizontalScale(4),
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.05)',
     borderRadius: moderateScale(12),
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
     paddingHorizontal: horizontalScale(16),
     height: verticalScale(56),
-  },
-  inputContainerFocused: {
-    borderColor: COLORS.primary,
-    backgroundColor: 'rgba(255,255,255,0.08)',
   },
   inputIcon: {
     marginRight: horizontalScale(12),
   },
   input: {
     flex: 1,
-    color: welcomeCOLOR.white,
     fontSize: moderateScale(16),
   },
   passwordToggle: {
@@ -274,10 +272,8 @@ const styles = StyleSheet.create({
     marginTop: verticalScale(24),
   },
   registerButton: {
-
     padding: verticalScale(10),
     alignItems: 'center',
-    backgroundColor:COLORS.secondary,
     borderRadius: moderateScale(12),
   },
   gradient: {
@@ -285,7 +281,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   buttonText: {
-    color: welcomeCOLOR.white,
     fontSize: moderateScale(18),
     fontWeight: 'bold',
   },
@@ -296,11 +291,9 @@ const styles = StyleSheet.create({
     marginTop: verticalScale(24),
   },
   loginText: {
-    color: welcomeCOLOR.grey,
     fontSize: moderateScale(16),
   },
   loginLink: {
-    color: COLORS.primary,
     fontSize: moderateScale(16),
     fontWeight: 'bold',
     marginLeft: horizontalScale(8),

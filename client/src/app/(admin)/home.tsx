@@ -403,7 +403,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     shadowColor: '#4F46E5',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
+    
     shadowRadius: 8,
     elevation: 5,
   },
@@ -427,7 +427,7 @@ const styles = StyleSheet.create({
     width: '47%',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
+    
     shadowRadius: 8,
     elevation: 5,
     marginBottom: 4,
@@ -519,7 +519,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#1E293B',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
+    
     shadowRadius: 8,
     elevation: 5,
     borderLeftWidth: 4,

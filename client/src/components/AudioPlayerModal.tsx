@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Modal, Image, Alert } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { StyleSheet, View, Text, TouchableOpacity, Modal, Image, Alert, Animated, ScrollView, AppState } from 'react-native';
 import { Audio } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
 import { moderateScale, verticalScale, horizontalScale } from '@/utils/responsiveSize';
@@ -36,21 +36,87 @@ const AudioPlayer = ({
   const [sliderValue, setSliderValue] = useState(0);
   const [isBuffering, setIsBuffering] = useState(false);
   const [error, setError] = useState(null);
+  
+  // New state for enhanced functionality
+  const [isRepeat, setIsRepeat] = useState(false);
+  const [playbackRate, setPlaybackRate] = useState(1.0);
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [showTimer, setShowTimer] = useState(false);
+  const [timerOptions] = useState([15, 30, 45, 60, 90, 120]);
+  const [selectedTimer, setSelectedTimer] = useState(null);
+  const [timerId, setTimerId] = useState(null);
 
-console.log(audioUrl, 
-    bookCover, 
-    title, 
-    author );
+  // Animation refs
+  const spinAnimation = useRef(new Animated.Value(0)).current;
+  const pulseAnimation = useRef(new Animated.Value(1)).current;
+  const coverScaleAnimation = useRef(new Animated.Value(1)).current;
 
+  console.log(audioUrl, bookCover, title, author, 'audioUrl in playerrrr');
 
+  // Handle app state changes
+  useEffect(() => {
+    const handleAppStateChange = (nextAppState) => {
+      if (nextAppState === 'background' || nextAppState === 'inactive') {
+        // Pause audio when app goes to background
+        if (sound && isPlaying) {
+          sound.pauseAsync();
+        }
+      }
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+    return () => subscription?.remove();
+  }, [sound, isPlaying]);
+
+  // Handle modal visibility changes
   useEffect(() => {
     if (isVisible && audioUrl) {
       loadAudio();
+    } else {
+      // Stop and unload audio when modal is not visible
+      stopAndUnloadAudio();
     }
+    
     return () => {
-      unloadAudio();
+      stopAndUnloadAudio();
     };
   }, [isVisible, audioUrl]);
+
+  // Animation effects
+  useEffect(() => {
+    if (isBuffering) {
+      Animated.loop(
+        Animated.timing(spinAnimation, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        })
+      ).start();
+    } else {
+      spinAnimation.setValue(0);
+    }
+  }, [isBuffering]);
+
+  useEffect(() => {
+    if (isPlaying) {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnimation, {
+            toValue: 1.1,
+            duration: 1000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseAnimation, {
+            toValue: 1,
+            duration: 1000,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    } else {
+      pulseAnimation.setValue(1);
+    }
+  }, [isPlaying]);
 
   const loadAudio = async () => {
     if (!audioUrl) {
@@ -63,10 +129,9 @@ console.log(audioUrl,
       setIsBuffering(true);
       setError(null);
 
-      // Ensure proper audio mode is set
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: false,
-        staysActiveInBackground: true,
+        staysActiveInBackground: false, // Changed to false to stop background playback
         playsInSilentModeIOS: true,
         shouldDuckAndroid: true,
         playThroughEarpieceAndroid: false,
@@ -76,7 +141,7 @@ console.log(audioUrl,
         { uri: audioUrl },
         { shouldPlay: false },
         onPlaybackStatusUpdate,
-        true  // Set downloadFirst to true for better buffering
+        true
       );
       
       setSound(newSound);
@@ -89,17 +154,42 @@ console.log(audioUrl,
     }
   };
 
+  const stopAndUnloadAudio = async () => {
+    try {
+      if (sound) {
+        // Stop the audio first
+        await sound.stopAsync();
+        // Then unload it
+        await sound.unloadAsync();
+        setSound(null);
+        setIsPlaying(false);
+        setPosition(0);
+        setDuration(0);
+      }
+      // Clear any active timers
+      clearTimer();
+    } catch (error) {
+      console.error('Error stopping/unloading audio:', error);
+    }
+  };
+
   const onPlaybackStatusUpdate = (status) => {
     if (status.isLoaded) {
       setDuration(status.durationMillis);
       setPosition(status.positionMillis);
       setIsPlaying(status.isPlaying);
       setIsBuffering(status.isBuffering);
+      
+      // Handle repeat
+      if (isRepeat && status.didJustFinish) {
+        sound?.replayAsync();
+      }
     } else if (status.error) {
       console.error(`Playback error: ${status.error}`);
       setError(status.error);
     }
   };
+
   const unloadAudio = async () => {
     try {
       if (sound) {
@@ -129,12 +219,93 @@ console.log(audioUrl,
     }
   };
 
-
   const handleSeek = async (value) => {
     if (sound) {
       await sound.setPositionAsync(value * duration);
     }
     setSliderValue(value);
+  };
+
+  const handleRewind = async () => {
+    if (sound) {
+      const newPosition = Math.max(0, position - 10000); // 10 seconds back
+      await sound.setPositionAsync(newPosition);
+    }
+  };
+
+  const handleForward = async () => {
+    if (sound) {
+      const newPosition = Math.min(duration, position + 10000); // 10 seconds forward
+      await sound.setPositionAsync(newPosition);
+    }
+  };
+
+  const handleSkipBack = async () => {
+    if (sound) {
+      const newPosition = Math.max(0, position - 30000); // 30 seconds back
+      await sound.setPositionAsync(newPosition);
+    }
+  };
+
+  const handleSkipForward = async () => {
+    if (sound) {
+      const newPosition = Math.min(duration, position + 30000); // 30 seconds forward
+      await sound.setPositionAsync(newPosition);
+    }
+  };
+
+  const toggleRepeat = () => {
+    setIsRepeat(!isRepeat);
+  };
+
+  const toggleBookmark = () => {
+    setIsBookmarked(!isBookmarked);
+    Alert.alert(
+      isBookmarked ? 'Bookmark Removed' : 'Bookmark Added',
+      isBookmarked ? 'Bookmark has been removed' : 'Current position has been bookmarked'
+    );
+  };
+
+  const toggleTimer = () => {
+    setShowTimer(!showTimer);
+  };
+
+  const setTimer = (minutes) => {
+    clearTimer();
+    if (minutes > 0) {
+      const timer = setTimeout(() => {
+        if (sound && isPlaying) {
+          sound.pauseAsync();
+          Alert.alert('Timer', 'Playback stopped by timer');
+        }
+        setSelectedTimer(null);
+        setTimerId(null);
+      }, minutes * 60 * 1000);
+      
+      setSelectedTimer(minutes);
+      setTimerId(timer);
+      setShowTimer(false);
+    }
+  };
+
+  const clearTimer = () => {
+    if (timerId) {
+      clearTimeout(timerId);
+      setTimerId(null);
+    }
+    setSelectedTimer(null);
+  };
+
+  const changePlaybackRate = () => {
+    const rates = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0];
+    const currentIndex = rates.indexOf(playbackRate);
+    const nextIndex = (currentIndex + 1) % rates.length;
+    const newRate = rates[nextIndex];
+    
+    setPlaybackRate(newRate);
+    if (sound) {
+      sound.setRateAsync(newRate, true);
+    }
   };
 
   const formatTime = (milliseconds) => {
@@ -146,9 +317,14 @@ console.log(audioUrl,
   };
 
   const handleClose = async () => {
-    await unloadAudio();
+    await stopAndUnloadAudio();
     onClose();
   };
+
+  const spin = spinAnimation.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
 
   return (
     <Modal
@@ -160,27 +336,42 @@ console.log(audioUrl,
       <View style={styles.container}>
         <View style={styles.blurBackground} />
         
-        <View style={styles.content}>
-          <View style={styles.header}>
-            <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
-              <Ionicons name="chevron-down" size={28} color={COLORS.text} />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>Now Playing</Text>
-            <TouchableOpacity style={styles.menuButton}>
-              <Ionicons name="ellipsis-horizontal" size={24} color={COLORS.text} />
-            </TouchableOpacity>
-          </View>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
+            <Ionicons name="chevron-down" size={28} color={COLORS.text} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Now Playing</Text>
+          <TouchableOpacity style={styles.menuButton}>
+            <Ionicons name="ellipsis-horizontal" size={24} color={COLORS.text} />
+          </TouchableOpacity>
+        </View>
 
+        <ScrollView 
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
           <View style={styles.coverWrapper}>
-            <View style={styles.coverContainer}>
+            <Animated.View 
+              style={[
+                styles.coverContainer,
+                { transform: [{ scale: pulseAnimation }] }
+              ]}
+            >
               <Image source={{ uri: bookCover }} style={styles.coverImage} />
               <View style={styles.coverGlow} />
-            </View>
+              <View style={styles.coverOverlay} />
+            </Animated.View>
           </View>
 
           <View style={styles.infoContainer}>
             <Text style={styles.title} numberOfLines={1}>{title}</Text>
             <Text style={styles.author} numberOfLines={1}>{author}</Text>
+            {playbackRate !== 1.0 && (
+              <View style={styles.rateIndicator}>
+                <Text style={styles.rateText}>{playbackRate}x</Text>
+              </View>
+            )}
           </View>
 
           <View style={styles.progressContainer}>
@@ -193,7 +384,6 @@ console.log(audioUrl,
               minimumTrackTintColor={COLORS.accent}
               maximumTrackTintColor={COLORS.lightGray}
               thumbTintColor={COLORS.text}
-              thumbStyle={styles.sliderThumb}
             />
             <View style={styles.timeContainer}>
               <Text style={styles.timeText}>{formatTime(position)}</Text>
@@ -202,11 +392,11 @@ console.log(audioUrl,
           </View>
 
           <View style={styles.controls}>
-            <TouchableOpacity style={styles.secondaryButton}>
+            <TouchableOpacity style={styles.secondaryButton} onPress={handleSkipBack}>
               <Ionicons name="play-back" size={20} color={COLORS.textSecondary} />
             </TouchableOpacity>
             
-            <TouchableOpacity style={styles.rewindButton}>
+            <TouchableOpacity style={styles.rewindButton} onPress={handleRewind}>
               <Ionicons name="play-skip-back" size={24} color={COLORS.text} />
             </TouchableOpacity>
 
@@ -217,7 +407,9 @@ console.log(audioUrl,
             >
               <View style={styles.playButtonInner}>
                 {isBuffering ? (
-                  <Ionicons name="sync" size={36} color={COLORS.text} style={styles.spinningIcon} />
+                  <Animated.View style={{ transform: [{ rotate: spin }] }}>
+                    <Ionicons name="sync" size={36} color={COLORS.text} />
+                  </Animated.View>
                 ) : (
                   <Ionicons 
                     name={isPlaying ? 'pause' : 'play'} 
@@ -228,37 +420,81 @@ console.log(audioUrl,
               </View>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.forwardButton}>
+            <TouchableOpacity style={styles.forwardButton} onPress={handleForward}>
               <Ionicons name="play-skip-forward" size={24} color={COLORS.text} />
             </TouchableOpacity>
             
-            <TouchableOpacity style={styles.secondaryButton}>
+            <TouchableOpacity style={styles.secondaryButton} onPress={handleSkipForward}>
               <Ionicons name="play-forward" size={20} color={COLORS.textSecondary} />
             </TouchableOpacity>
           </View>
           
           <View style={styles.additionalControls}>
-            <TouchableOpacity style={[styles.iconButton, styles.iconButtonActive]}>
-              <Ionicons name="repeat" size={20} color={COLORS.accent} />
+            <TouchableOpacity 
+              style={[styles.iconButton, isRepeat && styles.iconButtonActive]}
+              onPress={toggleRepeat}
+            >
+              <Ionicons name="repeat" size={20} color={isRepeat ? COLORS.accent : COLORS.textSecondary} />
             </TouchableOpacity>
             
-            <TouchableOpacity style={styles.iconButton}>
-              <Ionicons name="timer-outline" size={20} color={COLORS.textSecondary} />
+            <TouchableOpacity 
+              style={[styles.iconButton, selectedTimer && styles.iconButtonActive]}
+              onPress={toggleTimer}
+            >
+              <Ionicons name="timer-outline" size={20} color={selectedTimer ? COLORS.accent : COLORS.textSecondary} />
             </TouchableOpacity>
             
-            <TouchableOpacity style={styles.iconButton}>
-              <Ionicons name="speedometer-outline" size={20} color={COLORS.textSecondary} />
+            <TouchableOpacity style={styles.iconButton} onPress={changePlaybackRate}>
+              <Text style={styles.speedText}>{playbackRate}x</Text>
             </TouchableOpacity>
             
-            <TouchableOpacity style={styles.iconButton}>
-              <Ionicons name="bookmark-outline" size={20} color={COLORS.textSecondary} />
+            <TouchableOpacity 
+              style={[styles.iconButton, isBookmarked && styles.iconButtonActive]}
+              onPress={toggleBookmark}
+            >
+              <Ionicons 
+                name={isBookmarked ? "bookmark" : "bookmark-outline"} 
+                size={20} 
+                color={isBookmarked ? COLORS.accent : COLORS.textSecondary} 
+              />
             </TouchableOpacity>
           </View>
+
+          {showTimer && (
+            <View style={styles.timerContainer}>
+              <Text style={styles.timerTitle}>Set Sleep Timer</Text>
+              <View style={styles.timerOptions}>
+                {timerOptions.map((minutes) => (
+                  <TouchableOpacity
+                    key={minutes}
+                    style={[
+                      styles.timerOption,
+                      selectedTimer === minutes && styles.timerOptionActive
+                    ]}
+                    onPress={() => setTimer(minutes)}
+                  >
+                    <Text style={[
+                      styles.timerOptionText,
+                      selectedTimer === minutes && styles.timerOptionTextActive
+                    ]}>
+                      {minutes}m
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+                <TouchableOpacity
+                  style={styles.timerOption}
+                  onPress={clearTimer}
+                >
+                  <Text style={styles.timerOptionText}>Off</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
           
           {error && (
             <Text style={styles.errorText}>{error}</Text>
           )}
-        </View>
+        </ScrollView>
       </View>
     </Modal>
   );
@@ -273,18 +509,14 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     backgroundColor: COLORS.overlay,
   },
-  content: {
-    flex: 1,
-    paddingTop: verticalScale(40),
-    paddingHorizontal: horizontalScale(24),
-    justifyContent: 'space-between',
-    paddingBottom: verticalScale(50),
-  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: verticalScale(20),
+    paddingHorizontal: horizontalScale(24),
+    paddingTop: verticalScale(40),
+    paddingBottom: verticalScale(20),
+    backgroundColor: 'transparent',
   },
   headerTitle: {
     color: COLORS.textSecondary,
@@ -302,6 +534,13 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(20),
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
   },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: horizontalScale(24),
+    paddingBottom: verticalScale(40),
+  },
   coverWrapper: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -313,32 +552,39 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   coverImage: {
-    width: horizontalScale(300),
-    height: verticalScale(300),
+    width: horizontalScale(280),
+    height: verticalScale(280),
     borderRadius: moderateScale(20),
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   coverGlow: {
     position: 'absolute',
-    width: horizontalScale(300),
-    height: verticalScale(300),
+    width: horizontalScale(280),
+    height: verticalScale(280),
     borderRadius: moderateScale(20),
     backgroundColor: 'transparent',
     shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
     shadowRadius: 30,
     elevation: 25,
     zIndex: -1,
   },
+  coverOverlay: {
+    position: 'absolute',
+    width: horizontalScale(280),
+    height: verticalScale(280),
+    borderRadius: moderateScale(20),
+    backgroundColor: 'rgba(139, 92, 246, 0.1)',
+  },
   infoContainer: {
     alignItems: 'center',
-    marginTop: verticalScale(30),
+    marginTop: verticalScale(20),
+    marginBottom: verticalScale(20),
   },
   title: {
     color: COLORS.text,
-    fontSize: moderateScale(28),
+    fontSize: moderateScale(24),
     fontWeight: '700',
     marginBottom: verticalScale(8),
     textAlign: 'center',
@@ -350,19 +596,26 @@ const styles = StyleSheet.create({
     opacity: 0.9,
     letterSpacing: 0.5,
   },
+  rateIndicator: {
+    backgroundColor: 'rgba(236, 72, 153, 0.2)',
+    paddingHorizontal: moderateScale(12),
+    paddingVertical: moderateScale(4),
+    borderRadius: moderateScale(12),
+    marginTop: verticalScale(8),
+  },
+  rateText: {
+    color: COLORS.accent,
+    fontSize: moderateScale(12),
+    fontWeight: '600',
+  },
   progressContainer: {
-    marginTop: verticalScale(40),
+    marginTop: verticalScale(20),
+    marginBottom: verticalScale(20),
     paddingHorizontal: horizontalScale(5),
   },
   slider: {
     width: '100%',
     height: verticalScale(40),
-  },
-  sliderThumb: {
-    width: horizontalScale(12),
-    height: verticalScale(12),
-    borderRadius: moderateScale(6),
-    backgroundColor: COLORS.accent,
   },
   timeContainer: {
     flexDirection: 'row',
@@ -378,7 +631,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: verticalScale(30),
+    marginTop: verticalScale(20),
+    marginBottom: verticalScale(20),
   },
   playButton: {
     width: horizontalScale(80),
@@ -400,7 +654,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
     shadowRadius: 15,
     elevation: 10,
   },
@@ -440,7 +693,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: verticalScale(40),
+    marginTop: verticalScale(20),
+    marginBottom: verticalScale(20),
     gap: horizontalScale(30),
   },
   iconButton: {
@@ -457,8 +711,50 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(236, 72, 153, 0.15)',
     borderColor: 'rgba(236, 72, 153, 0.3)',
   },
-  spinningIcon: {
-    opacity: 0.8,
+  speedText: {
+    color: COLORS.textSecondary,
+    fontSize: moderateScale(12),
+    fontWeight: '600',
+  },
+  timerContainer: {
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: moderateScale(16),
+    padding: moderateScale(20),
+    marginTop: verticalScale(20),
+    marginBottom: verticalScale(20),
+  },
+  timerTitle: {
+    color: COLORS.text,
+    fontSize: moderateScale(16),
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: moderateScale(16),
+  },
+  timerOptions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: moderateScale(8),
+  },
+  timerOption: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    paddingHorizontal: moderateScale(16),
+    paddingVertical: moderateScale(8),
+    borderRadius: moderateScale(20),
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  timerOptionActive: {
+    backgroundColor: 'rgba(236, 72, 153, 0.2)',
+    borderColor: 'rgba(236, 72, 153, 0.4)',
+  },
+  timerOptionText: {
+    color: COLORS.textSecondary,
+    fontSize: moderateScale(14),
+    fontWeight: '500',
+  },
+  timerOptionTextActive: {
+    color: COLORS.accent,
   },
   errorText: {
     color: COLORS.accent,

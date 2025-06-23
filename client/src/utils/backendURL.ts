@@ -1,3 +1,1 @@
-// export const ipURL = "http://192.168.0.143:3001" //http + ip + port
-
-export const ipURL = "https://safari-books.onrender.com" //http + ip + portr
+export const ipURL = process.env.EXPO_PUBLIC_BACKEND_URL || "http://10.65.2.99:3001"

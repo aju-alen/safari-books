@@ -10,12 +10,12 @@ import { router, useLocalSearchParams } from 'expo-router'
 import React, { useState } from 'react'
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View,ActivityIndicator } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-
+import { useTheme } from '@/providers/ThemeProvider'
 
 const PublisherCompanyForm = () => {
   const id = createId()
   const { publishercompanyForm } = useLocalSearchParams()
-  
+  const {theme} = useTheme()
   const [companyName, setCompanyName] = useState('')
   const [address, setAddress] = useState('')
   const [telephone, setTelephone] = useState('')
@@ -49,11 +49,11 @@ const PublisherCompanyForm = () => {
     const url = `${ipURL}/api/s3/upload-to-aws`
     const formData = new FormData()
 
-    if (doc1) formData.append('document1', { uri: doc1.uri, name: doc1.name, type: doc1.type })
-    if (doc2) formData.append('document2', { uri: doc2.uri, name: doc2.name, type: doc2.type })
+    if (doc1) formData.append('document1', { uri: doc1.uri, name: doc1.name, type: doc1.type } as any)
+    if (doc2) formData.append('document2', { uri: doc2.uri, name: doc2.name, type: doc2.type } as any)
 
     formData.append('id', id)
-    formData.append('userId', publishercompanyForm)
+    formData.append('userId', publishercompanyForm as string)
 
     try {
       const response = await fetch(url, {
@@ -98,8 +98,84 @@ const PublisherCompanyForm = () => {
     }
   }
 
+  const styles = StyleSheet.create({
+    container: {
+      backgroundColor: theme.background,
+    },
+    content: {
+      flex: 1,
+      padding: moderateScale(24),
+    },
+    title: {
+      fontSize: moderateScale(28),
+      fontWeight: '600',
+      color: theme.text,
+      marginBottom: verticalScale(32),
+      textAlign: 'center',
+    },
+    form: {
+      gap: verticalScale(24),
+    },
+    fieldGroup: {
+      marginBottom: verticalScale(8),
+    },
+    label: {
+      fontSize: moderateScale(14),
+      color: theme.text,
+      marginBottom: verticalScale(8),
+      fontFamily: FONT.RobotoLight,
+    },
+    input: {
+      width: '100%',
+      height: verticalScale(48),
+      backgroundColor: theme.white,
+      borderRadius: moderateScale(8),
+      paddingHorizontal: horizontalScale(16),
+      color: theme.text,
+      borderWidth: 1,
+      borderColor: theme.gray2,
+      fontSize: moderateScale(16),
+    },
+    uploadButton: {
+      marginTop: verticalScale(8),
+      padding: moderateScale(12),
+      borderRadius: moderateScale(8),
+      backgroundColor: theme.primary,
+      alignItems: 'center',
+      shadowColor: theme.text,
+      shadowOffset: {
+        width: 0,
+        height: 2,
+      },
+
+      shadowRadius: 3.84,
+      elevation: 5,
+    },
+    uploadText: {
+      color: theme.white,
+      fontSize: moderateScale(14),
+      fontWeight: '500',
+    },
+    submitButton: {
+      marginTop: verticalScale(32),
+      height: verticalScale(50),
+      backgroundColor: theme.primary,
+      borderRadius: moderateScale(8),
+      justifyContent: 'center',
+      alignItems: 'center',
+      shadowColor: theme.text,
+      shadowOffset: {
+        width: 0,
+        height: 2,
+      },
+
+      shadowRadius: 3.84,
+      elevation: 5,
+    },
+  })
+
   return (
-    <SafeAreaView style={[defaultStyles.container, styles.container]}>
+    <SafeAreaView style={[defaultStyles.container, styles.container, { backgroundColor: theme.background }]}>
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.content}>
           {/* <Text style={styles.title}>Publisher Registration</Text> */}
@@ -109,7 +185,7 @@ const PublisherCompanyForm = () => {
               <Text style={styles.label}>Company Name</Text>
               <TextInput
                 placeholder="Enter company name"
-                placeholderTextColor="rgba(255, 255, 255, 0.5)"
+                placeholderTextColor={theme.textMuted}
                 value={companyName}
                 onChangeText={setCompanyName}
                 style={styles.input}
@@ -120,7 +196,7 @@ const PublisherCompanyForm = () => {
               <Text style={styles.label}>Address</Text>
               <TextInput
                 placeholder="Enter company address"
-                placeholderTextColor="rgba(255, 255, 255, 0.5)"
+                placeholderTextColor={theme.textMuted}
                 value={address}
                 onChangeText={setAddress}
                 style={styles.input}
@@ -131,7 +207,7 @@ const PublisherCompanyForm = () => {
               <Text style={styles.label}>Telephone</Text>
               <TextInput
                 placeholder="Enter telephone number"
-                placeholderTextColor="rgba(255, 255, 255, 0.5)"
+                placeholderTextColor={theme.textMuted}
                 value={telephone}
                 onChangeText={setTelephone}
                 keyboardType="phone-pad"
@@ -143,7 +219,7 @@ const PublisherCompanyForm = () => {
               <Text style={styles.label}>Company Registration No.</Text>
               <TextInput
                 placeholder="Enter registration number"
-                placeholderTextColor="rgba(255, 255, 255, 0.5)"
+                placeholderTextColor={theme.textMuted}
                 value={companyRegNo}
                 onChangeText={setCompanyRegNo}
                 style={styles.input}
@@ -162,7 +238,7 @@ const PublisherCompanyForm = () => {
               <Text style={styles.label}>KRA PIN</Text>
               <TextInput
                 placeholder="Enter KRA PIN"
-                placeholderTextColor="rgba(255, 255, 255, 0.5)"
+                placeholderTextColor={theme.textMuted}
                 value={kraPin}
                 onChangeText={setKraPin}
                 style={styles.input}
@@ -183,14 +259,14 @@ const PublisherCompanyForm = () => {
             >
               <Text
               style={{
-                color: '#fff',
+                color: theme.white,
                 fontSize: moderateScale(18),
                 textAlign: 'center',
                 fontFamily: FONT.RobotoMedium,
               }}
               >
 
-                {loading ? <ActivityIndicator size="small" color="#fff" style={{
+                {loading ? <ActivityIndicator size="small" color={theme.white} style={{
                   display: loading ? 'flex' : 'none',
                   justifyContent: 'center',
                   alignItems: 'center',
@@ -205,61 +281,5 @@ const PublisherCompanyForm = () => {
     </SafeAreaView>
   )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: '#000000',
-  },
-  content: {
-    flex: 1,
-    padding: moderateScale(24),
-  },
-  title: {
-    fontSize: moderateScale(28),
-    fontWeight: '600',
-    color: '#fff',
-    marginBottom: verticalScale(32),
-    textAlign: 'center',
-  },
-  form: {
-    gap: verticalScale(24),
-  },
-  fieldGroup: {
-    marginBottom: verticalScale(8),
-  },
-  label: {
-    fontSize: moderateScale(14),
-    color: '#fff',
-    marginBottom: verticalScale(8),
-    fontFamily: FONT.RobotoLight,
-  },
-  input: {
-    width: '100%',
-    height: verticalScale(48),
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderRadius: moderateScale(8),
-    paddingHorizontal: horizontalScale(16),
-    color: '#fff',
-    borderWidth: 1,
-    borderColor: 'rgba(99, 102, 241, 0.2)',
-  },
-  uploadButton: {
-    marginTop: verticalScale(8),
-    padding: moderateScale(12),
-    borderRadius: moderateScale(8),
-    backgroundColor: 'rgba(99, 102, 241, 0.1)',
-    alignItems: 'center',
-  },
-  uploadText: {
-    color: '#fff',
-    fontSize: moderateScale(14),
-  },
-  submitButton: {
-    marginTop: verticalScale(32),
-    height: verticalScale(50),
-    backgroundColor: '#6366F1',
-    borderRadius: moderateScale(8),
-  },
-})
 
 export default PublisherCompanyForm

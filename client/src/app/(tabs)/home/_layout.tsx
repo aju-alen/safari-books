@@ -10,6 +10,7 @@ const HomeLayout = () => {
     <Stack>
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="[singleBook]" options={{ headerShown: false }} />
+        <Stack.Screen name="allAudioBooks" options={{ headerShown: false }} />
        
         
     </Stack>

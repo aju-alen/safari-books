@@ -132,12 +132,12 @@ export const publisherCompanyUpdate = async (req, res) => {
 }
 
 export const getAllAuthorData = async (req, res) => {
-    console.log(req.body.userId);
+    console.log(req.params.userId);
     
     try {
         const authorData = await prisma.author.findMany({
             where: {
-                userId: req.body.userId,
+                userId: req.params.userId,
             },
            select: {
             id: true,
@@ -235,4 +235,18 @@ export const publishBook = async (req, res) => {
         res.status(500).json({ message: "Internal server error", error });
     }
     
+}
+
+export const createPostmanBook = async (req, res) => {
+    try {
+        const createPostmanBook = await prisma.book.create({
+            data: req.body
+        });
+        await prisma.$disconnect();
+        res.status(201).json({ message: "Book created successfully", createPostmanBook });
+    }
+    catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "Internal server error", error });
+    }
 }

@@ -24,7 +24,6 @@
         "UIViewControllerBasedStatusBarAppearance": false
       },
       "bundleIdentifier": "com.rise.safaribooks",
-      "buildNumber": "1.0.0",
       "splash": {
         "image": "./assets/sbLogo.png",
         "resizeMode": "contain",
@@ -34,9 +33,11 @@
           "resizeMode": "contain",
           "backgroundColor": "#000000"
         }
-      }
+      },
+      "buildNumber": "1"
     },
     "android": {
+      "versionCode": 5,
       "adaptiveIcon": {
         "foregroundImage": "./assets/sbLogo.png",
         "backgroundColor": "#000000"
