@@ -157,7 +157,7 @@ const checkIfNew = (releaseDate) => {
       margin: moderateScale(10),
       borderRadius: moderateScale(16),
       shadowOffset: { width: 0, height: 5 },
-      shadowOpacity: 0.1,
+
       shadowRadius: 8,
       elevation: 7,
       overflow: 'hidden',
@@ -182,7 +182,7 @@ const checkIfNew = (releaseDate) => {
       borderRadius: moderateScale(12),
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.2,
+
       shadowRadius: 3,
       elevation: 3,
     },

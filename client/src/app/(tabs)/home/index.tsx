@@ -41,7 +41,7 @@ const HomePage = () => {
   const {theme} = useTheme()
 
   const getBooksData = async()=>{
-    const resp = await axios.get(`${ipURL}/api/listeners//books-data`);
+    const resp = await axios.get(`${ipURL}/api/listeners/books-data`);
     setBookData(resp.data);
     setLatestRelease(resp.data.books.map((book ) => ({
       coverImage: book.coverImage,
@@ -198,7 +198,7 @@ const HomePage = () => {
             <SectionTitle 
               title="Continue Listening" 
               subtitle="Pick up where you left off"
-              onPress={() => router.push({pathname: '/(tabs)/home/allAudioBooks', params: {searchTerm:"continue"}})}
+              onPress={() => router.push({pathname: '/(tabs)/home/allAudioBooks', params: {continue:"continue"}})}
             />
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
               {bookData.books.slice(1, 4).map((book, index) => (
@@ -216,37 +216,37 @@ const HomePage = () => {
               icon="book-outline" 
               title="Fiction" 
               color={theme.secondary}
-              onPress={() => {}}
+              onPress={() => router.push({pathname: '/(tabs)/home/allAudioBooks', params: {category: 'fiction'}})}
             />
             <CategoryCard 
               icon="bulb-outline" 
               title="Self-Help" 
               color={theme.primary}
-              onPress={() => {}}
+              onPress={() => router.push({pathname: '/(tabs)/home/allAudioBooks', params: {category: 'selfhelp'}})}
             />
             <CategoryCard 
               icon="trending-up-outline" 
               title="Business" 
               color={theme.tertiary}
-              onPress={() => {}}
+              onPress={() => router.push({pathname: '/(tabs)/home/allAudioBooks', params: {category: 'business'}})}
             />
             <CategoryCard 
               icon="school-outline" 
               title="Education" 
               color={theme.secondary2}
-              onPress={() => {}}
+              onPress={() => router.push({pathname: '/(tabs)/home/allAudioBooks', params: {category: 'education'}})}
             />
             <CategoryCard 
               icon="heart-outline" 
               title="Romance" 
               color={theme.primary}
-              onPress={() => {}}
+              onPress={() => router.push({pathname: '/(tabs)/home/allAudioBooks', params: {category: 'romance'}})}
             />
             <CategoryCard 
               icon="flash-outline" 
               title="Thriller" 
               color={theme.secondary}
-              onPress={() => {}}
+              onPress={() => router.push({pathname: '/(tabs)/home/allAudioBooks', params: {category: 'thriller'}})}
             />
           </View>
         </View>
@@ -256,7 +256,7 @@ const HomePage = () => {
           <SectionTitle 
             title="Trending Now" 
             subtitle="Most popular this week"
-            onPress={() => router.push({pathname: '/(tabs)/home/allAudioBooks', params: {searchTerm:"trending"}})}
+            onPress={() => router.push({pathname: '/(tabs)/home/allAudioBooks', params: {trending:"trending"}})}
             showBadge={true}
           />
           <View style={styles.trendingContent}>
@@ -270,7 +270,7 @@ const HomePage = () => {
             <SectionTitle 
               title="Recently Added" 
               subtitle="Latest additions to our library"
-              onPress={() => router.push({pathname: '/(tabs)/home/allAudioBooks', params: {searchTerm:"recent"}})}
+              onPress={() => router.push({pathname: '/(tabs)/home/allAudioBooks', params: {recent:"recent"}})}
             />
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
               {bookData.books.slice(7, 10).map((book, index) => (
@@ -324,7 +324,7 @@ const styles = StyleSheet.create({
     padding: moderateScale(8),
     borderRadius: moderateScale(20),
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+
     shadowRadius: 4,
     elevation: 3,
   },
@@ -343,7 +343,7 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(20),
     padding: moderateScale(20),
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
+
     shadowRadius: 16,
     elevation: 8,
   },
@@ -424,7 +424,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+
     shadowRadius: 4,
     elevation: 3,
   },
@@ -501,7 +501,7 @@ const styles = StyleSheet.create({
     padding: moderateScale(12),
     borderWidth: 1,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+
     shadowRadius: 4,
     elevation: 3,
   },
@@ -599,7 +599,7 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(16),
     overflow: 'hidden',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
+
     shadowRadius: 8,
     elevation: 5,
   },

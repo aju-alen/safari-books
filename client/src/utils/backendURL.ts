@@ -1,1 +1,1 @@
-export const ipURL = process.env.EXPO_PUBLIC_BACKEND_URL || "http://10.65.2.26:3001"
+export const ipURL = process.env.EXPO_PUBLIC_BACKEND_URL || "http://10.65.2.99:3001"

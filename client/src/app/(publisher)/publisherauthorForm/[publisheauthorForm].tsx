@@ -261,7 +261,7 @@ const PublishAuthorForm = () => {
                 width: 0,
                 height: 2,
             },
-            shadowOpacity: 0.05,
+            
             shadowRadius: 4,
             elevation: 2,
         },
@@ -303,7 +303,7 @@ const PublishAuthorForm = () => {
                 width: 0,
                 height: 2,
             },
-            shadowOpacity: 0.05,
+            
             shadowRadius: 4,
             elevation: 2,
         },
@@ -358,7 +358,7 @@ const PublishAuthorForm = () => {
                 width: 0,
                 height: 8,
             },
-            shadowOpacity: 0.3,
+            
             shadowRadius: 16,
             elevation: 16,
             justifyContent: 'center',

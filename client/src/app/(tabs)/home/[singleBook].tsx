@@ -145,7 +145,7 @@ const SingleBookPage = () => {
         borderRadius: moderateScale(12),
         shadowColor: theme.text,
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
+
         shadowRadius: 8,
         elevation: 5,
       },
@@ -511,7 +511,7 @@ const SingleBookPage = () => {
               )}
             </View>
 
-            {/* <View style={styles.section}>
+            <View style={styles.section}>
               <Text style={styles.sectionTitle}>What Listeners Say</Text>
               <View style={styles.reviewCard}>
                 <View style={styles.reviewHeader}>
@@ -532,7 +532,7 @@ const SingleBookPage = () => {
               <TouchableOpacity style={styles.allReviewsButton}>
                 <Text style={styles.allReviewsText}>See all reviews</Text>
               </TouchableOpacity>
-            </View> */}
+            </View>
 
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Product Details</Text>

@@ -83,7 +83,7 @@ const PublisherHome = () => {
       borderRadius: 12,
       shadowColor: theme.text,
       shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.25,
+      
       shadowRadius: 8,
       elevation: 5,
     },
@@ -107,7 +107,7 @@ const PublisherHome = () => {
       width: '47%',
       shadowColor: theme.text,
       shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.15,
+      
       shadowRadius: 8,
       elevation: 5,
       marginBottom: 4,
@@ -163,7 +163,7 @@ const PublisherHome = () => {
       gap: 12,
       shadowColor: theme.text,
       shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.15,
+      
       shadowRadius: 8,
       elevation: 5,
     },
@@ -206,7 +206,7 @@ const PublisherHome = () => {
       backgroundColor: theme.white,
       shadowColor: theme.text,
       shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.1,
+      
       shadowRadius: 8,
       elevation: 5,
       borderLeftWidth: 4,
