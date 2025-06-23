@@ -42,7 +42,7 @@ enum Role{
 
 model Book{
 
- id                String   @id @default(cuid())
+  id                String   @id @default(cuid())
   title             String  // delete this
   description       String  // delete this
   durationInHours   Int
