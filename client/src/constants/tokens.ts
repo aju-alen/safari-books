@@ -1,55 +1,58 @@
 export const COLORS = {
-    // Core App Colors - A refined and harmonious palette with enhanced visual appeal
-    primary: '#4F46E5', // Indigo Blue - Modern, trustworthy, and sophisticated
-    secondary2: "#7C3AED", // Purple - Creative, balanced, and engaging
-    secondary: "#1E40AF", // Deep Blue - Calming, professional, and harmonious
-    tertiary: "#059669", // Emerald Green - Fresh, balanced, and attention-grabbing accent
-    background: '#FDF8F3', // Soft Cream - Clean, gentle, and reduces eye strain
-    text: '#1E293B', // Slate Gray - Excellent readability with softer contrast
-    textMuted: '#64748B', // Slate Gray - Clear secondary text without harshness
-    icon: '#4F46E5', // Primary Indigo - Consistent and professional icon color
-    maximumTrackTintColor: 'rgba(30,41,59,0.1)', // Slider track (inactive)
-    minimumTrackTintColor: 'rgba(30,41,59,0.3)', // Slider track (active)
+    // Core App Colors - Nature Theme - Harmonized and fresh
+    primary: '#3E6B3A', // Forest Green - Calm, trustworthy, and grounded
+    secondary2: '#7BAE7F', // Muted Leaf Green - Friendly and warm accent
+    secondary: '#4D8455', // Dark Sage - Professional and calming
+    tertiary: '#A7C957', // Bright Olive - Attention-grabbing accent
+    background: '#F4F8EC', // Light Leaf Tint - Clean and easy on eyes
+    text: '#1F2D1B', // Deep Green Charcoal - Clear and grounded
+    textMuted: '#6D7F6B', // Olive Gray - Soft contrast without harshness
+    icon: '#3E6B3A', // Forest Green - Matching primary
+    maximumTrackTintColor: 'rgba(62,107,58,0.1)', // Slider inactive
+    minimumTrackTintColor: 'rgba(62,107,58,0.4)', // Slider active
 
     // Neutrals
-    gray: "#94A3B8", // Slate Gray - Modern, balanced neutral
-    gray2: "#E2E8F0", // Light Slate - Subtle division with warmth
-    white: "#FFFFFF", // Pure White - For crisp elements
-    lightWhite: "#F1F5F9", // Very Light Slate-Tinted - Gentle variation
-    tabs: "#FFFFFF", // Pure White - For a bright, clean tab bar
-}
+    gray: "#B6C4A7", // Misty Olive - Subtle neutral for outlines
+    gray2: "#E3EEDB", // Pale Leaf - Light dividers and cards
+    white: "#F4F8EC", // Pure White
+    lightWhite: "#FAFBF6", // Off-white with warmth
+    tabs: "#FFFFFF", // Clean tabs
+};
 
 export const DARK_COLORS = {
-    // Core App Colors - Dark Mode - Sophisticated and easy on the eyes
-    primary: '#6366F1', // Lighter Indigo - More vibrant in dark mode
-    secondary2: "#8B5CF6", // Lighter Purple - Enhanced visibility
-    secondary: "#3B82F6", // Lighter Blue - Better contrast in dark
-    tertiary: "#10B981", // Lighter Emerald - Brighter accent for dark backgrounds
-    background: '#0F172A', // Deep Slate - Rich dark background
-    text: '#F1F5F9', // Light Slate - Excellent readability on dark
-    textMuted: '#94A3B8', // Medium Slate - Clear secondary text
-    icon: '#6366F1', // Lighter Indigo - Consistent and visible
-    maximumTrackTintColor: 'rgba(241,245,249,0.1)', // Slider track (inactive)
-    minimumTrackTintColor: 'rgba(241,245,249,0.3)', // Slider track (active)
+    // Core App Colors - Nature Dark Mode - Modern, earthy, and elegant
+    primary: '#8DA95F', // Olive Moss - More balanced and modern
+    secondary2: '#A5C49F', // Soft Herb Green - Gentle for buttons and highlights
+    secondary: '#5F7E4C', // Sage Green - Calm and versatile
+    tertiary: '#99B77A', // Muted Olive - Subtle and elegant accent
+    background: '#141D14', // Deep Forest Night - Rich, true dark base
+    text: '#E3EAD9', // Soft Off-White with a hint of green - Easy on eyes
+    textMuted: '#A0B49A', // Muted Sage - Secondary text with clarity
+    icon: '#8DA95F', // Matches primary - Clear and not harsh
+    maximumTrackTintColor: 'rgba(141,169,95,0.15)', // Softer inactive slider
+    minimumTrackTintColor: 'rgba(141,169,95,0.4)', // Visible active slider
 
     // Neutrals
-    gray: "#64748B", // Darker Slate - Modern, balanced neutral
-    gray2: "#334155", // Dark Slate - Subtle division in dark mode
-    white: "#1E293B", // Dark White - For crisp elements in dark mode
-    lightWhite: "#334155", // Dark Light White - Gentle variation
-    tabs: "#1E293B", // Dark White - For a clean, dark tab bar
-}
+    gray: '#6F8569', // Dusty Moss - Balanced, not too warm or cold
+    gray2: '#202B20', // Dark Olive Base - For cards/dividers in dark
+    white: '#1A241A', // Soft neutral white - Clean on dark backgrounds
+    lightWhite: '#2E3A2E', // Mid-tone contrast (e.g. pressed states)
+    tabs: '#1A241A', // Slightly lighter than background for tab separation
+};
+
 
 export const welcomeCOLOR = {
-    // Welcome Screen Specific Colors - Warm, inviting, and trustworthy
+    // Welcome Screen Specific Colors - Fresh and welcoming
     white: "#FFFFFF", // Pure White
-    black: "#1A202C", // Deep Charcoal - Strong but not harsh
-    primary: "#2B6CB0", // Confident Blue - Trustworthy and welcoming
-    secondary: "#A0AEC0", // Soft Gray-Blue - Gentle and approachable
-    grey: "#CBD5E0", // Light Blue-Gray - Soft neutral for welcome elements
-    registerPrimary: "#38A169", // Fresh Green - Encouraging and positive action color
-    registerSecondary: "#FFFFFF", // White - High contrast text/icon on register button
-}
+    black: "#1E2D1B", // Deep Olive - Serious but warm
+    primary: "#3E6B3A", // Forest Green - Confident and inviting
+    secondary: "#7BAE7F", // Leaf Green - Friendly subtitle color
+    grey: "#DCE8CE", // Soft green neutral - Light and relaxed
+    registerPrimary: "#A7C957", // Olive Accent - Encouraging action
+    registerSecondary: "#FFFFFF", // High contrast text on green
+};
+
+
 export const FONTSIZE = {
     xSmall: 10,
     small: 12,

@@ -98,3 +98,24 @@ export const getAllBooksDataByCategory = async (req,res)=>{
         res.status(500).json({message: "Internal server error"});
     }
 }
+
+export const getFeaturedBooks = async (req,res)=>{
+    try{
+        const featuredBooks = await prisma.book.findMany({
+            where: {
+                featuredBook: true
+            },
+            orderBy: {
+                releaseDate: 'desc'
+            }
+        });
+        
+        res.status(200).json({
+            featuredBooks
+        });
+    }
+    catch(err){
+        console.log(err,'error in getFeaturedBooks api');
+        res.status(500).json({message: "Internal server error"});
+    }
+}

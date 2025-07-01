@@ -6,55 +6,63 @@ import {
   SafeAreaView, 
   Animated, 
   Dimensions,
-  TouchableWithoutFeedback
+  TouchableOpacity,
+  ScrollView
 } from 'react-native';
-import { verticalScale, horizontalScale ,moderateScale} from "@/utils/responsiveSize";
+import { verticalScale, horizontalScale, moderateScale } from "@/utils/responsiveSize";
 import { FONT } from '@/constants/tokens';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTheme } from '@/providers/ThemeProvider';
+import { Ionicons } from '@expo/vector-icons';
+
 const { width, height } = Dimensions.get('window');
 
 const options = [
   {
     id: '1',
     title: 'Listener',
-    icon: '🎧',
+    icon: 'headphones-outline',
     role: 'LISTENER',
-    description: 'Discover audiobooks',
-    gradient: ['#FF6B6B', '#FF8E53']
+    description: 'Discover and enjoy audiobooks',
+    gradient: ['#3E6B3A', '#7BAE7F'] as const,
+    features: ['Browse audiobooks', 'Create playlists', 'Track progress']
   },
   {
     id: '2',
     title: 'Publisher',
-    icon: '📚',
+    icon: 'library-outline',
     role: 'PUBLISHER',
-    description: 'Share your stories',
-    gradient: ['#4E65FF', '#92EFFD']
+    description: 'Share your stories with the world',
+    gradient: ['#4D8455', '#A7C957'] as const,
+    features: ['Upload content', 'Manage library', 'Analytics']
   },
   {
     id: '3',
     title: 'Guest',
-    icon: '👤',
+    icon: 'person-outline',
     role: 'GUEST',
-    description: 'Explore the platform with limited features',
-    gradient: ['#6B4EFF', '#B592FD']
+    description: 'Explore with limited features',
+    gradient: ['#6D7F6B', '#B6C4A7'] as const,
+    features: ['Browse content', 'Limited access', 'No saving']
   }
 ];
 
-const App = () => {
-  const [selectedId, setSelectedId] = useState(null);
+const ChooseRole = () => {
+  const { theme } = useTheme();
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [animations] = useState(options.map(() => new Animated.Value(0)));
   const [buttonAnim] = useState(new Animated.Value(0));
 
   useEffect(() => {
-    // Animate cards in on mount with a more natural spring configuration
+    // Animate cards in on mount
     options.forEach((_, index) => {
       Animated.spring(animations[index], {
         toValue: 1,
-        delay: index * 150, // Increased delay for more distinct animations
+        delay: index * 200,
         useNativeDriver: true,
-        tension: 50,  // Added for smoother animation
-        friction: 7,  // Added for smoother animation
+        tension: 50,
+        friction: 7,
       }).start();
     });
   }, []);
@@ -64,15 +72,25 @@ const App = () => {
     Animated.spring(buttonAnim, {
       toValue: selectedId ? 1 : 0,
       useNativeDriver: true,
+      tension: 50,
+      friction: 7,
     }).start();
   }, [selectedId]);
 
-  const handleSelect = (role) => {
+  const handleSelect = (role: string) => {
     const isDeselecting = role === selectedId;
     setSelectedId(isDeselecting ? null : role);
   };
 
-  const renderOption = (item, index) => {
+  const handleContinue = () => {
+    if (selectedId === "GUEST") {
+      router.push('/(authenticate)/guestLogin');
+    } else if (selectedId) {
+      router.push(`/(authenticate)/${selectedId}`);
+    }
+  };
+
+  const renderOption = (item: typeof options[0], index: number) => {
     const isSelected = item.role === selectedId;
     const otherSelected = selectedId && !isSelected;
 
@@ -81,49 +99,69 @@ const App = () => {
       outputRange: [0.8, 1]
     });
 
-    const cardStyle = {
-      transform: [
-        { scale },
-        { 
-          translateY: animations[index].interpolate({
-            inputRange: [0, 1],
-            outputRange: [50, 0]
-          })
-        }
-      ],
-      opacity: animations[index].interpolate({
-        inputRange: [0, 1],
-        outputRange: [0, 1]
-      })
-    };
+    const translateY = animations[index].interpolate({
+      inputRange: [0, 1],
+      outputRange: [50, 0]
+    });
+
+    const opacity = animations[index].interpolate({
+      inputRange: [0, 1],
+      outputRange: [0, 1]
+    });
 
     return (
-      <TouchableWithoutFeedback key={item.id} onPress={() => handleSelect(item.role)}>
-        <Animated.View style={[
-          styles.card,
-          cardStyle,
-          otherSelected && styles.cardDimmed,
-          { transform: [...cardStyle.transform] }
-        ]}>
-            <LinearGradient
-              colors={item.gradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={[
-                styles.cardGradient,
-                isSelected && styles.selectedCard
-              ]}
-            >
-              <View style={styles.cardContent}>
-                <Text style={styles.cardIcon}>{item.icon}</Text>
-                <View style={styles.cardTextContainer}>
-                  <Text style={styles.cardTitle}>{item.title}</Text>
-                  <Text style={styles.cardDescription}>{item.description}</Text>
-                </View>
+      <Animated.View
+        key={item.id}
+        style={[
+          styles.cardContainer,
+          {
+            transform: [{ scale }, { translateY }],
+            opacity,
+          },
+          otherSelected && styles.cardDimmed
+        ]}
+      >
+        <TouchableOpacity
+          style={[
+            styles.card,
+            isSelected && styles.selectedCard,
+            { borderColor: isSelected ? theme.primary : 'transparent' }
+          ]}
+          onPress={() => handleSelect(item.role)}
+          activeOpacity={0.8}
+        >
+          <LinearGradient
+            colors={item.gradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.cardGradient}
+          >
+            <View style={styles.cardHeader}>
+              <View style={styles.iconContainer}>
+                <Ionicons name={item.icon as any} size={28} color="#fff" />
               </View>
-            </LinearGradient>
-        </Animated.View>
-      </TouchableWithoutFeedback>
+              <View style={styles.cardTextContainer}>
+                <Text style={styles.cardTitle}>{item.title}</Text>
+                <Text style={styles.cardDescription}>{item.description}</Text>
+              </View>
+              {isSelected && (
+                <View style={styles.checkmarkContainer}>
+                  <Ionicons name="checkmark-circle" size={24} color="#fff" />
+                </View>
+              )}
+            </View>
+            
+            <View style={styles.featuresContainer}>
+              {item.features.map((feature, idx) => (
+                <View key={idx} style={styles.featureItem}>
+                  <Ionicons name="checkmark" size={16} color="rgba(255,255,255,0.8)" />
+                  <Text style={styles.featureText}>{feature}</Text>
+                </View>
+              ))}
+            </View>
+          </LinearGradient>
+        </TouchableOpacity>
+      </Animated.View>
     );
   };
 
@@ -132,44 +170,62 @@ const App = () => {
     outputRange: [100, 0]
   });
 
+  const buttonOpacity = buttonAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 1]
+  });
+
   return (
-    <SafeAreaView style={styles.container}>
-      <LinearGradient
-        colors={['#000000', '#1A1A1A']}
-        style={styles.gradient}
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
       >
         <View style={styles.content}>
-          <Text style={styles.heading}>Welcome!</Text>
-          <Text style={styles.subheading}>How would you like to experience stories?</Text>
+          <View style={styles.headerContainer}>
+            <Text style={[styles.heading, { color: theme.text }]}>Welcome!</Text>
+            <Text style={[styles.subheading, { color: theme.textMuted }]}>
+              How would you like to experience stories?
+            </Text>
+          </View>
           
           <View style={styles.cardsContainer}>
             {options.map((item, index) => renderOption(item, index))}
           </View>
-
-          <Animated.View style={[
-            styles.buttonContainer,
-            { transform: [{ translateY: buttonTranslateY }] }
-          ]}>
-            <TouchableWithoutFeedback onPress={() => {
-              if(selectedId === "GUEST") {
-              router.push(`/(authenticate)/guestLogin`)
-              }
-              else if(selectedId) {
-                router.push(`/(authenticate)/${selectedId}`);
-              }
-            }}>
-              <LinearGradient
-                colors={selectedId ? options.find((item) => item.role === selectedId).gradient : ['#000', '#000']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.button}
-              >
-                <Text style={styles.buttonText}>Continue</Text>
-              </LinearGradient>
-            </TouchableWithoutFeedback>
-          </Animated.View>
         </View>
-      </LinearGradient>
+      </ScrollView>
+
+      <Animated.View 
+        style={[
+          styles.buttonContainer,
+          { 
+            transform: [{ translateY: buttonTranslateY }],
+            opacity: buttonOpacity
+          }
+        ]}
+      >
+        <TouchableOpacity
+          style={[
+            styles.button,
+            { 
+              backgroundColor: selectedId 
+                ? options.find(item => item.role === selectedId)?.gradient[0] || theme.primary
+                : theme.gray
+            }
+          ]}
+          onPress={handleContinue}
+          disabled={!selectedId}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.buttonText}>
+            {selectedId ? 'Continue' : 'Select a role to continue'}
+          </Text>
+          {selectedId && (
+            <Ionicons name="arrow-forward" size={20} color="#fff" style={styles.buttonIcon} />
+          )}
+        </TouchableOpacity>
+      </Animated.View>
     </SafeAreaView>
   );
 };
@@ -177,85 +233,108 @@ const App = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
   },
-  gradient: {
+  scrollView: {
     flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
   },
   content: {
     flex: 1,
-    paddingHorizontal: horizontalScale(24), // Increased padding
-    paddingTop: verticalScale(height * 0.1), // More space at top
+    paddingHorizontal: horizontalScale(24),
+    paddingTop: verticalScale(40),
+    paddingBottom: verticalScale(120),
+  },
+  headerContainer: {
+    alignItems: 'center',
+    marginBottom: verticalScale(40),
   },
   heading: {
     fontFamily: FONT.notoBold,
-    color: '#fff',
-    fontSize: moderateScale(36),
-    marginBottom: verticalScale(12),
-    letterSpacing: 0.5,
+    fontSize: moderateScale(32),
+    marginBottom: verticalScale(8),
+    textAlign: 'center',
   },
   subheading: {
     fontFamily: FONT.notoRegular,
-    color: 'rgba(255,255,255,0.8)',
-    fontSize: moderateScale(18),
-    marginBottom: verticalScale(height * 0.06),
-    letterSpacing: 0.3,
+    fontSize: moderateScale(16),
+    textAlign: 'center',
+    lineHeight: moderateScale(24),
   },
   cardsContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    flex: 1,
+    gap: verticalScale(20),
+  },
+  cardContainer: {
+    width: '100%',
   },
   card: {
-    width: horizontalScale(width * 0.85),
-    height: verticalScale(height * 0.15),
-    marginBottom: verticalScale(20),
-    borderRadius: moderateScale(24),
+    borderRadius: moderateScale(16),
     overflow: 'hidden',
+    borderWidth: 2,
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: 8,
+      height: 4,
     },
-    
-    shadowRadius: 10.32,
-    elevation: 16,
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 8,
   },
   cardGradient: {
-    flex: 1,
-    padding: moderateScale(24),
-    borderRadius: moderateScale(24),
+    padding: moderateScale(20),
   },
-  cardContent: {
+  cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: verticalScale(16),
+  },
+  iconContainer: {
+    width: moderateScale(48),
+    height: moderateScale(48),
+    borderRadius: moderateScale(24),
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: horizontalScale(16),
   },
   cardTextContainer: {
     flex: 1,
-    marginLeft: horizontalScale(20),
-  },
-  cardDimmed: {
-    opacity: 0.4,
-    transform: [{ scale: 0.92 }],
-  },
-  selectedCard: {
-    borderWidth: 3,
-
-  },
-  cardIcon: {
-    fontSize: moderateScale(38),
   },
   cardTitle: {
     fontFamily: FONT.notoBold,
     color: '#fff',
-    fontSize: moderateScale(24),
-    marginBottom: verticalScale(6),
-    letterSpacing: 0.5,
+    fontSize: moderateScale(20),
+    marginBottom: verticalScale(4),
   },
   cardDescription: {
     fontFamily: FONT.notoRegular,
     color: 'rgba(255,255,255,0.9)',
-    fontSize: moderateScale(16),
-    letterSpacing: 0.3,
+    fontSize: moderateScale(14),
+  },
+  checkmarkContainer: {
+    marginLeft: horizontalScale(8),
+  },
+  featuresContainer: {
+    gap: verticalScale(8),
+  },
+  featureItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: horizontalScale(8),
+  },
+  featureText: {
+    fontFamily: FONT.notoRegular,
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: moderateScale(13),
+  },
+  cardDimmed: {
+    opacity: 0.5,
+    transform: [{ scale: 0.95 }],
+  },
+  selectedCard: {
+    borderWidth: 3,
   },
   buttonContainer: {
     position: 'absolute',
@@ -268,21 +347,25 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(28),
     alignItems: 'center',
     justifyContent: 'center',
+    flexDirection: 'row',
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: 8,
+      height: 4,
     },
-    
-    shadowRadius: 10.32,
-    elevation: 16,
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 8,
   },
   buttonText: {
     fontFamily: FONT.notoBold,
     color: '#fff',
-    fontSize: moderateScale(18),
-    letterSpacing: moderateScale(1),
+    fontSize: moderateScale(16),
+    letterSpacing: 0.5,
+  },
+  buttonIcon: {
+    marginLeft: horizontalScale(8),
   },
 });
 
-export default App;
+export default ChooseRole;

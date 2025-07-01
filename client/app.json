@@ -18,7 +18,9 @@
         "usesNonExemptEncryption": false
       },
       "infoPlist": {
-        "UIBackgroundModes": ["audio"],
+        "UIBackgroundModes": [
+          "audio"
+        ],
         "UILaunchStoryboardName": "SplashScreen",
         "UIStatusBarHidden": true,
         "UIViewControllerBasedStatusBarAppearance": false
@@ -34,10 +36,10 @@
           "backgroundColor": "#000000"
         }
       },
-      "buildNumber": "1"
+      "buildNumber": "2"
     },
     "android": {
-      "versionCode": 5,
+      "versionCode": 6,
       "adaptiveIcon": {
         "foregroundImage": "./assets/sbLogo.png",
         "backgroundColor": "#000000"

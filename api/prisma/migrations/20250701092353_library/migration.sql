@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE `Library` ADD COLUMN `timestamp` INTEGER NOT NULL DEFAULT 0;

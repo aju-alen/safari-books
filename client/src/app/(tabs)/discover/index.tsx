@@ -39,7 +39,7 @@ const DiscoverPage = () => {
 
   const bookDataMystery = filterByCategory('mystery');
   const bookDataScience = filterByCategory('science');
-  const bookDataEducation = filterByCategory('education');
+  const bookDataEducation = filterByCategory('selfhelp');
 
   const renderCategory = (title, books) => (
     <View style={styles.category}>

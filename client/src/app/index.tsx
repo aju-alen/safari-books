@@ -1,7 +1,7 @@
 import { StatusBar } from "expo-status-bar";
 import { StyleSheet, Text, View, Pressable, Dimensions } from 'react-native';
 import { router } from "expo-router";
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import * as SecureStore from 'expo-secure-store';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -13,26 +13,35 @@ const { width, height } = Dimensions.get('window');
 
 const App = () => {
   const { theme } = useTheme();
+  const [userDetails, setUserDetails] = useState(null);
+  const [loading, setLoading] = useState(true);
   
   // Check user role
   useEffect(() => {
-    const checkUser = async () => {
-      let userDetail = await SecureStore.getItemAsync('userDetails');
-      let authToken = await SecureStore.getItemAsync('authToken');
-      if (!userDetail) return;
-      const userData = JSON.parse(userDetail);
-      if (userData.role === 'PUBLISHER') {
-        router.replace('/(publisher)/publisherhome');
-      } else if (userData.role === 'LISTENER') {
-        router.replace('/(tabs)/home');
+    const user = async () => {
+      const user = await SecureStore.getItemAsync("userDetails");
+      if (!user) {
+        setLoading(false);
+        return;
       }
+      const parsed = JSON.parse(user);
+      setUserDetails(parsed);
+
+      if (parsed.role === 'GUEST') {
+        router.replace('/(tabs)/home');
+        return;
+      }
+      // Add other redirects if needed
+      setLoading(false);
     };
-    checkUser();
+    user();
   }, []);
 
   const handleGetStarted = () => {
     router.replace('/(authenticate)/chooseRole');
   };
+
+  if (loading) return null; // or a spinner
 
   return (
     <SafeAreaProvider>
