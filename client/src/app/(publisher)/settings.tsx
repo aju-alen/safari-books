@@ -4,38 +4,39 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import * as SecureStore from 'expo-secure-store';
 import { useRouter } from 'expo-router';
 import { MaterialIcons, Ionicons, FontAwesome5, Feather } from '@expo/vector-icons';
-import { COLORS, welcomeCOLOR } from '@/constants/tokens';
-
-const publisherOptions = [
-  {
-    icon: <Ionicons name="person-circle-outline" size={24} color={COLORS.primary} />,
-    label: 'Edit Profile',
-    route: '/(publisher)/edit-profile',
-  },
-  {
-    icon: <MaterialIcons name="library-books" size={24} color={COLORS.primary} />,
-    label: 'Manage Books',
-    route: '/(publisher)/manage-books',
-  },
-  {
-    icon: <FontAwesome5 name="chart-line" size={22} color={COLORS.primary} />,
-    label: 'Analytics',
-    route: '/(publisher)/analytics',
-  },
-  {
-    icon: <Feather name="credit-card" size={22} color={COLORS.primary} />,
-    label: 'Payment Settings',
-    route: '/(publisher)/payments',
-  },
-  {
-    icon: <Ionicons name="help-circle-outline" size={24} color={COLORS.primary} />,
-    label: 'Support',
-    route: '/(publisher)/support',
-  },
-];
+import { useTheme } from '@/providers/ThemeProvider';
 
 const SettingsPage = () => {
   const router = useRouter();
+  const { theme } = useTheme();
+
+  const publisherOptions = [
+    {
+      icon: <Ionicons name="person-circle-outline" size={24} color={theme.primary} />,
+      label: 'Edit Profile',
+      route: '/(publisher)/edit-profile',
+    },
+    {
+      icon: <MaterialIcons name="library-books" size={24} color={theme.primary} />,
+      label: 'Manage Books',
+      route: '/(publisher)/manage-books',
+    },
+    {
+      icon: <FontAwesome5 name="chart-line" size={22} color={theme.primary} />,
+      label: 'Analytics',
+      route: '/(publisher)/analytics',
+    },
+    {
+      icon: <Feather name="credit-card" size={22} color={theme.primary} />,
+      label: 'Payment Settings',
+      route: '/(publisher)/payments',
+    },
+    {
+      icon: <Ionicons name="help-circle-outline" size={24} color={theme.primary} />,
+      label: 'Support',
+      route: '/(publisher)/support',
+    },
+  ];
 
   const handleLogout = async () => {
     await SecureStore.deleteItemAsync('userDetails');
@@ -55,33 +56,39 @@ const SettingsPage = () => {
   };
 
   const handleViewAsListener = () => {
-    router.replace({ pathname: '/(tabs)/home' }); // Adjust this route to your listener home/dashboard
+    router.replace('/(tabs)/home' as any);
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Text style={styles.header}>Settings</Text>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+      <Text style={[styles.header, { color: theme.text }]}>Settings</Text>
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
         <View style={styles.optionsSection}>
           {publisherOptions.map((option, idx) => (
             <TouchableOpacity
               key={option.label}
-              style={styles.optionButton}
+              style={[styles.optionButton, { backgroundColor: `${theme.primary}10` }]}
               onPress={() => router.push(option.route)}
             >
               <View style={styles.optionIcon}>{option.icon}</View>
-              <Text style={styles.optionLabel}>{option.label}</Text>
+              <Text style={[styles.optionLabel, { color: theme.text }]}>{option.label}</Text>
             </TouchableOpacity>
           ))}
         </View>
         <View style={{ flex: 1 }} />
-        <TouchableOpacity style={styles.listenerButton} onPress={handleViewAsListener}>
-          <Ionicons name="headset-outline" size={22} color={COLORS.primary} />
-          <Text style={styles.listenerText}>View as Listener</Text>
+        <TouchableOpacity 
+          style={[styles.listenerButton, { backgroundColor: `${theme.primary}20` }]} 
+          onPress={handleViewAsListener}
+        >
+          <Ionicons name="headset-outline" size={22} color={theme.primary} />
+          <Text style={[styles.listenerText, { color: theme.primary }]}>View as Listener</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={confirmLogout} style={styles.logoutButton}>
-          <MaterialIcons name="logout" size={22} color={COLORS.text} />
-          <Text style={styles.logoutText}>Logout</Text>
+        <TouchableOpacity 
+          style={[styles.logoutButton, { backgroundColor: theme.primary }]} 
+          onPress={confirmLogout}
+        >
+          <MaterialIcons name="logout" size={22} color={theme.white} />
+          <Text style={[styles.logoutText, { color: theme.white }]}>Logout</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -93,13 +100,11 @@ export default SettingsPage;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
     padding: 24,
   },
   header: {
     fontSize: 28,
     fontWeight: '700',
-    color: COLORS.text,
     marginBottom: 32,
   },
   optionsSection: {
@@ -108,7 +113,6 @@ const styles = StyleSheet.create({
   optionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(74,77,255,0.07)',
     paddingVertical: 16,
     paddingHorizontal: 18,
     borderRadius: 12,
@@ -119,13 +123,11 @@ const styles = StyleSheet.create({
   },
   optionLabel: {
     fontSize: 16,
-    color: COLORS.text,
     fontWeight: '500',
   },
   listenerButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(74,77,255,0.12)',
     paddingVertical: 16,
     paddingHorizontal: 18,
     borderRadius: 12,
@@ -133,7 +135,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   listenerText: {
-    color: COLORS.primary,
     fontSize: 16,
     fontWeight: '600',
     marginLeft: 10,
@@ -141,7 +142,6 @@ const styles = StyleSheet.create({
   logoutButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.primary,
     paddingVertical: 14,
     paddingHorizontal: 24,
     borderRadius: 12,
@@ -150,7 +150,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   logoutText: {
-    color: COLORS.text,
     fontSize: 16,
     fontWeight: '600',
     marginLeft: 10,

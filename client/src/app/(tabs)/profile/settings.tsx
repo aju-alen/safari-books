@@ -29,16 +29,16 @@ const SettingsPage = () => {
       icon: 'person-outline',
       onPress: () => router.push('/(tabs)/profile/personalInfo')
     },
-    {
-      title: 'Preferences',
-      icon: 'options-outline',
-      onPress: () => {}
-    },
-    {
-      title: 'Analytics',
-      icon: 'analytics-outline',
-      onPress: () => {}
-    },
+    // {
+    //   title: 'Preferences',
+    //   icon: 'options-outline',
+    //   onPress: () => {}
+    // },
+    // {
+    //   title: 'Analytics',
+    //   icon: 'analytics-outline',
+    //   onPress: () => {}
+    // },
     {
       title: 'Delete Account',
       icon: 'trash-outline',
