@@ -309,7 +309,7 @@ console.log(publisherCommonForm,'companyId in document submit');
             const response = await axios.put(`${ipURL}/api/publisher/update-company`, data)
             console.log(response, 'responsein common form');
             setLoading(false);
-            router.push('/(tabs)/home')
+            router.replace('/(tabs)/home')
 
         }
        catch (error) {

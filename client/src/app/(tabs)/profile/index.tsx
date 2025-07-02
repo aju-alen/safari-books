@@ -44,7 +44,7 @@ const ProfilePage = () => {
   const handleLogout = async() => {
     await SecureStore.deleteItemAsync('userDetails');
     await SecureStore.deleteItemAsync('authToken');
-    router.push('/(authenticate)/login');
+    router.replace('/(authenticate)/login');
   }
 
   const stats: Stat[] = [

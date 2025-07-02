@@ -110,7 +110,7 @@ const PublishAuthorForm = () => {
             }
             const response = await axios.post(`${ipURL}/api/publisher/create-author`, data);
             console.log(response.data, 'after backend data is saved');
-            router.push(`/(publisher)/${id}`);
+            router.replace(`/(publisher)/${id}`);
             setLoading(false);
         } catch (error) {
             setLoading(false);

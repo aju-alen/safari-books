@@ -90,7 +90,7 @@ const PublisherCompanyForm = () => {
       }
 
       await axios.post(`${ipURL}/api/publisher/create-company`, data)
-      router.push(`/(publisher)/${id}`)
+      router.replace(`/(publisher)/${id}`)
       setLoading(false)
     } catch (error) {
       setLoading(false)
