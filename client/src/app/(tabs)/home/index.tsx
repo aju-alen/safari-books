@@ -116,8 +116,8 @@ const HomePage = () => {
           <Text style={[styles.heroAuthor, { color: theme.white, opacity: 0.8 }]}>{book.authorName}</Text>
           <View style={styles.heroMeta}>
             <View style={styles.heroRating}>
-              <Ionicons name="star" size={14} color={theme.tertiary} />
-              <Text style={[styles.heroRatingText, { color: theme.white }]}>{book.rating}</Text>
+              <Ionicons name="eye-outline" size={14} color={theme.white} />
+              <Text style={[styles.heroRatingText, { color: theme.white }]}>{book._count.Library}</Text>
             </View>
             <Text style={[styles.heroDuration, { color: theme.white, opacity: 0.8 }]}>
               {book.durationInHours}h {book.durationInMinutes}m

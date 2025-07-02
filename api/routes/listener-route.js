@@ -5,6 +5,7 @@ import {
     getSingleBookData,
     getAllBooksDataByCategory,
     getFeaturedBooks,
+    bookmarkBook,
 } from '../controllers/listener-controller.js'
 
 const router = express.Router()
@@ -13,5 +14,6 @@ router.get('/books-data', getAllBooksData);
 router.get('/book-data/:id', getSingleBookData);
 router.get('/get-all-books-data/:category', getAllBooksDataByCategory);
 router.get('/featured-books', getFeaturedBooks);
+router.put('/bookmark/:bookId', verifyToken, bookmarkBook);
 
 export default router;

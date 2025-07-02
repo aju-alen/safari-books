@@ -41,6 +41,7 @@ const TrendingRelease = ({ bookData }) => {
   };
 
   const renderItem = ({ item }) => {
+    console.log(item,'item');
     const {
       id,
       title,
@@ -51,7 +52,7 @@ const TrendingRelease = ({ bookData }) => {
       durationInMinutes,
       releaseDate,
       categories,
-      listens = 0,
+      listens = item._count.Library,
       isNew = false,
     } = item;
 

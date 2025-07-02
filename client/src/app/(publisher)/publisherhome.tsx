@@ -305,31 +305,18 @@ const PublisherHome = () => {
           <View style={styles.insightsContainer}>
             <Text style={styles.sectionTitle}>Quick Insights</Text>
             <View style={styles.insightCards}>
-              <View style={styles.insightCard}>
-                <View style={styles.insightHeader}>
-                  <View style={styles.insightIconContainer}>
-                    <MaterialIcons name="trending-up" size={18} color={theme.white} />
-                  </View>
-                  <Text style={styles.insightTitle}>Today's Performance</Text>
-                </View>
-                <View style={styles.insightContent}>
-                  <Text style={styles.insightStat}>↑ 0 New Downloads</Text>
-                  <Text style={styles.insightStat}>★ 0 New Reviews</Text>
-                  <Text style={styles.insightStat}>$ 0 Revenue</Text>
-                </View>
-              </View>
-
+            
               <View style={styles.insightCard}>
                 <View style={styles.insightHeader}>
                   <View style={styles.insightIconContainer}>
                     <MaterialIcons name="timeline" size={18} color={theme.white} />
                   </View>
-                  <Text style={styles.insightTitle}>Monthly Overview</Text>
+                  <Text style={styles.insightTitle}>Total Overview</Text>
                 </View>
                 <View style={styles.insightContent}>
                   <Text style={styles.insightStat}>📚 0 Books Published</Text>
                   <Text style={styles.insightStat}>👥 0 New Listeners</Text>
-                  <Text style={styles.insightStat}>⭐ 0 Avg Rating</Text>
+                  <Text style={styles.insightStat}>⭐ 0 Revenue Earned</Text>
                 </View>
               </View>
             </View>

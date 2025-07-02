@@ -18,6 +18,7 @@ import { useRevenueCat } from '../../../providers/RevenueCat';
 import RevenueCatUI, { PAYWALL_RESULT } from 'react-native-purchases-ui';
 import * as Sharing from 'expo-sharing';
 import { useTheme } from '@/providers/ThemeProvider';
+import { axiosWithAuth } from '@/utils/customAxios';
 
 const SingleBookPage = () => {
   const { theme } = useTheme();
@@ -102,8 +103,10 @@ const SingleBookPage = () => {
     return stars;
   };
 
-  const toggleBookmark = () => {
+  const toggleBookmark = async () => {
     setIsBookmarked(!isBookmarked);
+    const bookmarkResponse  = await axiosWithAuth.put(`${ipURL}/api/listeners/bookmark/${singleBook}`);
+    console.log(bookmarkResponse.data,'bookmarkResponse');
   };
 
   console.log('singleBookData', singleBookData);
@@ -111,6 +114,7 @@ const SingleBookPage = () => {
   const handlePurchase = async() => {
     if (isPro) {
       // Logic for already subscribed users
+      const resp = await axiosWithAuth.post(`${ipURL}/api/library/create-library/${singleBook}`);
       console.log('User is already subscribed');
       setCurrentAudioUrl(singleBookData[0]?.completeAudioUrl);
       setPlayerVisible(true);
@@ -126,7 +130,7 @@ const SingleBookPage = () => {
   const handleShare = async () => {
     const bool = await Sharing.isAvailableAsync();
     if (bool) {
-      const result = await Sharing.shareAsync('https://www.google.com');
+      const result = await Sharing.shareAsync('safari-books://');
       console.log(result, 'result');
     } else {
       Alert.alert('Sharing is not available on this device');
@@ -600,6 +604,7 @@ const SingleBookPage = () => {
         title={singleBookData[0]?.title}
         author={singleBookData[0]?.authorName}
         authorAvatar={singleBookData[0]?.authorAvatar || singleBookData[0]?.coverImage}
+        bookId={singleBook}
       />
     </ScrollView>
   );
