@@ -28,6 +28,7 @@ const SingleBookPage = () => {
   const [isPlayerVisible, setPlayerVisible] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [showFullSummary, setShowFullSummary] = useState(false);
+  const [currentAudioUrl, setCurrentAudioUrl] = useState('');
   const { isPro } = useRevenueCat();
 
   console.log(singleBookData,'singleBookData');
@@ -111,6 +112,9 @@ const SingleBookPage = () => {
     if (isPro) {
       // Logic for already subscribed users
       console.log('User is already subscribed');
+      setCurrentAudioUrl(singleBookData[0]?.completeAudioUrl);
+      setPlayerVisible(true);
+      
     } else {
       // Logic for purchasing the book
       console.log('Proceed to purchase the book');
@@ -297,6 +301,11 @@ const SingleBookPage = () => {
       marginTop: verticalScale(10),
       marginBottom: verticalScale(20),
     },
+    headerRightButtons: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: horizontalScale(12),
+    },
     backButton: {
       padding: moderateScale(8),
       borderRadius: moderateScale(20),
@@ -416,22 +425,26 @@ const SingleBookPage = () => {
   return (
     <ScrollView style={[defaultStyles.container, { backgroundColor: theme.background }]}>
       <SafeAreaView>
-        <LinearGradient
+        <View
           style={styles.gradientContainer}
-          colors={[`#${singleBookData[0]?.colorCode}`, theme.background]}
-          end={{ x: 0.5, y: 0.4 }}
+         
         >
           <View style={styles.header}>
             <TouchableOpacity style={styles.backButton}>
-              <Ionicons name="arrow-back" size={24} color={theme.white} />
+              <Ionicons name="arrow-back" size={24} color={theme.text} />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.bookmarkButton} onPress={toggleBookmark}>
-              <Ionicons 
-                name={isBookmarked ? "bookmark" : "bookmark-outline"} 
-                size={24} 
-                color={isBookmarked ? theme.tertiary : theme.white} 
-              />
-            </TouchableOpacity>
+            <View style={styles.headerRightButtons}>
+              <TouchableOpacity style={styles.iconButton} onPress={handleShare}>
+                <Ionicons name="share-social-outline" size={22} color={theme.text} />
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.bookmarkButton} onPress={toggleBookmark}>
+                <Ionicons 
+                  name={isBookmarked ? "bookmark" : "bookmark-outline"} 
+                  size={24} 
+                  color={isBookmarked ? theme.tertiary : theme.text} 
+                />
+              </TouchableOpacity>
+            </View>
           </View>
 
           <View style={styles.imageContainer}>
@@ -454,12 +467,12 @@ const SingleBookPage = () => {
                 </Text>
               </View>
 
-              <View style={styles.ratingContainer}>
+              {/* <View style={styles.ratingContainer}>
                 <View style={styles.stars}>
                   {renderRatingStars(singleBookData[0]?.rating)}
                 </View>
                 <Text style={styles.ratingText}>{singleBookData[0]?.rating}</Text>
-              </View>
+              </View> */}
             </View>
 
             <View style={styles.creditsContainer}>
@@ -477,7 +490,10 @@ const SingleBookPage = () => {
             <View style={styles.buttonContainer}>
               <TouchableOpacity
                 style={styles.primaryButton}
-                onPress={() => setPlayerVisible(true)}
+                onPress={() => {
+                  setCurrentAudioUrl(singleBookData[0]?.sampleAudioURL);
+                  setPlayerVisible(true);
+                }}
               >
                 <Ionicons name="play" size={20} color={theme.white} />
                 <Text style={styles.buttonText}>Listen to Sample</Text>
@@ -486,12 +502,6 @@ const SingleBookPage = () => {
               <TouchableOpacity style={styles.buyButton} onPress={handlePurchase}>
                 <Text style={styles.buyButtonText}>{isPro ? 'Listen Now' : `Subscribe to Listen`}</Text>
               </TouchableOpacity>
-              
-              <View style={styles.shareContainer}>
-                <TouchableOpacity style={styles.iconButton} onPress={handleShare}>
-                  <Ionicons name="share-social-outline" size={22} color={theme.white} />
-                </TouchableOpacity>
-              </View>
             </View>
 
             <View style={styles.section}>
@@ -511,7 +521,7 @@ const SingleBookPage = () => {
               )}
             </View>
 
-            <View style={styles.section}>
+            {/* <View style={styles.section}>
               <Text style={styles.sectionTitle}>What Listeners Say</Text>
               <View style={styles.reviewCard}>
                 <View style={styles.reviewHeader}>
@@ -532,7 +542,7 @@ const SingleBookPage = () => {
               <TouchableOpacity style={styles.allReviewsButton}>
                 <Text style={styles.allReviewsText}>See all reviews</Text>
               </TouchableOpacity>
-            </View>
+            </View> */}
 
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Product Details</Text>
@@ -569,7 +579,7 @@ const SingleBookPage = () => {
               </ScrollView>
             </View>
           </View>
-        </LinearGradient>
+        </View>
 
         <Modal visible={isModalVisible} transparent animationType="slide">
           <View style={styles.modalContainer}>
@@ -585,10 +595,11 @@ const SingleBookPage = () => {
       <AudioPlayerModal
         isVisible={isPlayerVisible}
         onClose={() => setPlayerVisible(false)}
-        audioUrl={singleBookData[0]?.sampleAudioURL}
+        audioUrl={currentAudioUrl}
         bookCover={singleBookData[0]?.coverImage}
         title={singleBookData[0]?.title}
         author={singleBookData[0]?.authorName}
+        authorAvatar={singleBookData[0]?.authorAvatar || singleBookData[0]?.coverImage}
       />
     </ScrollView>
   );

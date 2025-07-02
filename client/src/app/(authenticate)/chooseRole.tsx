@@ -22,7 +22,7 @@ const options = [
   {
     id: '1',
     title: 'Listener',
-    icon: 'headphones-outline',
+    icon: 'headset-outline',
     role: 'LISTENER',
     description: 'Discover and enjoy audiobooks',
     gradient: ['#3E6B3A', '#7BAE7F'] as const,

@@ -20,6 +20,8 @@ const App = () => {
   useEffect(() => {
     const user = async () => {
       const user = await SecureStore.getItemAsync("userDetails");
+      console.log(user, 'user');
+      
       if (!user) {
         setLoading(false);
         return;
@@ -29,6 +31,14 @@ const App = () => {
 
       if (parsed.role === 'GUEST') {
         router.replace('/(tabs)/home');
+        return;
+      }
+      else if (parsed.role === 'LISTENER') {
+        router.replace('/(tabs)/home');
+        return;
+      }
+      else if (parsed.role === 'PUBLISHER') {
+        router.replace('/(publisher)/publisherhome');
         return;
       }
       // Add other redirects if needed
