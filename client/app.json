@@ -48,7 +48,8 @@
         "android.permission.WAKE_LOCK",
         "android.permission.RECORD_AUDIO"
       ],
-      "package": "com.rise.safaribooks"
+      "package": "com.rise.safaribooks",
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "favicon": "./assets/favicon.png"

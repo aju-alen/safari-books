@@ -6,6 +6,8 @@ node_modules/
 /ios
 
 /expo-SB-ServiceAccount.json
+/safaribooks-notification-firebase-adminsdk-fbsvc-5e82e1c3b1.json
+/google-services.json
 
 # Expo
 .expo/
