@@ -8,13 +8,15 @@ import * as DocumentPicker from 'expo-document-picker'
 import { router, useLocalSearchParams } from 'expo-router'
 import * as SecureStore from 'expo-secure-store'
 import React, { useEffect, useState } from 'react'
-import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View,ActivityIndicator, Alert } from 'react-native'
+import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, ActivityIndicator, Alert, Dimensions } from 'react-native'
 import { Audio } from 'react-native-compressor'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import * as ImagePicker from 'expo-image-picker'
 import * as ImageManipulator from 'expo-image-manipulator'
 import {BookCategoryLabels} from '../../utils/categoriesdata'
 import { useTheme } from '@/providers/ThemeProvider'
+import { axiosWithAuth } from '@/utils/customAxios'
+import { Ionicons, Feather } from '@expo/vector-icons'
 
 interface AudioSample {
   name: string;
@@ -22,6 +24,8 @@ interface AudioSample {
   uri: string;
   type: string;
 }
+
+const { width } = Dimensions.get('window');
 
 const publisherCommonForm = () => {
     const {publisherCommonForm} = useLocalSearchParams()
@@ -51,7 +55,7 @@ const publisherCommonForm = () => {
     const [rightsHolder, setRightsHolder] = useState(false)
 
     const [isChecked, setChecked] = useState(false);
-
+    const [errors, setErrors] = useState<{[key: string]: string}>({});
 
     const [mode, setMode] = useState('date');
     const [show, setShow] = useState(false);
@@ -276,7 +280,59 @@ console.log(publisherCommonForm,'companyId in document submit');
         }
       };
 
+    const validateForm = () => {
+        const newErrors: {[key: string]: string} = {}
+        
+        if (!title.trim()) {
+            newErrors.title = 'Title is required'
+        }
+        
+        if (!language.trim()) {
+            newErrors.language = 'Language is required'
+        }
+        
+        if (!categories || categories === 'none') {
+            newErrors.categories = 'Please select a category'
+        }
+        
+        if (!ISBNDOIISRC.trim()) {
+            newErrors.ISBNDOIISRC = 'ISBN/DOI/ISRC is required'
+        }
+        
+        if (!synopsis.trim()) {
+            newErrors.synopsis = 'Synopsis is required'
+        }
+        
+        if (!amount.trim()) {
+            newErrors.amount = 'Price is required'
+        }
+        
+        if (!audioSample) {
+            newErrors.audioSample = 'Audio sample is required'
+        }
+        
+        if (!doc1) {
+            newErrors.doc1 = 'PDF document is required'
+        }
+        
+        if (!image) {
+            newErrors.image = 'Cover image is required'
+        }
+        
+        if (!rightsHolder) {
+            newErrors.rightsHolder = 'You must confirm you are the rights holder'
+        }
+        
+        setErrors(newErrors)
+        return Object.keys(newErrors).length === 0
+    }
+
     const handleSubmit = async () => {
+        // Validate form before proceeding
+        if (!validateForm()) {
+            return
+        }
+        
         try{
             setLoading(true);
             const audioData = await postAudio()
@@ -306,7 +362,7 @@ console.log(publisherCommonForm,'companyId in document submit');
             }
     
             console.log(data, 'data');
-            const response = await axios.put(`${ipURL}/api/publisher/update-company`, data)
+            const response = await axiosWithAuth.put(`${ipURL}/api/publisher/update-company`, data)
             console.log(response, 'responsein common form');
             setLoading(false);
             router.replace('/(tabs)/home')
@@ -330,55 +386,93 @@ console.log(publisherCommonForm,'companyId in document submit');
           padding: moderateScale(20),
       },
       headerContainer: {
-          marginBottom: verticalScale(30),
+          marginBottom: verticalScale(32),
+          alignItems: 'center',
+          paddingTop: verticalScale(20),
       },
       headerText: {
-          fontSize: moderateScale(28),
-          fontWeight: 'bold',
+          fontSize: moderateScale(24),
+          fontWeight: '700',
           color: theme.text,
           marginBottom: verticalScale(8),
+          textAlign: 'center',
       },
       subHeaderText: {
-          fontSize: moderateScale(16),
+          fontSize: moderateScale(14),
           color: theme.textMuted,
+          textAlign: 'center',
+          lineHeight: moderateScale(20),
       },
       formContainer: {
-          gap: verticalScale(20),
+          gap: verticalScale(24),
       },
       inputContainer: {
           marginBottom: verticalScale(16),
       },
       label: {
           fontSize: moderateScale(14),
+          fontWeight: '600',
           color: theme.text,
           marginBottom: verticalScale(8),
-          fontWeight: '500',
       },
       input: {
           backgroundColor: theme.white,
-          borderRadius: moderateScale(8),
-          padding: moderateScale(12),
+          borderRadius: moderateScale(12),
+          padding: moderateScale(16),
           color: theme.text,
-          borderWidth: 1,
+          borderWidth: 1.5,
           borderColor: theme.gray2,
           fontSize: moderateScale(16),
+          shadowColor: theme.text,
+          shadowOffset: {
+              width: 0,
+              height: 1,
+          },
+          shadowOpacity: 0.1,
+          shadowRadius: 2,
+          elevation: 2,
+      },
+      inputError: {
+          borderColor: '#FF6B6B',
+          borderWidth: 2,
+      },
+      errorText: {
+          color: '#FF6B6B',
+          fontSize: moderateScale(12),
+          marginTop: verticalScale(4),
       },
       textArea: {
           backgroundColor: theme.white,
-          borderRadius: moderateScale(8),
-          padding: moderateScale(12),
+          borderRadius: moderateScale(12),
+          padding: moderateScale(16),
           color: theme.text,
-          height: verticalScale(100),
+          height: verticalScale(120),
           textAlignVertical: 'top',
-          borderWidth: 1,
+          borderWidth: 1.5,
           borderColor: theme.gray2,
           fontSize: moderateScale(16),
+          shadowColor: theme.text,
+          shadowOffset: {
+              width: 0,
+              height: 1,
+          },
+          shadowOpacity: 0.1,
+          shadowRadius: 2,
+          elevation: 2,
       },
       pickerContainer: {
           backgroundColor: theme.white,
-          borderRadius: moderateScale(8),
-          borderWidth: 1,
-          borderColor: theme.gray2,   
+          borderRadius: moderateScale(12),
+          borderWidth: 1.5,
+          borderColor: theme.gray2,
+          shadowColor: theme.text,
+          shadowOffset: {
+              width: 0,
+              height: 1,
+          },
+          shadowOpacity: 0.1,
+          shadowRadius: 2,
+          elevation: 2,
       },
       picker: {
           color: theme.text,
@@ -387,101 +481,166 @@ console.log(publisherCommonForm,'companyId in document submit');
           backgroundColor: theme.white,
           color: theme.text,
       },
-      checkboxGrid: {
-          gap: verticalScale(12),
+      narrationSection: {
+          marginBottom: verticalScale(16),
       },
-      checkboxRow: {
+      narrationGrid: {
           flexDirection: 'row',
+          flexWrap: 'wrap',
           justifyContent: 'space-between',
-          paddingHorizontal: horizontalScale(20),
-      },
-      checkboxItem: {
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: horizontalScale(8),
-      },
-      checkboxLabel: {
-          color: theme.text,
-          fontSize: moderateScale(14),
-      },
-      uploadSection: {
           gap: verticalScale(12),
       },
-      uploadButton: {
+      narrationCard: {
+          width: (width - horizontalScale(48) - horizontalScale(12)) / 2,
           backgroundColor: theme.white,
-          padding: moderateScale(12),
-          borderRadius: moderateScale(8),
+          borderRadius: moderateScale(12),
+          padding: moderateScale(16),
           alignItems: 'center',
-          borderWidth: 1,
-          borderColor: theme.primary,
-          shadowColor: theme.text,
-          shadowOffset: {
-              width: 0,
-              height: 2,
-          },
-          
-          shadowRadius: 3.84,
-          elevation: 5,
-      },
-      uploadButtonText: {
-          color: theme.text,
-          fontSize: moderateScale(14),
-          fontWeight: '500',
-      },
-      dateButton: {
-          backgroundColor: theme.white,
-          padding: moderateScale(12),
-          borderRadius: moderateScale(8),
-          alignItems: 'center',
-          borderWidth: 1,
+          borderWidth: 2,
           borderColor: theme.gray2,
           shadowColor: theme.text,
           shadowOffset: {
               width: 0,
               height: 2,
           },
-          
-          shadowRadius: 3.84,
-          elevation: 5,
+          shadowOpacity: 0.1,
+          shadowRadius: 4,
+          elevation: 3,
       },
-      dateButtonText: {
+      narrationCardSelected: {
+          borderColor: theme.primary,
+          backgroundColor: `${theme.primary}10`,
+      },
+      narrationCardText: {
           color: theme.text,
           fontSize: moderateScale(14),
-          fontWeight: '500',
+          fontWeight: '600',
+          marginTop: verticalScale(8),
       },
-      rightsHolder: {
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: horizontalScale(8),
-          marginVertical: verticalScale(20),
+      narrationCardTextSelected: {
+          color: theme.primary,
       },
-      rightsHolderText: {
-          color: theme.text,
-          fontSize: moderateScale(14),
+      uploadSection: {
+          gap: verticalScale(16),
       },
-      submitButton: {
-          backgroundColor: theme.primary,
+      uploadButton: {
+          backgroundColor: theme.white,
           padding: moderateScale(16),
-          borderRadius: moderateScale(8),
+          borderRadius: moderateScale(12),
           alignItems: 'center',
-          marginTop: verticalScale(20),
+          borderWidth: 2,
+          borderColor: theme.gray2,
           shadowColor: theme.text,
           shadowOffset: {
               width: 0,
               height: 2,
           },
-          
-          shadowRadius: 3.84,
-          elevation: 5,
+          shadowOpacity: 0.1,
+          shadowRadius: 4,
+          elevation: 3,
+      },
+      uploadButtonError: {
+          borderColor: '#FF6B6B',
+          backgroundColor: '#FF6B6B10',
+      },
+      uploadButtonText: {
+          color: theme.text,
+          fontSize: moderateScale(14),
+          fontWeight: '600',
+      },
+      uploadButtonTextError: {
+          color: '#FF6B6B',
+      },
+      dateButton: {
+          backgroundColor: theme.white,
+          padding: moderateScale(16),
+          borderRadius: moderateScale(12),
+          alignItems: 'center',
+          borderWidth: 1.5,
+          borderColor: theme.gray2,
+          shadowColor: theme.text,
+          shadowOffset: {
+              width: 0,
+              height: 1,
+          },
+          shadowOpacity: 0.1,
+          shadowRadius: 2,
+          elevation: 2,
+      },
+      dateButtonText: {
+          color: theme.text,
+          fontSize: moderateScale(14),
+          fontWeight: '600',
+      },
+      rightsHolder: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: horizontalScale(12),
+          marginVertical: verticalScale(24),
+          padding: moderateScale(16),
+          backgroundColor: theme.white,
+          borderRadius: moderateScale(12),
+          borderWidth: 1.5,
+          borderColor: theme.gray2,
+          shadowColor: theme.text,
+          shadowOffset: {
+              width: 0,
+              height: 1,
+          },
+          shadowOpacity: 0.1,
+          shadowRadius: 2,
+          elevation: 2,
+      },
+      rightsHolderError: {
+          borderColor: '#FF6B6B',
+          backgroundColor: '#FF6B6B10',
+      },
+      rightsHolderText: {
+          color: theme.text,
+          fontSize: moderateScale(14),
+          fontWeight: '500',
+          flex: 1,
+      },
+      submitSection: {
+          marginTop: verticalScale(32),
+          paddingHorizontal: horizontalScale(10),
+      },
+      submitButton: {
+          backgroundColor: theme.primary,
+          padding: moderateScale(18),
+          borderRadius: moderateScale(16),
+          alignItems: 'center',
+          shadowColor: theme.text,
+          shadowOffset: {
+              width: 0,
+              height: 4,
+          },
+          shadowOpacity: 0.3,
+          shadowRadius: 8,
+          elevation: 8,
       },
       submitButtonText: {
           color: theme.white,
-          fontSize: moderateScale(16),
-          fontWeight: '600',
+          fontSize: moderateScale(18),
+          fontWeight: '700',
       },
       uploadButtonPrimary: {
-        backgroundColor: theme.primary,
-        borderColor: theme.primary,
+          backgroundColor: theme.primary,
+          borderColor: theme.primary,
+      },
+      uploadButtonPrimaryText: {
+          color: theme.white,
+      },
+      loadingContainer: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+      },
+      loadingText: {
+          color: theme.white,
+          fontSize: moderateScale(16),
+          fontWeight: '600',
+          marginLeft: horizontalScale(8),
       },
     });
 
@@ -504,11 +663,12 @@ console.log(publisherCommonForm,'companyId in document submit');
                           placeholder="Enter Title Name"
                           value={title}
                           onChangeText={setTitle}
+                          error={errors.title}
                       />
 
                       <View style={styles.inputContainer}>
                           <Text style={styles.label}>Category</Text>
-                          <View style={styles.pickerContainer}>
+                          <View style={[styles.pickerContainer, errors.categories && styles.inputError]}>
                               <Picker
                                   mode='dropdown'
                                   dropdownIconColor={theme.text}
@@ -526,9 +686,9 @@ console.log(publisherCommonForm,'companyId in document submit');
 
                                       />
                                   ))}
-                                  {/* ... other picker items ... */}
                               </Picker>
                           </View>
+                          {errors.categories && <Text style={styles.errorText}>{errors.categories}</Text>}
                       </View>
 
                       <FormInput
@@ -536,6 +696,7 @@ console.log(publisherCommonForm,'companyId in document submit');
                           placeholder="Enter Language"
                           value={language}
                           onChangeText={setLanguage}
+                          error={errors.language}
                       />
 
                       <View style={styles.inputContainer}>
@@ -563,6 +724,7 @@ console.log(publisherCommonForm,'companyId in document submit');
                           placeholder="Enter ISBN/DOI/ISRC No."
                           value={ISBNDOIISRC}
                           onChangeText={setISBNDOIISRC}
+                          error={errors.ISBNDOIISRC}
                       />
 
                       <View style={styles.inputContainer}>
@@ -574,9 +736,11 @@ console.log(publisherCommonForm,'companyId in document submit');
                               numberOfLines={4}
                               value={synopsis}
                               onChangeText={setSynopsis}
-                              style={styles.textArea}
+                              style={[styles.textArea, errors.synopsis && styles.inputError]}
                           />
+                          {errors.synopsis && <Text style={styles.errorText}>{errors.synopsis}</Text>}
                       </View>
+                      
                       <View style={styles.inputContainer}>
                           <Text style={styles.label}>Enter Your Price</Text>
                           <TextInput
@@ -584,94 +748,161 @@ console.log(publisherCommonForm,'companyId in document submit');
                               placeholderTextColor={theme.textMuted}
                               value={amount}
                               onChangeText={setAmount}
-                              style={styles.textArea}
+                              keyboardType="numeric"
+                              style={[styles.input, errors.amount && styles.inputError]}
                           />
+                          {errors.amount && <Text style={styles.errorText}>{errors.amount}</Text>}
                       </View>
 
-                      <View style={styles.inputContainer}>
+                      <View style={styles.narrationSection}>
                           <Text style={styles.label}>Narration Style</Text>
-                          <View style={styles.checkboxGrid}>
-                              <View style={styles.checkboxRow}>
-                                  <CheckboxItem
-                                      label="Slow"
-                                      value={narrationStyleSlow}
-                                      onValueChange={setNarrationStyleSlow}
+                          <View style={styles.narrationGrid}>
+                              <TouchableOpacity 
+                                  style={[styles.narrationCard, narrationStyleSlow && styles.narrationCardSelected]}
+                                  onPress={() => setNarrationStyleSlow(!narrationStyleSlow)}
+                              >
+                                  <Ionicons 
+                                      name={narrationStyleSlow ? "checkmark-circle" : "ellipse-outline"} 
+                                      size={moderateScale(24)} 
+                                      color={narrationStyleSlow ? theme.primary : theme.gray2} 
                                   />
-                                  <CheckboxItem
-                                      label="Fast"
-                                      value={narrationStyleFast}
-                                      onValueChange={setNarrationStyleFast}
+                                  <Text style={[styles.narrationCardText, narrationStyleSlow && styles.narrationCardTextSelected]}>
+                                      Slow
+                                  </Text>
+                              </TouchableOpacity>
+
+                              <TouchableOpacity 
+                                  style={[styles.narrationCard, narrationStyleFast && styles.narrationCardSelected]}
+                                  onPress={() => setNarrationStyleFast(!narrationStyleFast)}
+                              >
+                                  <Ionicons 
+                                      name={narrationStyleFast ? "checkmark-circle" : "ellipse-outline"} 
+                                      size={moderateScale(24)} 
+                                      color={narrationStyleFast ? theme.primary : theme.gray2} 
                                   />
-                              </View>
-                              <View style={styles.checkboxRow}>
-                                  <CheckboxItem
-                                      label="Intimate"
-                                      value={narrationStyleIntimate}
-                                      onValueChange={setNarrationStyleIntimate}
+                                  <Text style={[styles.narrationCardText, narrationStyleFast && styles.narrationCardTextSelected]}>
+                                      Fast
+                                  </Text>
+                              </TouchableOpacity>
+
+                              <TouchableOpacity 
+                                  style={[styles.narrationCard, narrationStyleIntimate && styles.narrationCardSelected]}
+                                  onPress={() => setNarrationStyleIntimate(!narrationStyleIntimate)}
+                              >
+                                  <Ionicons 
+                                      name={narrationStyleIntimate ? "checkmark-circle" : "ellipse-outline"} 
+                                      size={moderateScale(24)} 
+                                      color={narrationStyleIntimate ? theme.primary : theme.gray2} 
                                   />
-                                  <CheckboxItem
-                                      label="Casual"
-                                      value={narrationStyleCasual}
-                                      onValueChange={setNarrationStyleCasual}
+                                  <Text style={[styles.narrationCardText, narrationStyleIntimate && styles.narrationCardTextSelected]}>
+                                      Intimate
+                                  </Text>
+                              </TouchableOpacity>
+
+                              <TouchableOpacity 
+                                  style={[styles.narrationCard, narrationStyleCasual && styles.narrationCardSelected]}
+                                  onPress={() => setNarrationStyleCasual(!narrationStyleCasual)}
+                              >
+                                  <Ionicons 
+                                      name={narrationStyleCasual ? "checkmark-circle" : "ellipse-outline"} 
+                                      size={moderateScale(24)} 
+                                      color={narrationStyleCasual ? theme.primary : theme.gray2} 
                                   />
-                              </View>
-                              <View style={styles.checkboxRow}>
-                                  <CheckboxItem
-                                      label="Oratoric"
-                                      value={narrationStyleOratoric}
-                                      onValueChange={setNarrationStyleOratoric}
+                                  <Text style={[styles.narrationCardText, narrationStyleCasual && styles.narrationCardTextSelected]}>
+                                      Casual
+                                  </Text>
+                              </TouchableOpacity>
+
+                              <TouchableOpacity 
+                                  style={[styles.narrationCard, narrationStyleOratoric && styles.narrationCardSelected]}
+                                  onPress={() => setNarrationStyleOratoric(!narrationStyleOratoric)}
+                              >
+                                  <Ionicons 
+                                      name={narrationStyleOratoric ? "checkmark-circle" : "ellipse-outline"} 
+                                      size={moderateScale(24)} 
+                                      color={narrationStyleOratoric ? theme.primary : theme.gray2} 
                                   />
-                                  <CheckboxItem
-                                      label="Static"
-                                      value={narrationStyleStatic}
-                                      onValueChange={setNarrationStyleStatic}
+                                  <Text style={[styles.narrationCardText, narrationStyleOratoric && styles.narrationCardTextSelected]}>
+                                      Oratoric
+                                  </Text>
+                              </TouchableOpacity>
+
+                              <TouchableOpacity 
+                                  style={[styles.narrationCard, narrationStyleStatic && styles.narrationCardSelected]}
+                                  onPress={() => setNarrationStyleStatic(!narrationStyleStatic)}
+                              >
+                                  <Ionicons 
+                                      name={narrationStyleStatic ? "checkmark-circle" : "ellipse-outline"} 
+                                      size={moderateScale(24)} 
+                                      color={narrationStyleStatic ? theme.primary : theme.gray2} 
                                   />
-                              </View>
+                                  <Text style={[styles.narrationCardText, narrationStyleStatic && styles.narrationCardTextSelected]}>
+                                      Static
+                                  </Text>
+                              </TouchableOpacity>
                           </View>
                       </View>
 
                       <View style={styles.uploadSection}>
                           <Text style={styles.label}>Upload Files</Text>
                           <TouchableOpacity 
-                              style={styles.uploadButton} 
+                              style={[styles.uploadButton, errors.audioSample && styles.uploadButtonError]} 
                               onPress={pickAudio}
                           >
-                              <Text style={styles.uploadButtonText}>
+                              <Feather 
+                                  name={audioSample ? "check-circle" : "upload"} 
+                                  size={moderateScale(18)} 
+                                  color={errors.audioSample ? '#FF6B6B' : theme.text} 
+                              />
+                              <Text style={[styles.uploadButtonText, errors.audioSample && styles.uploadButtonTextError]}>
                                   {audioSample?.name || 'Upload Audio Sample'}
                               </Text>
                           </TouchableOpacity>
+                          {errors.audioSample && <Text style={styles.errorText}>{errors.audioSample}</Text>}
 
                           <TouchableOpacity 
-                              style={styles.uploadButton} 
+                              style={[styles.uploadButton, errors.doc1 && styles.uploadButtonError]} 
                               onPress={pickDocument}
                           >
-                              <Text style={styles.uploadButtonText}>
+                              <Feather 
+                                  name={doc1 ? "check-circle" : "upload"} 
+                                  size={moderateScale(18)} 
+                                  color={errors.doc1 ? '#FF6B6B' : theme.text} 
+                              />
+                              <Text style={[styles.uploadButtonText, errors.doc1 && styles.uploadButtonTextError]}>
                                   {doc1?.name || 'Upload PDF Document'}
                               </Text>
                           </TouchableOpacity>
+                          {errors.doc1 && <Text style={styles.errorText}>{errors.doc1}</Text>}
                           
                           <TouchableOpacity 
-                              style={styles.uploadButton} 
+                              style={[styles.uploadButton, errors.image && styles.uploadButtonError]} 
                               onPress={pickImage}
                           >
-                              <Text style={styles.uploadButtonText}>
+                              <Feather 
+                                  name={image ? "check-circle" : "upload"} 
+                                  size={moderateScale(18)} 
+                                  color={errors.image ? '#FF6B6B' : theme.text} 
+                              />
+                              <Text style={[styles.uploadButtonText, errors.image && styles.uploadButtonTextError]}>
                                   {image ? 'Image Selected' : 'Upload Cover Image'}
                               </Text>
                           </TouchableOpacity>
+                          {errors.image && <Text style={styles.errorText}>{errors.image}</Text>}
                           
                           {image && (
                               <TouchableOpacity 
                                   style={[styles.uploadButton, styles.uploadButtonPrimary]} 
                                   onPress={uploadImageToBe}
                               >
-                                  <Text style={styles.uploadButtonText}>
+                                  <Text style={[styles.uploadButtonText, styles.uploadButtonPrimaryText]}>
                                       Submit Image
                                   </Text>
                               </TouchableOpacity>
                           )}
                       </View>
 
-                      <View style={styles.rightsHolder}>
+                      <View style={[styles.rightsHolder, errors.rightsHolder && styles.rightsHolderError]}>
                           <Checkbox
                               value={rightsHolder}
                               onValueChange={setRightsHolder}
@@ -681,16 +912,26 @@ console.log(publisherCommonForm,'companyId in document submit');
                               I confirm that I am the rights holder
                           </Text>
                       </View>
+                      {errors.rightsHolder && <Text style={styles.errorText}>{errors.rightsHolder}</Text>}
 
-                      <TouchableOpacity 
-                          style={styles.submitButton}
-                          onPress={handleSubmit}
-                      >
-                          {loading? <ActivityIndicator color={theme.white}/>:
-                          <Text style={styles.submitButtonText}>
-                              Submit Publication
-                          </Text>}
-                      </TouchableOpacity>
+                      <View style={styles.submitSection}>
+                          <TouchableOpacity 
+                              style={styles.submitButton}
+                              onPress={handleSubmit}
+                              disabled={loading}
+                          >
+                              {loading ? (
+                                  <View style={styles.loadingContainer}>
+                                      <ActivityIndicator color={theme.white} />
+                                      <Text style={styles.loadingText}>Submitting...</Text>
+                                  </View>
+                              ) : (
+                                  <Text style={styles.submitButtonText}>
+                                      Submit Publication
+                                  </Text>
+                              )}
+                          </TouchableOpacity>
+                      </View>
                   </View>
               </View>
           </ScrollView>
@@ -698,16 +939,39 @@ console.log(publisherCommonForm,'companyId in document submit');
   )
 }
 
-const FormInput = ({ label, ...props }) => {
+const FormInput = ({ label, error, ...props }) => {
   const {theme} = useTheme()
   return (
     <View style={{marginBottom: verticalScale(16)}}>
-        <Text style={{fontSize: moderateScale(14), color: theme.text, marginBottom: verticalScale(8), fontWeight: '500'}}>{label}</Text>
+        <Text style={{fontSize: moderateScale(14), color: theme.text, marginBottom: verticalScale(8), fontWeight: '600'}}>{label}</Text>
         <TextInput
             {...props}
             placeholderTextColor={theme.textMuted}
-            style={{backgroundColor: theme.white, borderRadius: moderateScale(8), padding: moderateScale(12), color: theme.text, borderWidth: 1, borderColor: theme.gray2, fontSize: moderateScale(16)}}
+            style={[
+                {
+                    backgroundColor: theme.white, 
+                    borderRadius: moderateScale(12), 
+                    padding: moderateScale(16), 
+                    color: theme.text, 
+                    borderWidth: 1.5, 
+                    borderColor: theme.gray2, 
+                    fontSize: moderateScale(16),
+                    shadowColor: theme.text,
+                    shadowOffset: {
+                        width: 0,
+                        height: 1,
+                    },
+                    shadowOpacity: 0.1,
+                    shadowRadius: 2,
+                    elevation: 2,
+                },
+                error && {
+                    borderColor: '#FF6B6B',
+                    borderWidth: 2,
+                }
+            ]}
         />
+        {error && <Text style={{color: '#FF6B6B', fontSize: moderateScale(12), marginTop: verticalScale(4)}}>{error}</Text>}
     </View>
   )
 }

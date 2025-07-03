@@ -15,7 +15,9 @@ export const verifyToken = (req,res,next)=>{
         req.isTeacher = payload.isTeacher;
         req.isAdmin = payload.isAdmin;
         req.middlewareRole = payload.role;
-        console.log(req.userId,req.isTeacher,req.isAdmin,'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz');
+        req.email = payload.email;
+        req.name = payload.name;
+        console.log(req.userId,req.isTeacher,req.isAdmin,req.email,req.name,'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz');
         next()
     });
 }

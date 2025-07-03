@@ -206,3 +206,29 @@ export const bookmarkBook = async (req,res)=> {
         res.status(500).json({message: "Internal server error"});
     }
 }
+
+export const listenerAnalytics = async (req,res)=>{
+    try {
+
+        const finishedBooks = await prisma.library.count({
+            where: {
+                userId: req.userId,
+                status: "FINISHED"
+            }
+        });
+
+        const inProgressBooks = await prisma.library.count({
+            where: {
+                userId: req.userId,
+                status: "IN_PROGRESS"
+            }
+        });
+    
+        await prisma.$disconnect();
+        res.status(200).json({ message: "Publisher insights fetched successfully", finishedBooks, inProgressBooks });
+    } catch (error) {
+            console.log(error);
+            res.status(500).json({ message: "Internal server error", error });
+    }
+    
+    }

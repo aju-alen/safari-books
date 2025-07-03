@@ -152,10 +152,10 @@ const HomePage = () => {
         <Text style={[styles.bookTitle, isLarge && styles.largeBookTitle, { color: theme.text }]} numberOfLines={2}>{book.title}</Text>
         <Text style={[styles.bookAuthor, { color: theme.textMuted }]}>{book.authorName}</Text>
         <View style={styles.bookMeta}>
-          <View style={styles.bookRating}>
+          {/* <View style={styles.bookRating}>
             <Ionicons name="star" size={12} color={theme.tertiary} />
             <Text style={[styles.bookRatingText, { color: theme.textMuted }]}>{book.rating}</Text>
-          </View>
+          </View> */}
           <Text style={[styles.bookDuration, { color: theme.textMuted }]}>
             {book.durationInHours}h {book.durationInMinutes}m
           </Text>

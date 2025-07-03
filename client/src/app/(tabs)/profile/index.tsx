@@ -8,6 +8,8 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '@/providers/ThemeProvider';
 import { moderateScale, verticalScale } from '@/utils/responsiveSize';
 import { LinearGradient } from 'expo-linear-gradient';
+import { axiosWithAuth } from '@/utils/customAxios';
+import { ipURL } from '@/utils/backendURL';
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
@@ -31,11 +33,13 @@ const ProfilePage = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const {theme} = useTheme()
-
+  const [listenerAnalytics, setListenerAnalytics] = useState(null);
   const getUserDetails = async () => {
     const details = await SecureStore.getItemAsync('userDetails');
     console.log(details, 'details in profile');
-    
+
+    const response = await axiosWithAuth.get(`${ipURL}/api/listeners/listener-analytics`)
+    setListenerAnalytics(response.data)
     if (details) {
       setUserDetails(JSON.parse(details));
     }
@@ -66,8 +70,8 @@ const ProfilePage = () => {
   }
 
   const stats: Stat[] = [
-    { icon: 'headset-outline', label: 'Listening Hours', value: '24.5' },
-    { icon: 'book-outline', label: 'Books Completed', value: '12' },
+    { icon: 'reader-outline', label: 'Books in Progress', value: listenerAnalytics?.inProgressBooks },
+    { icon: 'book-outline', label: 'Books Completed', value: listenerAnalytics?.finishedBooks },
     { icon: 'time-outline', label: 'Current Streak', value: '7 days' },
   ];
 
@@ -81,7 +85,7 @@ const ProfilePage = () => {
     { 
       icon: 'heart-outline', 
       label: 'Favorites', 
-      route: '/(tabs)/profile/favorites',
+      route: '',
       color: theme.tertiary
     },
   

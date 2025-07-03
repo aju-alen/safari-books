@@ -10,33 +10,33 @@ const SettingsPage = () => {
   const router = useRouter();
   const { theme } = useTheme();
 
-  const publisherOptions = [
-    {
-      icon: <Ionicons name="person-circle-outline" size={24} color={theme.primary} />,
-      label: 'Edit Profile',
-      route: '/(publisher)/edit-profile',
-    },
-    {
-      icon: <MaterialIcons name="library-books" size={24} color={theme.primary} />,
-      label: 'Manage Books',
-      route: '/(publisher)/manage-books',
-    },
-    {
-      icon: <FontAwesome5 name="chart-line" size={22} color={theme.primary} />,
-      label: 'Analytics',
-      route: '/(publisher)/analytics',
-    },
-    {
-      icon: <Feather name="credit-card" size={22} color={theme.primary} />,
-      label: 'Payment Settings',
-      route: '/(publisher)/payments',
-    },
-    {
+const publisherOptions = [
+  // {
+  //     icon: <Ionicons name="person-circle-outline" size={24} color={theme.primary} />,
+  //   label: 'Edit Profile',
+  //   route: '/(publisher)/edit-profile',
+  // },
+  // {
+  //     icon: <MaterialIcons name="library-books" size={24} color={theme.primary} />,
+  //   label: 'Manage Books',
+  //   route: '/(publisher)/manage-books',
+  // },
+  // {
+  //     icon: <FontAwesome5 name="chart-line" size={22} color={theme.primary} />,
+  //   label: 'Analytics',
+  //   route: '/(publisher)/analytics',
+  // },
+  // {
+  //     icon: <Feather name="credit-card" size={22} color={theme.primary} />,
+  //   label: 'Payment Settings',
+  //   route: '/(publisher)/payments',
+  // },
+  {
       icon: <Ionicons name="help-circle-outline" size={24} color={theme.primary} />,
-      label: 'Support',
-      route: '/(publisher)/support',
-    },
-  ];
+    label: 'Support',
+    route: '/(publisher)/support',
+  },
+];
 
   const handleLogout = async () => {
     await SecureStore.deleteItemAsync('userDetails');

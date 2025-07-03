@@ -288,7 +288,7 @@ export const login = async (req, res, next) => {
         if (!isCorrect) {
             return res.status(400).json({ message: "Invalid email or password" });
         }
-        const token = jwt.sign({ userId: user.id, role:user.role, }, process.env.SECRET_KEY);
+        const token = jwt.sign({ userId: user.id, role:user.role, email:user.email, name:user.name }, process.env.SECRET_KEY);
         res.status(200).json({ message: "Login successful", token, role:user.role, id:user.id, name:user.name, email:user.email });
     }
     catch (err) {
@@ -320,7 +320,7 @@ export const loginAdmin = async (req, res, next) => {
         if (!isCorrect) {
             return res.status(400).json({ message: "Invalid email or password" });
         }
-        const token = jwt.sign({ userId: user.id, role:user.role, }, process.env.SECRET_KEY);
+        const token = jwt.sign({ userId: user.id, role:user.role, email:user.email, name:user.name}, process.env.SECRET_KEY);
         res.status(200).json({ message: "Login successful", token, role:user.role, id:user.id, name:user.name, email:user.email });
     }
     catch (err) {

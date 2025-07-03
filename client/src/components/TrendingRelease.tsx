@@ -107,7 +107,7 @@ const checkIfNew = (releaseDate) => {
               </View>
 
               {/* Rating Section with improved visual */}
-              <View style={[styles.ratingContainer, { backgroundColor: `${theme.primary}15` }]}>
+              {/* <View style={[styles.ratingContainer, { backgroundColor: `${theme.primary}15` }]}>
                 {[...Array(5)].map((_, index) => (
                   <Ionicons
                     key={index}
@@ -119,7 +119,7 @@ const checkIfNew = (releaseDate) => {
                 <Text style={[styles.ratingText, { color: theme.primary }]}>
                   {rating ? `${rating.toFixed(1)}` : 'N/A'}
                 </Text>
-              </View>
+              </View> */}
 
               {/* Info Row */}
               <View style={[styles.infoRow, { backgroundColor: theme.lightWhite }]}>
@@ -141,7 +141,7 @@ const checkIfNew = (releaseDate) => {
               <View style={styles.categoryContainer}>
                 {categories && categories.split(',').slice(0, 2).map((category, index) => (
                   <View key={index} style={[styles.categoryTag, { backgroundColor: `${theme.primary}15` }]}>
-                    <Text style={[styles.categoryText, { color: theme.primary }]}>{category.trim()}</Text>
+                    <Text style={[styles.categoryText, { color: theme.primary }]}>{category.trim().toUpperCase()}</Text>
                   </View>
                 ))}
               </View>

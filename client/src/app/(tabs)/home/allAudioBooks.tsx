@@ -175,7 +175,7 @@ const allAudioBooks = () => {
           {item.author || 'Unknown Author'}
         </Text>
         
-        <View style={styles.bookMeta}>
+        {/* <View style={styles.bookMeta}>
           <View style={styles.bookRating}>
             <Ionicons name="star" size={12} color={theme.tertiary} />
             <Text style={styles.bookRatingText}>
@@ -185,16 +185,16 @@ const allAudioBooks = () => {
           <Text style={styles.bookDuration}>
             {item.duration || 'N/A'}
           </Text>
-        </View>
+        </View> */}
         
-        <View style={styles.priceContainer}>
+        {/* <View style={styles.priceContainer}>
           <Text style={styles.price}>
             {item.price || '$12.99'}
           </Text>
           <TouchableOpacity style={styles.addButton}>
             <Ionicons name="add" size={16} color={theme.white} />
           </TouchableOpacity>
-        </View>
+        </View> */}
       </View>
     </TouchableOpacity>
   )
