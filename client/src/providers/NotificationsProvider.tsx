@@ -66,9 +66,11 @@ import { router } from "expo-router";
       responseListener.current =
         Notifications.addNotificationResponseReceivedListener((response) => {
           //Write logic to handle after notification is clicked
-          if (response.notification.request.content.data.type === "new_book") {
-            router.replace('/(tabs)/profile');
-          }
+          const notificationData = response.notification.request.content.data;
+          
+          if (notificationData.type === "bedtime_reminder") {
+            router.replace('/(tabs)/library');
+          } 
           console.log(
             "🔔 Notification Response: ",
             JSON.stringify(response, null, 2),

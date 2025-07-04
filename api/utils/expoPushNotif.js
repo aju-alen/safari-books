@@ -4,9 +4,10 @@ export const sendPushNotification = async (expoPushToken, message) => {
     console.log(expoPushToken, message);
   const body = {
     to: expoPushToken,
-    sound: 'default',
+    sound: '',
     title: message.title,
     body: message.body,
+    data: message.data || {},
   };
 
   await fetch('https://exp.host/--/api/v2/push/send', {

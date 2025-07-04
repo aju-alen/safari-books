@@ -13,7 +13,10 @@ export const startNotificationCron = () => {
         for (const user of users) {
             await sendPushNotification(user, {
                 title: "Ready for bedtime?",
-                body: `You have unfinished books waiting for you.  📖`,
+                body: `You have unfinished books waiting for you. 📖`,
+                data: {
+                    type: "bedtime_reminder"
+                }
             });
         }
     }
