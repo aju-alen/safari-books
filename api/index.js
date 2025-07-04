@@ -7,7 +7,7 @@ import adminRoute from './routes/admin-route.js';
 import listenerRoute from './routes/listener-route.js';
 import libraryRoute from './routes/library-route.js';
 import cors from 'cors';
-
+import { startNotificationCron } from './utils/cronJob.js';
 
 const app = express();
 app.use(cors({
@@ -33,4 +33,5 @@ app.use('/api/library',libraryRoute)
 const port = process.env.PORT || 3001;
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
+    startNotificationCron();
 });
