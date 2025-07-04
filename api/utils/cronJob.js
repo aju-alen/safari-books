@@ -4,7 +4,7 @@ import { getUsersWithUnfinishedBooks } from './cronFunctions.js';
 import { sendPushNotification } from './expoPushNotif.js';
 
 export const startNotificationCron = () => {
-  cron.schedule('* * * * *', async () => {
+  cron.schedule('0 21 * * *', async () => {
     console.log('Cron job ran');
     const users = await getUsersWithUnfinishedBooks();
 
@@ -12,8 +12,8 @@ export const startNotificationCron = () => {
         console.log('Users found');
         for (const user of users) {
             await sendPushNotification(user, {
-                title: "Keep reading!",
-                body: `You still have unfinished books waiting for you 📖`,
+                title: "Ready for bedtime?",
+                body: `You have unfinished books waiting for you.  📖`,
             });
         }
     }
