@@ -8,13 +8,16 @@ export const verifyToken = (req,res,next)=>{
     if (!token) return res.status(401).send("You are not authenticated!");
 
     jwt.verify(token,process.env.SECRET_KEY,async(err,payload)=>{
+        console.log(payload,'payload');
        
         if(err) return res.status(403).send("Token is not valid");
         req.userId = payload.userId;
         req.isTeacher = payload.isTeacher;
         req.isAdmin = payload.isAdmin;
         req.middlewareRole = payload.role;
-        console.log(req.userId,req.isTeacher,req.isAdmin,'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz');
+        req.email = payload.email;
+        req.name = payload.name;
+        console.log(req.userId,req.isTeacher,req.isAdmin,req.email,req.name,'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz');
         next()
     });
 }

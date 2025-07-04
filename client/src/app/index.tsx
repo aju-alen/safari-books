@@ -1,7 +1,7 @@
 import { StatusBar } from "expo-status-bar";
-import { StyleSheet, Text, View, Pressable, Dimensions } from 'react-native';
+import { StyleSheet, Text, View, Pressable, Dimensions, Image } from 'react-native';
 import { router } from "expo-router";
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import * as SecureStore from 'expo-secure-store';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -13,26 +13,45 @@ const { width, height } = Dimensions.get('window');
 
 const App = () => {
   const { theme } = useTheme();
+  const [userDetails, setUserDetails] = useState(null);
+  const [loading, setLoading] = useState(true);
   
   // Check user role
   useEffect(() => {
-    const checkUser = async () => {
-      let userDetail = await SecureStore.getItemAsync('userDetails');
-      let authToken = await SecureStore.getItemAsync('authToken');
-      if (!userDetail) return;
-      const userData = JSON.parse(userDetail);
-      if (userData.role === 'PUBLISHER') {
-        router.replace('/(publisher)/publisherhome');
-      } else if (userData.role === 'LISTENER') {
-        router.replace('/(tabs)/home');
+    const user = async () => {
+      const user = await SecureStore.getItemAsync("userDetails");
+      console.log(user, 'user');
+      
+      if (!user) {
+        setLoading(false);
+        return;
       }
+      const parsed = JSON.parse(user);
+      setUserDetails(parsed);
+
+      if (parsed.role === 'GUEST') {
+        router.replace('/(tabs)/home');
+        return;
+      }
+      else if (parsed.role === 'LISTENER') {
+        router.replace('/(tabs)/home');
+        return;
+      }
+      else if (parsed.role === 'PUBLISHER') {
+        router.replace('/(publisher)/publisherhome');
+        return;
+      }
+      // Add other redirects if needed
+      setLoading(false);
     };
-    checkUser();
+    user();
   }, []);
 
   const handleGetStarted = () => {
     router.replace('/(authenticate)/chooseRole');
   };
+
+  if (loading) return null; // or a spinner
 
   return (
     <SafeAreaProvider>
@@ -41,10 +60,9 @@ const App = () => {
         {/* Header Section */}
         <View style={styles.headerSection}>
           <View style={[styles.logoContainer, { backgroundColor: theme.primary }]}>
-            <Ionicons name="library" size={moderateScale(40)} color={theme.white} />
+            <Image source={require('@/assets/sbLogo.png')} style={{ width: moderateScale(80), height: moderateScale(40) }} />
           </View>
-          <Text style={[styles.appName, { color: theme.text }]}>Safari Books</Text>
-          <Text style={[styles.tagline, { color: theme.textMuted }]}>Your Gateway to Stories</Text>
+         
         </View>
 
         {/* Main Content */}
@@ -149,9 +167,10 @@ const styles = StyleSheet.create({
   mainContent: {
     flex: 1,
     paddingHorizontal: horizontalScale(24),
+    justifyContent: 'space-between',
   },
   heroSection: {
-    marginBottom: verticalScale(40),
+    marginBottom: verticalScale(20),
   },
   heroTitle: {
     fontSize: moderateScale(28),
@@ -169,6 +188,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
+    marginBottom: verticalScale(20),
   },
   featureCard: {
     width: (width - horizontalScale(48) - horizontalScale(12)) / 2,
@@ -208,6 +228,7 @@ const styles = StyleSheet.create({
   bottomSection: {
     paddingHorizontal: horizontalScale(24),
     paddingBottom: verticalScale(40),
+    paddingTop: verticalScale(20),
     alignItems: 'center',
   },
   ctaButton: {

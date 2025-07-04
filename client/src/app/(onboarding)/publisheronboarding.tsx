@@ -13,7 +13,7 @@ const publisheronboarding = () => {
 
   const handleSkipOnboarding = async () => {
     await SecureStore.setItemAsync('sb-onboarding', 'false');
-    router.push('/(publisher)/publisherHome');
+    router.replace('/(publisher)/publisherHome');
   }
 
   const styles = StyleSheet.create({

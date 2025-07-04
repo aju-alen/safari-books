@@ -288,7 +288,7 @@ export const login = async (req, res, next) => {
         if (!isCorrect) {
             return res.status(400).json({ message: "Invalid email or password" });
         }
-        const token = jwt.sign({ userId: user.id, role:user.role, }, process.env.SECRET_KEY);
+        const token = jwt.sign({ userId: user.id, role:user.role, email:user.email, name:user.name }, process.env.SECRET_KEY);
         res.status(200).json({ message: "Login successful", token, role:user.role, id:user.id, name:user.name, email:user.email });
     }
     catch (err) {
@@ -320,7 +320,7 @@ export const loginAdmin = async (req, res, next) => {
         if (!isCorrect) {
             return res.status(400).json({ message: "Invalid email or password" });
         }
-        const token = jwt.sign({ userId: user.id, role:user.role, }, process.env.SECRET_KEY);
+        const token = jwt.sign({ userId: user.id, role:user.role, email:user.email, name:user.name}, process.env.SECRET_KEY);
         res.status(200).json({ message: "Login successful", token, role:user.role, id:user.id, name:user.name, email:user.email });
     }
     catch (err) {
@@ -355,6 +355,97 @@ export const getUserById = async (req, res) => {
     } catch (error) {
         console.log(error);
         res.status(500).json({ message: "An error occurred while fetching user data" });
+    }
+};
+
+export const updateUserProfile = async (req, res) => {
+    try {
+        const { name, email, password } = req.body;
+        const userId = req.userId; // Get userId from JWT middleware
+
+        if (!name && !email && !password) {
+            return res.status(400).json({ message: "At least one field (name, email, or password) is required" });
+        }
+
+        // Find the user
+        const user = await prisma.user.findUnique({
+            where: { id: userId }
+        });
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        const updateData = {};
+
+        // Update name if provided
+        if (name && name.trim() !== '') {
+            updateData.name = name.trim();
+        }
+
+        // Update email if provided
+        if (email && email.trim() !== '') {
+            const lowercaseEmail = email.toLowerCase().trim();
+            
+            // Check if email is already taken by another user
+            const existingUser = await prisma.user.findFirst({
+                where: {
+                    email: lowercaseEmail,
+                    id: { not: userId }
+                }
+            });
+
+            if (existingUser) {
+                return res.status(400).json({ message: "Email is already taken by another user" });
+            }
+
+            updateData.email = lowercaseEmail;
+            updateData.emailVerified = false; // Require email verification for new email
+            updateData.emailVerificationToken = crypto.randomBytes(64).toString('hex');
+        }
+
+        // Update password if provided
+        if (password && password.trim() !== '') {
+            if (password.length < 6) {
+                return res.status(400).json({ message: "Password must be at least 6 characters long" });
+            }
+            updateData.password = await bcrypt.hash(password, 10);
+        }
+
+        // Update the user
+        const updatedUser = await prisma.user.update({
+            where: { id: userId },
+            data: updateData,
+            select: {
+                id: true,
+                name: true,
+                email: true,
+                role: true,
+                emailVerified: true,
+                firstTimeLogin: true,
+                createdAt: true,
+                updatedAt: true
+            }
+        });
+        const token = jwt.sign({ userId: updatedUser.id, role:updatedUser.role, }, process.env.SECRET_KEY);
+
+
+        // Send verification email if email was changed
+        if (email && email.trim() !== '') {
+            sendVerificationEmail(updatedUser.email, updateData.emailVerificationToken, updatedUser.name);
+        }
+
+        await prisma.$disconnect();
+        
+        res.status(200).json({ 
+            message: "Profile updated successfully", 
+            user: updatedUser,
+            emailChanged: !!email,
+            token: token
+        });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "An error occurred while updating the profile" });
     }
 };
 
@@ -393,5 +484,41 @@ export const deleteAccount = async (req, res) => {
     } catch (error) {
         console.log(error);
         res.status(500).json({ message: "An error occurred while deleting the account" });
+    }
+};
+
+export const registerPushToken = async (req, res) => {
+    try {
+        const { pushToken } = req.body;
+        const userId = req.userId; // Get userId from JWT middleware
+
+        if (!pushToken) {
+            return res.status(400).json({ message: "Push token is required" });
+        }
+
+        // Check if user exists
+        const user = await prisma.user.findUnique({
+            where: { id: userId }
+        });
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        // Update user with push token
+        await prisma.user.update({
+            where: { id: userId },
+            data: {
+                pushToken: pushToken
+            }
+        });
+
+        await prisma.$disconnect();
+        
+        console.log(`Push token registered for user ${userId}: ${pushToken}`);
+        res.status(200).json({ message: "Push token registered successfully" });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "An error occurred while registering push token" });
     }
 };

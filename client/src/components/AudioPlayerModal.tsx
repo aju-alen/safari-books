@@ -1,25 +1,15 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Modal, Image, Alert, Animated, ScrollView, AppState } from 'react-native';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { StyleSheet, View, Text, TouchableOpacity, Modal, Image, Alert, Animated, ScrollView } from 'react-native';
 import { Audio } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
 import { moderateScale, verticalScale, horizontalScale } from '@/utils/responsiveSize';
 import Slider from '@react-native-community/slider';
+import { useTheme } from '@/providers/ThemeProvider';
+import { useFocusEffect } from '@react-navigation/native';
+import { axiosWithAuth } from '@/utils/customAxios';
+import { ipURL } from '@/utils/backendURL';
 
-const COLORS = {
-  primary: '#8B5CF6',      // Vibrant purple
-  secondary: '#C4B5FD',    // Light purple
-  accent: '#EC4899',       // Pink accent
-  background: '#000000',
-  text: '#FFFFFF',
-  textSecondary: '#D1D5DB',
-  darkGray: '#1F2937',
-  lightGray: 'rgba(255, 255, 255, 0.1)',
-  gradient: {
-    start: '#8B5CF6',      // Vibrant purple
-    end: '#EC4899',        // Pink
-  },
-  overlay: 'rgba(17, 24, 39, 0.95)', // Dark overlay with higher opacity
-};
+
 
 const AudioPlayer = ({ 
   isVisible, 
@@ -27,15 +17,22 @@ const AudioPlayer = ({
   audioUrl, 
   bookCover, 
   title, 
-  author 
+  author,
+  authorAvatar,
+  bookId
 }) => {
+  const { theme } = useTheme();
   const [sound, setSound] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
   const [position, setPosition] = useState(0);
-  const [sliderValue, setSliderValue] = useState(0);
   const [isBuffering, setIsBuffering] = useState(false);
   const [error, setError] = useState(null);
+  const [isSeeking, setIsSeeking] = useState(false);
+  const [isSavingProgress, setIsSavingProgress] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [savedProgressLoaded, setSavedProgressLoaded] = useState(false);
+  const [savedTimestamp, setSavedTimestamp] = useState(null);
   
   // New state for enhanced functionality
   const [isRepeat, setIsRepeat] = useState(false);
@@ -51,36 +48,125 @@ const AudioPlayer = ({
   const pulseAnimation = useRef(new Animated.Value(1)).current;
   const coverScaleAnimation = useRef(new Animated.Value(1)).current;
 
-  console.log(audioUrl, bookCover, title, author, 'audioUrl in playerrrr');
+  console.log(audioUrl, bookCover, title, author, bookId, 'audioUrl in playerrrr');
 
-  // Handle app state changes
-  useEffect(() => {
-    const handleAppStateChange = (nextAppState) => {
-      if (nextAppState === 'background' || nextAppState === 'inactive') {
-        // Pause audio when app goes to background
-        if (sound && isPlaying) {
-          sound.pauseAsync();
+  // Progress saving function
+  const saveProgress = useCallback(async () => {
+    console.log(isSavingProgress, 'isSavingProgress', bookId, 'bookId');
+    
+    if (!bookId || isSavingProgress) return;
+    
+    try {
+      setIsSavingProgress(true);
+      
+      // Determine status based on position and duration
+      let status: 'NOT_STARTED' | 'IN_PROGRESS' | 'FINISHED' = 'NOT_STARTED';
+      
+      if (position > 0) {
+        if (duration > 0 && position >= duration - 1000) { // Within 1 second of end
+          status = 'FINISHED';
+        } else {
+          status = 'IN_PROGRESS';
         }
       }
-    };
+      
+      const timestampInSeconds = Math.floor(position / 1000);
+      
+      await axiosWithAuth.put(`${ipURL}/api/library/update-status/${bookId}`, {
+        status: status,
+        timestamp: timestampInSeconds
+      });
+      
+      console.log('Progress saved:', { position, duration, status });
+    } catch (error) {
+      console.error('Failed to save progress:', error);
+    } finally {
+      setIsSavingProgress(false);
+    }
+  }, [bookId, position, duration, isSavingProgress]);
 
-    const subscription = AppState.addEventListener('change', handleAppStateChange);
-    return () => subscription?.remove();
-  }, [sound, isPlaying]);
+  // Save progress when screen loses focus
+  useFocusEffect(
+    useCallback(() => {
+      return () => {
+        if (position > 0 && bookId) {
+          console.log('Saving progress when screen loses focus');
+          saveProgress();
+        }
+      };
+    }, [isLoading])
+  );
+
+  // Reset saved progress when bookId changes
+  useEffect(() => {
+    setSavedProgressLoaded(false);
+    setSavedTimestamp(null);
+  }, [bookId]);
 
   // Handle modal visibility changes
   useEffect(() => {
     if (isVisible && audioUrl) {
-      loadAudio();
+      const initializeAudio = async () => {
+        // Load saved progress first
+        const savedTimestamp = await loadSavedProgress();
+        // Then load audio with saved position
+        await loadAudio(savedTimestamp);
+      };
+      initializeAudio();
     } else {
       // Stop and unload audio when modal is not visible
       stopAndUnloadAudio();
+      // Reset saved progress state
+      setSavedProgressLoaded(false);
+      setSavedTimestamp(null);
     }
     
     return () => {
       stopAndUnloadAudio();
     };
   }, [isVisible, audioUrl]);
+
+  // Periodic progress saving during playback - every 20 seconds
+  // useEffect(() => {
+  //   let intervalId = null;
+    
+  //   if (isPlaying && bookId && position > 0) {
+  //     intervalId = setInterval(() => {
+  //       console.log('Periodic progress save (20 seconds)');
+  //       saveProgress();
+  //     }, 20000); // Save every 20 seconds
+  //   }
+    
+  //   return () => {
+  //     if (intervalId) {
+  //       clearInterval(intervalId);
+  //     }
+  //   };
+  // }, [isPlaying, bookId, position, saveProgress]);
+
+  // Load saved progress from database
+  const loadSavedProgress = async () => {
+    if (!bookId) return null;
+    
+    // Return cached result if already loaded
+    if (savedProgressLoaded && savedTimestamp) {
+      return savedTimestamp;
+    }
+    
+    try {
+      const response = await axiosWithAuth.get(`${ipURL}/api/library/status/${bookId}`);
+      if (response.data && response.data.library && response.data.library.timestamp > 0) {
+        const timestamp = response.data.library.timestamp * 1000; // Convert seconds to milliseconds
+        console.log('Loaded saved progress:', response.data.library, 'timestamp in ms:', timestamp);
+        setSavedTimestamp(timestamp);
+        setSavedProgressLoaded(true);
+        return timestamp;
+      }
+    } catch (error) {
+      console.error('Failed to load saved progress:', error);
+    }
+    return null;
+  };
 
   // Animation effects
   useEffect(() => {
@@ -118,7 +204,7 @@ const AudioPlayer = ({
     }
   }, [isPlaying]);
 
-  const loadAudio = async () => {
+  const loadAudio = async (savedTimestamp = null) => {
     if (!audioUrl) {
       setError('Audio URL is missing');
       Alert.alert('Error', 'Cannot play audio - source is missing');
@@ -128,6 +214,7 @@ const AudioPlayer = ({
     try {
       setIsBuffering(true);
       setError(null);
+      setIsSeeking(false);
 
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: false,
@@ -146,6 +233,13 @@ const AudioPlayer = ({
       
       setSound(newSound);
       setIsBuffering(false);
+      
+      // Seek to saved position if available
+      if (savedTimestamp && savedTimestamp > 0) {
+        console.log('Seeking to saved position:', savedTimestamp);
+        await newSound.setPositionAsync(savedTimestamp);
+        setPosition(savedTimestamp);
+      }
     } catch (error) {
       console.error('Error loading audio:', error);
       setError(error.message);
@@ -165,6 +259,7 @@ const AudioPlayer = ({
         setIsPlaying(false);
         setPosition(0);
         setDuration(0);
+        setIsSeeking(false);
       }
       // Clear any active timers
       clearTimer();
@@ -176,13 +271,19 @@ const AudioPlayer = ({
   const onPlaybackStatusUpdate = (status) => {
     if (status.isLoaded) {
       setDuration(status.durationMillis);
-      setPosition(status.positionMillis);
+      // Only update position if not currently seeking
+      if (!isSeeking) {
+        setPosition(status.positionMillis);
+      }
       setIsPlaying(status.isPlaying);
       setIsBuffering(status.isBuffering);
       
-      // Handle repeat
-      if (isRepeat && status.didJustFinish) {
-        sound?.replayAsync();
+      // Handle audio completion
+      if (status.didJustFinish) {
+        // Handle repeat
+        if (isRepeat) {
+          sound?.replayAsync();
+        }
       }
     } else if (status.error) {
       console.error(`Playback error: ${status.error}`);
@@ -203,7 +304,9 @@ const AudioPlayer = ({
 
   const handlePlayPause = async () => {
     if (!sound) {
-      await loadAudio();
+      // Load saved progress when creating new sound
+      const savedTimestamp = await loadSavedProgress();
+      await loadAudio(savedTimestamp);
       return;
     }
 
@@ -220,16 +323,31 @@ const AudioPlayer = ({
   };
 
   const handleSeek = async (value) => {
-    if (sound) {
-      await sound.setPositionAsync(value * duration);
+    if (sound && duration > 0) {
+      setIsSeeking(true);
+      const newPosition = value * duration;
+      setPosition(newPosition);
     }
-    setSliderValue(value);
+  };
+
+  const handleSlidingStart = () => {
+    setIsSeeking(true);
+  };
+
+  const handleSlidingComplete = async (value) => {
+    if (sound && duration > 0) {
+      const newPosition = value * duration;
+      await sound.setPositionAsync(newPosition);
+      setPosition(newPosition);
+    }
+    setIsSeeking(false);
   };
 
   const handleRewind = async () => {
     if (sound) {
       const newPosition = Math.max(0, position - 10000); // 10 seconds back
       await sound.setPositionAsync(newPosition);
+      setPosition(newPosition);
     }
   };
 
@@ -237,6 +355,7 @@ const AudioPlayer = ({
     if (sound) {
       const newPosition = Math.min(duration, position + 10000); // 10 seconds forward
       await sound.setPositionAsync(newPosition);
+      setPosition(newPosition);
     }
   };
 
@@ -244,6 +363,7 @@ const AudioPlayer = ({
     if (sound) {
       const newPosition = Math.max(0, position - 30000); // 30 seconds back
       await sound.setPositionAsync(newPosition);
+      setPosition(newPosition);
     }
   };
 
@@ -251,6 +371,7 @@ const AudioPlayer = ({
     if (sound) {
       const newPosition = Math.min(duration, position + 30000); // 30 seconds forward
       await sound.setPositionAsync(newPosition);
+      setPosition(newPosition);
     }
   };
 
@@ -317,7 +438,9 @@ const AudioPlayer = ({
   };
 
   const handleClose = async () => {
+    setIsLoading(true);
     await stopAndUnloadAudio();
+    setIsLoading(false);
     onClose();
   };
 
@@ -333,439 +456,218 @@ const AudioPlayer = ({
       animationType="fade"
       onRequestClose={handleClose}
     >
-      <View style={styles.container}>
-        <View style={styles.blurBackground} />
-        
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
-            <Ionicons name="chevron-down" size={28} color={COLORS.text} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Now Playing</Text>
-          <TouchableOpacity style={styles.menuButton}>
-            <Ionicons name="ellipsis-horizontal" size={24} color={COLORS.text} />
-          </TouchableOpacity>
+      <View style={[styles.greenBg, { backgroundColor: theme.background }]}>
+        {/* Concentric Circles */}
+        <View style={styles.circlesBg} pointerEvents="none">
+          <View style={[styles.circleLarge, { backgroundColor: theme.secondary }]} />
+          <View style={[styles.circleMedium, { backgroundColor: theme.secondary }]} />
+          <View style={[styles.circleSmall, { backgroundColor: theme.secondary }]} />
         </View>
-
-        <ScrollView 
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.coverWrapper}>
-            <Animated.View 
-              style={[
-                styles.coverContainer,
-                { transform: [{ scale: pulseAnimation }] }
-              ]}
+        {/* Top Bar */}
+        <View style={styles.topBar}>
+                      <TouchableOpacity onPress={handleClose} style={styles.topIconBtn} activeOpacity={0.7}>
+              <Ionicons name="chevron-back" size={28} color={theme.text} />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.topIconBtn} activeOpacity={0.7}>
+              <Ionicons name="notifications-outline" size={24} color={theme.text} />
+            </TouchableOpacity>
+        </View>
+        {/* Main Content */}
+        <View style={styles.contentWrap}>
+          {/* Title & Author */}
+          <View style={styles.titleBlock}>
+            <Text style={[styles.bigTitle, { color: theme.text }]} numberOfLines={2}>{title}</Text>
+            <View style={styles.authorRow}>
+              <Image source={{ uri: authorAvatar }} style={styles.avatar} />
+              <Text style={[styles.authorName, { color: theme.text }]}>{author}</Text>
+            </View>
+          </View>
+          {/* Play Button */}
+          <View style={styles.centerSection}>
+            <TouchableOpacity 
+              style={[styles.bigPlayButton, { backgroundColor: theme.background }]} 
+              onPress={handlePlayPause}
+              disabled={isBuffering}
+              activeOpacity={0.8}
             >
-              <Image source={{ uri: bookCover }} style={styles.coverImage} />
-              <View style={styles.coverGlow} />
-              <View style={styles.coverOverlay} />
-            </Animated.View>
+              {isBuffering ? (
+                <Animated.View style={{ transform: [{ rotate: spin }] }}>
+                  <Ionicons name="sync" size={48} color={theme.primary} />
+                </Animated.View>
+              ) : (
+                <Ionicons 
+                  name={isPlaying ? 'pause' : 'play'} 
+                  size={48} 
+                  color={theme.primary} 
+                />
+              )}
+            </TouchableOpacity>
           </View>
-
-          <View style={styles.infoContainer}>
-            <Text style={styles.title} numberOfLines={1}>{title}</Text>
-            <Text style={styles.author} numberOfLines={1}>{author}</Text>
-            {playbackRate !== 1.0 && (
-              <View style={styles.rateIndicator}>
-                <Text style={styles.rateText}>{playbackRate}x</Text>
-              </View>
-            )}
+        </View>
+        {/* Bottom Controls & Progress */}
+        <View style={styles.bottomWrap}>
+          <View style={styles.bottomRow}>
+            <TouchableOpacity style={styles.bottomIconBtn}>
+              <Ionicons name="settings-outline" size={24} color={theme.text} />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.bottomIconBtn}>
+              <Ionicons name="heart-outline" size={24} color={theme.text} />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.bottomIconBtn}>
+              <Ionicons name="share-social-outline" size={24} color={theme.text} />
+            </TouchableOpacity>
           </View>
-
-          <View style={styles.progressContainer}>
+          {/* Progress Bar */}
+          <View style={styles.progressSection}>
             <Slider
               style={styles.slider}
               minimumValue={0}
               maximumValue={1}
-              value={duration ? position / duration : 0}
+              value={duration > 0 ? position / duration : 0}
               onValueChange={handleSeek}
-              minimumTrackTintColor={COLORS.accent}
-              maximumTrackTintColor={COLORS.lightGray}
-              thumbTintColor={COLORS.text}
+              onSlidingStart={handleSlidingStart}
+              onSlidingComplete={handleSlidingComplete}
+              minimumTrackTintColor={theme.text}
+              maximumTrackTintColor={theme.maximumTrackTintColor}
+              thumbTintColor={theme.text}
             />
-            <View style={styles.timeContainer}>
-              <Text style={styles.timeText}>{formatTime(position)}</Text>
-              <Text style={styles.timeText}>{formatTime(duration)}</Text>
+            <View style={styles.timeRow}>
+              <Text style={[styles.timeText, { color: theme.text }]}>{formatTime(position)}</Text>
+              <Text style={[styles.timeText, { color: theme.text }]}>{formatTime(duration)}</Text>
             </View>
           </View>
-
-          <View style={styles.controls}>
-            <TouchableOpacity style={styles.secondaryButton} onPress={handleSkipBack}>
-              <Ionicons name="play-back" size={20} color={COLORS.textSecondary} />
-            </TouchableOpacity>
-            
-            <TouchableOpacity style={styles.rewindButton} onPress={handleRewind}>
-              <Ionicons name="play-skip-back" size={24} color={COLORS.text} />
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={styles.playButton} 
-              onPress={handlePlayPause}
-              disabled={isBuffering}
-            >
-              <View style={styles.playButtonInner}>
-                {isBuffering ? (
-                  <Animated.View style={{ transform: [{ rotate: spin }] }}>
-                    <Ionicons name="sync" size={36} color={COLORS.text} />
-                  </Animated.View>
-                ) : (
-                  <Ionicons 
-                    name={isPlaying ? 'pause' : 'play'} 
-                    size={36} 
-                    color={COLORS.text} 
-                  />
-                )}
-              </View>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.forwardButton} onPress={handleForward}>
-              <Ionicons name="play-skip-forward" size={24} color={COLORS.text} />
-            </TouchableOpacity>
-            
-            <TouchableOpacity style={styles.secondaryButton} onPress={handleSkipForward}>
-              <Ionicons name="play-forward" size={20} color={COLORS.textSecondary} />
-            </TouchableOpacity>
-          </View>
-          
-          <View style={styles.additionalControls}>
-            <TouchableOpacity 
-              style={[styles.iconButton, isRepeat && styles.iconButtonActive]}
-              onPress={toggleRepeat}
-            >
-              <Ionicons name="repeat" size={20} color={isRepeat ? COLORS.accent : COLORS.textSecondary} />
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={[styles.iconButton, selectedTimer && styles.iconButtonActive]}
-              onPress={toggleTimer}
-            >
-              <Ionicons name="timer-outline" size={20} color={selectedTimer ? COLORS.accent : COLORS.textSecondary} />
-            </TouchableOpacity>
-            
-            <TouchableOpacity style={styles.iconButton} onPress={changePlaybackRate}>
-              <Text style={styles.speedText}>{playbackRate}x</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={[styles.iconButton, isBookmarked && styles.iconButtonActive]}
-              onPress={toggleBookmark}
-            >
-              <Ionicons 
-                name={isBookmarked ? "bookmark" : "bookmark-outline"} 
-                size={20} 
-                color={isBookmarked ? COLORS.accent : COLORS.textSecondary} 
-              />
-            </TouchableOpacity>
-          </View>
-
-          {showTimer && (
-            <View style={styles.timerContainer}>
-              <Text style={styles.timerTitle}>Set Sleep Timer</Text>
-              <View style={styles.timerOptions}>
-                {timerOptions.map((minutes) => (
-                  <TouchableOpacity
-                    key={minutes}
-                    style={[
-                      styles.timerOption,
-                      selectedTimer === minutes && styles.timerOptionActive
-                    ]}
-                    onPress={() => setTimer(minutes)}
-                  >
-                    <Text style={[
-                      styles.timerOptionText,
-                      selectedTimer === minutes && styles.timerOptionTextActive
-                    ]}>
-                      {minutes}m
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-                <TouchableOpacity
-                  style={styles.timerOption}
-                  onPress={clearTimer}
-                >
-                  <Text style={styles.timerOptionText}>Off</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
-          
-          {error && (
-            <Text style={styles.errorText}>{error}</Text>
-          )}
-        </ScrollView>
+        </View>
       </View>
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  greenBg: {
     flex: 1,
-    backgroundColor: 'transparent',
+    justifyContent: 'flex-start',
+    alignItems: 'stretch',
   },
-  blurBackground: {
+  circlesBg: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: COLORS.overlay,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 0,
   },
-  header: {
+  circleLarge: {
+    position: 'absolute',
+    width: 600,
+    height: 600,
+    borderRadius: 300,
+    opacity: 0.18,
+  },
+  circleMedium: {
+    position: 'absolute',
+    width: 400,
+    height: 400,
+    borderRadius: 200,
+    opacity: 0.28,
+  },
+  circleSmall: {
+    position: 'absolute',
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    opacity: 0.45,
+  },
+  topBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: 48,
+    paddingHorizontal: 24,
+    zIndex: 2,
+  },
+  topIconBtn: {
+    padding: 4,
+  },
+  contentWrap: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1,
+  },
+  titleBlock: {
+    alignItems: 'center',
+    marginBottom: 32,
+  },
+  bigTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 12,
+    letterSpacing: 0.2,
+  },
+  authorRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 8,
+  },
+  avatar: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    marginRight: 8,
+    backgroundColor: '#d9d9d9',
+  },
+  authorName: {
+    fontSize: 13,
+    fontWeight: '400',
+    opacity: 0.95,
+  },
+  centerSection: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 0,
+  },
+  bigPlayButton: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#fff',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  bottomWrap: {
+    width: '100%',
+    paddingBottom: 24,
+    zIndex: 2,
+  },
+  bottomRow: {
+    flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: horizontalScale(24),
-    paddingTop: verticalScale(40),
-    paddingBottom: verticalScale(20),
-    backgroundColor: 'transparent',
-  },
-  headerTitle: {
-    color: COLORS.textSecondary,
-    fontSize: moderateScale(16),
-    fontWeight: '600',
-    letterSpacing: 0.5,
-  },
-  closeButton: {
-    padding: moderateScale(8),
-    borderRadius: moderateScale(20),
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-  },
-  menuButton: {
-    padding: moderateScale(8),
-    borderRadius: moderateScale(20),
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: horizontalScale(24),
-    paddingBottom: verticalScale(40),
-  },
-  coverWrapper: {
     alignItems: 'center',
-    justifyContent: 'center',
-    marginVertical: verticalScale(20),
+    width: '80%',
+    alignSelf: 'center',
+    marginBottom: 12,
   },
-  coverContainer: {
-    position: 'relative',
-    alignItems: 'center',
-    justifyContent: 'center',
+  bottomIconBtn: {
+    padding: 8,
   },
-  coverImage: {
-    width: horizontalScale(280),
-    height: verticalScale(280),
-    borderRadius: moderateScale(20),
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  coverGlow: {
-    position: 'absolute',
-    width: horizontalScale(280),
-    height: verticalScale(280),
-    borderRadius: moderateScale(20),
-    backgroundColor: 'transparent',
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowRadius: 30,
-    elevation: 25,
-    zIndex: -1,
-  },
-  coverOverlay: {
-    position: 'absolute',
-    width: horizontalScale(280),
-    height: verticalScale(280),
-    borderRadius: moderateScale(20),
-    backgroundColor: 'rgba(139, 92, 246, 0.1)',
-  },
-  infoContainer: {
-    alignItems: 'center',
-    marginTop: verticalScale(20),
-    marginBottom: verticalScale(20),
-  },
-  title: {
-    color: COLORS.text,
-    fontSize: moderateScale(24),
-    fontWeight: '700',
-    marginBottom: verticalScale(8),
-    textAlign: 'center',
-    letterSpacing: 0.3,
-  },
-  author: {
-    color: COLORS.secondary,
-    fontSize: moderateScale(16),
-    opacity: 0.9,
-    letterSpacing: 0.5,
-  },
-  rateIndicator: {
-    backgroundColor: 'rgba(236, 72, 153, 0.2)',
-    paddingHorizontal: moderateScale(12),
-    paddingVertical: moderateScale(4),
-    borderRadius: moderateScale(12),
-    marginTop: verticalScale(8),
-  },
-  rateText: {
-    color: COLORS.accent,
-    fontSize: moderateScale(12),
-    fontWeight: '600',
-  },
-  progressContainer: {
-    marginTop: verticalScale(20),
-    marginBottom: verticalScale(20),
-    paddingHorizontal: horizontalScale(5),
+  progressSection: {
+    width: '90%',
+    alignSelf: 'center',
+    marginTop: 0,
   },
   slider: {
     width: '100%',
-    height: verticalScale(40),
+    height: 18,
   },
-  timeContainer: {
+  timeRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: verticalScale(-15),
+    marginTop: -2,
   },
   timeText: {
-    color: COLORS.textSecondary,
-    fontSize: moderateScale(12),
-    fontWeight: '500',
-  },
-  controls: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: verticalScale(20),
-    marginBottom: verticalScale(20),
-  },
-  playButton: {
-    width: horizontalScale(80),
-    height: horizontalScale(80),
-    borderRadius: horizontalScale(40),
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginHorizontal: horizontalScale(20),
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  playButtonInner: {
-    width: horizontalScale(70),
-    height: horizontalScale(70),
-    borderRadius: horizontalScale(35),
-    backgroundColor: COLORS.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowRadius: 15,
-    elevation: 10,
-  },
-  secondaryButton: {
-    width: horizontalScale(40),
-    height: horizontalScale(40),
-    borderRadius: horizontalScale(20),
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-  },
-  rewindButton: {
-    width: horizontalScale(56),
-    height: horizontalScale(56),
-    borderRadius: horizontalScale(28),
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: horizontalScale(10),
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  forwardButton: {
-    width: horizontalScale(56),
-    height: horizontalScale(56),
-    borderRadius: horizontalScale(28),
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: horizontalScale(10),
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  additionalControls: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: verticalScale(20),
-    marginBottom: verticalScale(20),
-    gap: horizontalScale(30),
-  },
-  iconButton: {
-    width: horizontalScale(44),
-    height: horizontalScale(44),
-    borderRadius: horizontalScale(22),
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-  },
-  iconButtonActive: {
-    backgroundColor: 'rgba(236, 72, 153, 0.15)',
-    borderColor: 'rgba(236, 72, 153, 0.3)',
-  },
-  speedText: {
-    color: COLORS.textSecondary,
-    fontSize: moderateScale(12),
-    fontWeight: '600',
-  },
-  timerContainer: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderRadius: moderateScale(16),
-    padding: moderateScale(20),
-    marginTop: verticalScale(20),
-    marginBottom: verticalScale(20),
-  },
-  timerTitle: {
-    color: COLORS.text,
-    fontSize: moderateScale(16),
-    fontWeight: '600',
-    textAlign: 'center',
-    marginBottom: moderateScale(16),
-  },
-  timerOptions: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    gap: moderateScale(8),
-  },
-  timerOption: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    paddingHorizontal: moderateScale(16),
-    paddingVertical: moderateScale(8),
-    borderRadius: moderateScale(20),
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  timerOptionActive: {
-    backgroundColor: 'rgba(236, 72, 153, 0.2)',
-    borderColor: 'rgba(236, 72, 153, 0.4)',
-  },
-  timerOptionText: {
-    color: COLORS.textSecondary,
-    fontSize: moderateScale(14),
-    fontWeight: '500',
-  },
-  timerOptionTextActive: {
-    color: COLORS.accent,
-  },
-  errorText: {
-    color: COLORS.accent,
-    textAlign: 'center',
-    marginTop: verticalScale(20),
-    fontSize: moderateScale(14),
-    backgroundColor: 'rgba(236, 72, 153, 0.15)',
-    padding: moderateScale(10),
-    borderRadius: moderateScale(8),
-    borderWidth: 1,
-    borderColor: 'rgba(236, 72, 153, 0.3)',
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '400',
+    opacity: 0.9,
   },
 });
 

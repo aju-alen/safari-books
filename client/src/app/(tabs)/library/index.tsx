@@ -1,17 +1,34 @@
-import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import React, { useState } from 'react';
+import { FlatList, StyleSheet, Text, TouchableOpacity, View, Image, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect } from 'react';
 import { defaultStyles } from '@/styles';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/providers/ThemeProvider';
+import { axiosWithAuth } from '@/utils/customAxios';
+import { ipURL } from '@/utils/backendURL';
+import { router } from 'expo-router';
+import { horizontalScale, moderateScale, verticalScale } from '@/utils/responsiveSize';
+
+const status = {
+  'All Titles': 'All',
+  'In Progress': 'IN_PROGRESS',
+  'Finished': 'FINISHED',
+  'Not Started': 'NOT_STARTED',
+}
 
 const LibraryPage = () => {
   const { theme } = useTheme();
   const data = ["All", "Audiobooks", "Podcast"];
-  const subData = ["All Titles", "Not Started", "In Progress", "Downloaded", "Finished"];
+  const subData = ["All Titles","In Progress", "Finished"];
 
   const [selectedItem, setSelectedItem] = useState("All");
   const [selectedSubItem, setSelectedSubItem] = useState("All Titles");
+  const [libraryBooks, setLibraryBooks] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    fetchLibraryBooks(selectedSubItem);
+  }, []);
 
   const renderItem = ({ item }) => {
     const isSelected = selectedItem === item;
@@ -44,7 +61,10 @@ const LibraryPage = () => {
             backgroundColor: isSelected ? `${theme.primary}20` : theme.lightWhite
           },
         ]}
-        onPress={() => setSelectedSubItem(item)}
+        onPress={() => {
+          setSelectedSubItem(item);
+          fetchLibraryBooks(item);
+        }}
       >
         <Text style={[
           styles.subItemText,
@@ -52,6 +72,85 @@ const LibraryPage = () => {
         ]}>
           {item}
         </Text>
+      </TouchableOpacity>
+    );
+  };
+
+  const fetchLibraryBooks = async (status) => {
+    console.log(status,'status');
+    if(status === 'All Titles'){
+      status = 'All';
+    }
+    else if(status === 'In Progress'){
+      status = 'IN_PROGRESS';
+    }
+    else if(status === 'Finished'){
+      status = 'FINISHED';
+    }
+    try {
+      setLoading(true);
+      const response = await axiosWithAuth.get(`${ipURL}/api/library/books/${status}`);
+      setLibraryBooks(response.data.books || []);
+    } catch (error) {
+      console.error('Error fetching library books:', error);
+      setLibraryBooks([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const renderBookItem = ({ item }) => {
+    const formatDuration = (hours, minutes) => {
+      if (hours > 0) {
+        return `${hours}h ${minutes}m`;
+      }
+      return `${minutes}m`;
+    };
+
+    const getStatusColor = (status) => {
+      switch (status) {
+        case 'IN_PROGRESS':
+          return theme.primary;
+        case 'FINISHED':
+          return theme.tertiary || '#4CAF50';
+        case 'NOT_STARTED':
+          return theme.textMuted;
+        default:
+          return theme.textMuted;
+      }
+    };
+
+    const getStatusText = (status) => {
+      switch (status) {
+        case 'IN_PROGRESS':
+          return 'In Progress';
+        case 'FINISHED':
+          return 'Finished';
+        case 'NOT_STARTED':
+          return 'Not Started';
+        default:
+          return 'Unknown';
+      }
+    };
+
+    return (
+      <TouchableOpacity 
+        style={styles.bookItem}
+        onPress={() => router.push(`/(tabs)/home/${item.id}`)}
+      >
+        <Image source={{ uri: item.coverImage }} style={styles.bookCover} />
+        <View style={styles.bookInfo}>
+          <Text style={styles.bookTitle} numberOfLines={2}>{item.title}</Text>
+          <Text style={styles.bookAuthor}>{item.authorName}</Text>
+          <View style={styles.bookMeta}>
+            <Text style={styles.bookDuration}>
+              {formatDuration(item.durationInHours, item.durationInMinutes)}
+            </Text>
+            <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
+              <Text style={styles.statusText}>{getStatusText(item.status)}</Text>
+            </View>
+          </View>
+        </View>
       </TouchableOpacity>
     );
   };
@@ -152,6 +251,59 @@ const LibraryPage = () => {
       fontSize: 16,
       fontWeight: '600',
     },
+    bookItem: {
+      flexDirection: 'row',
+      padding: moderateScale(16),
+      backgroundColor: theme.lightWhite,
+      marginHorizontal: horizontalScale(16),
+      marginVertical: verticalScale(8),
+      borderRadius: moderateScale(12),
+      shadowColor: theme.text,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 3,
+    },
+    bookCover: {
+      width: horizontalScale(60),
+      height: verticalScale(90),
+      borderRadius: moderateScale(8),
+      marginRight: horizontalScale(12),
+    },
+    bookInfo: {
+      flex: 1,
+      justifyContent: 'space-between',
+    },
+    bookTitle: {
+      fontSize: moderateScale(16),
+      fontWeight: '600',
+      color: theme.text,
+      marginBottom: verticalScale(4),
+    },
+    bookAuthor: {
+      fontSize: moderateScale(14),
+      color: theme.textMuted,
+      marginBottom: verticalScale(8),
+    },
+    bookMeta: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    bookDuration: {
+      fontSize: moderateScale(12),
+      color: theme.textMuted,
+    },
+    statusBadge: {
+      paddingHorizontal: horizontalScale(8),
+      paddingVertical: verticalScale(4),
+      borderRadius: moderateScale(12),
+    },
+    statusText: {
+      fontSize: moderateScale(10),
+      fontWeight: '600',
+      color: theme.white,
+    },
   });
 
   return (
@@ -182,19 +334,42 @@ const LibraryPage = () => {
         />
       </View>
 
-      <View style={styles.emptyStateContainer}>
-        <View style={styles.emptyStateIconContainer}>
-          <Ionicons name="library-outline" size={64} color={theme.primary} />
+      {loading ? (
+        <View style={styles.emptyStateContainer}>
+          <ActivityIndicator size="large" color={theme.primary} />
+          <Text style={[styles.emptyStateSubtitle, { marginTop: 16 }]}>Loading your library...</Text>
         </View>
-        <Text style={styles.emptyStateTitle}>No Purchases Yet</Text>
-        <Text style={styles.emptyStateSubtitle}>
-          Start your collection by making your first purchase
-        </Text>
-        <TouchableOpacity style={styles.browseButton}>
-          <Ionicons name="cart-outline" size={20} color={theme.white} style={styles.buttonIcon} />
-          <Text style={styles.browseButtonText}>Browse Store</Text>
-        </TouchableOpacity>
-      </View>
+      ) : libraryBooks.length > 0 ? (
+        <FlatList
+          data={libraryBooks}
+          renderItem={renderBookItem}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={{ paddingVertical: 16 }}
+          showsVerticalScrollIndicator={false}
+        />
+      ) : (
+        <View style={styles.emptyStateContainer}>
+          <View style={styles.emptyStateIconContainer}>
+            <Ionicons name="library-outline" size={64} color={theme.primary} />
+          </View>
+          <Text style={styles.emptyStateTitle}>
+            {selectedSubItem === 'All Titles' ? 'No Books in Library' : `No ${selectedSubItem} Books`}
+          </Text>
+          <Text style={styles.emptyStateSubtitle}>
+            {selectedSubItem === 'All Titles' 
+              ? 'Start your collection by adding books to your library'
+              : `You don't have any ${selectedSubItem.toLowerCase()} books yet`
+            }
+          </Text>
+          <TouchableOpacity 
+            style={styles.browseButton}
+            onPress={() => router.push('/(tabs)/home')}
+          >
+            <Ionicons name="cart-outline" size={20} color={theme.white} style={styles.buttonIcon} />
+            <Text style={styles.browseButtonText}>Browse Store</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </SafeAreaView>
   );
 };

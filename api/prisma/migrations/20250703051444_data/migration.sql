@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE `Book` ADD COLUMN `userId` VARCHAR(191) NULL;
+
+-- AddForeignKey
+ALTER TABLE `Book` ADD CONSTRAINT `Book_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `User`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;

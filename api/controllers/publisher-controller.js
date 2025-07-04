@@ -1,6 +1,5 @@
-
 import { PrismaClient } from '@prisma/client'
-
+import nodemailer from 'nodemailer';
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -119,6 +118,9 @@ export const publisherCompanyUpdate = async (req, res) => {
                 }
             });
         }
+
+        sendConfirmationEmailToPublisher(req.email, req.name);
+        // sendConfirmationEmailToAdmin(process.env.GMAIL_AUTH_USER, req.name);
        
         await prisma.$disconnect();
         res.status(204).json({ message: "Company updated successfully"});
@@ -130,6 +132,104 @@ export const publisherCompanyUpdate = async (req, res) => {
 
     }
 }
+
+const sendConfirmationEmailToPublisher = async (email, name) => {
+    console.log(process.env.GMAIL_AUTH_USER);
+    console.log(process.env.GMAIL_AUTH_PASS);
+
+    const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+            user: process.env.GMAIL_AUTH_USER,
+            pass: process.env.GMAIL_AUTH_PASS
+        }
+    });
+
+    const mailOptions = {
+        from: process.env.GMAIL_AUTH_USER,
+        to: email,
+        subject: 'Publisher Confirmation',
+        html: `
+<html>
+  <body style="margin:0;padding:0;background:#f6f8fa;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background:#f6f8fa;padding:40px 0;">
+      <tr>
+        <td align="center">
+          <table width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.07);padding:32px;">
+            <tr>
+              <td align="center" style="padding-bottom:24px;">
+                <img src="https://safari-books-mobile.s3.ap-south-1.amazonaws.com/Assets/sbLogo.png" alt="Safari Books" width="60" style="border-radius:8px;" />
+                <h2 style="font-family:sans-serif;color:#4A4DFF;margin:16px 0 0 0;">Safari Books</h2>
+              </td>
+            </tr>
+            <tr>
+              <td style="font-family:sans-serif;color:#222;font-size:18px;padding-bottom:8px;">
+                Hi ${name},
+              </td>
+            </tr>
+            <tr>
+              <td style="font-family:sans-serif;color:#444;font-size:16px;padding-bottom:16px;">
+                Your book has been published successfully. Thank you for using Safari Books. The admins will review your book and get back to you soon. <br>
+              </td>
+            </tr>
+           
+            <tr>
+              <td style="font-family:sans-serif;color:#888;font-size:14px;padding-bottom:8px;">
+                If you have any questions, please contact us at ${process.env.GMAIL_AUTH_USER}
+              </td>
+            </tr>
+            <tr>
+              <td style="font-family:monospace;color:#4A4DFF;font-size:13px;word-break:break-all;">
+                ${process.env.GMAIL_AUTH_USER}
+              </td>            
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`
+    }
+
+    //send the mail
+    try {
+        const response = await transporter.sendMail(mailOptions);
+        console.log("Verification email sent", response);
+    }
+    catch (err) {
+        console.log("Err sending verification email", err);
+    }
+}
+
+const sendConfirmationEmailToAdmin = async (email, name) => {
+    const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+            user: process.env.GMAIL_AUTH_USER,
+            pass: process.env.GMAIL_AUTH_PASS
+        }
+    });
+    const mailOptions = {
+        from: process.env.GMAIL_AUTH_USER,
+        to: email,
+        subject: 'Publisher Confirmation',
+        html: `
+        <html>
+        <body>
+        <h1>New Book Published</h1>
+        <p>A new book has been published by a publisher. Please review the book and approve or reject it.</p>
+        </body>
+        </html>
+        `
+    }
+    try {
+        const response = await transporter.sendMail(mailOptions);
+        console.log("Confirmation email sent to admin", response);
+    }
+    catch (err) {
+        console.log("Err sending confirmation email to admin", err);
+    }
+}
+
 
 export const getAllAuthorData = async (req, res) => {
     console.log(req.params.userId);
@@ -249,4 +349,29 @@ export const createPostmanBook = async (req, res) => {
         console.log(error);
         res.status(500).json({ message: "Internal server error", error });
     }
+}
+
+export const publisherAnalytics = async (req, res) => {
+try {
+
+    const bookCount = await prisma.book.count({
+        where: {
+            userId: req.body.userId,
+        }
+    });
+
+    const ListenersStats = await prisma.library.count({
+        where: {
+            userId: req.body.userId,
+        }
+    });
+
+    console.log(bookCount, ListenersStats);
+    await prisma.$disconnect();
+    res.status(200).json({ message: "Publisher insights fetched successfully", bookCount, ListenersStats });
+} catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "Internal server error", error });
+}
+
 }

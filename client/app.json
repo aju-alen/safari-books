@@ -18,7 +18,9 @@
         "usesNonExemptEncryption": false
       },
       "infoPlist": {
-        "UIBackgroundModes": ["audio"],
+        "UIBackgroundModes": [
+          "audio"
+        ],
         "UILaunchStoryboardName": "SplashScreen",
         "UIStatusBarHidden": true,
         "UIViewControllerBasedStatusBarAppearance": false
@@ -34,10 +36,10 @@
           "backgroundColor": "#000000"
         }
       },
-      "buildNumber": "1"
+      "buildNumber": "3"
     },
     "android": {
-      "versionCode": 5,
+      "versionCode": 7,
       "adaptiveIcon": {
         "foregroundImage": "./assets/sbLogo.png",
         "backgroundColor": "#000000"
@@ -46,7 +48,8 @@
         "android.permission.WAKE_LOCK",
         "android.permission.RECORD_AUDIO"
       ],
-      "package": "com.rise.safaribooks"
+      "package": "com.rise.safaribooks",
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "favicon": "./assets/favicon.png"

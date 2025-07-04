@@ -63,7 +63,7 @@ console.log(clickCount, 'this is click count');
             console.log(resp.data, 'Logged in succesfully');
             
             await SecureStore.setItemAsync("authToken",JSON.stringify({token:resp.data.token}));
-            await SecureStore.setItemAsync("userDetails",JSON.stringify({role:resp.data.role,userId:resp.data.id,email:resp.data.email}));
+            await SecureStore.setItemAsync("userDetails",JSON.stringify({role:resp.data.role,userId:resp.data.id,email:resp.data.email,name:resp.data.name}));
 
             const sbOnboarding = await SecureStore.getItemAsync("sb-onboarding");
             console.log(sbOnboarding, 'sbOnboarding');

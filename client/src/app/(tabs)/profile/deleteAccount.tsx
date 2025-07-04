@@ -5,10 +5,11 @@ import { defaultStyles } from '@/styles'
 import * as SecureStore from 'expo-secure-store';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '@/constants/tokens';
 import { ipURL } from '@/utils/backendURL';
+import { useTheme } from '@/providers/ThemeProvider';
 
 const DeleteAccountPage = () => {
+  const { theme } = useTheme();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -97,12 +98,12 @@ const DeleteAccountPage = () => {
   };
 
   return (
-    <SafeAreaView style={[defaultStyles.container, styles.container]}>
+    <SafeAreaView style={[defaultStyles.container, { backgroundColor: theme.background }]}>
       <View style={styles.header}>
         <TouchableOpacity onPress={goBack} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+          <Ionicons name="arrow-back" size={24} color={theme.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Delete Account</Text>
+        <Text style={[styles.headerTitle, { color: theme.text }]}>Delete Account</Text>
         <View style={styles.placeholder} />
       </View>
 
@@ -111,33 +112,33 @@ const DeleteAccountPage = () => {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.warningContainer}>
+        <View style={[styles.warningContainer, { backgroundColor: 'rgba(255, 107, 107, 0.1)', borderColor: 'rgba(255, 107, 107, 0.2)' }]}>
           <Ionicons name="warning" size={48} color="#FF6B6B" />
-          <Text style={styles.warningTitle}>Warning</Text>
-          <Text style={styles.warningText}>
+          <Text style={[styles.warningTitle, { color: '#FF6B6B' }]}>Warning</Text>
+          <Text style={[styles.warningText, { color: theme.text }]}>
             This action will permanently delete your account and all associated data including:
           </Text>
           <View style={styles.warningList}>
-            <Text style={styles.warningItem}>• Your profile information</Text>
-            <Text style={styles.warningItem}>• All your books and content</Text>
-            <Text style={styles.warningItem}>• Company and author profiles</Text>
-            <Text style={styles.warningItem}>• All associated files and data</Text>
+            <Text style={[styles.warningItem, { color: theme.textMuted }]}>• Your profile information</Text>
+            <Text style={[styles.warningItem, { color: theme.textMuted }]}>• All your books and content</Text>
+            <Text style={[styles.warningItem, { color: theme.textMuted }]}>• Company and author profiles</Text>
+            <Text style={[styles.warningItem, { color: theme.textMuted }]}>• All associated files and data</Text>
           </View>
-          <Text style={styles.warningText}>
+          <Text style={[styles.warningText, { color: theme.text }]}>
             This action cannot be undone.
           </Text>
         </View>
 
-        <View style={styles.formContainer}>
-          <Text style={styles.formTitle}>Confirm Your Password</Text>
+        <View style={[styles.formContainer, { backgroundColor: 'rgba(255, 255, 255, 0.05)' }]}>
+          <Text style={[styles.formTitle, { color: theme.text }]}>Confirm Your Password</Text>
           
           <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Password</Text>
-            <View style={styles.passwordInput}>
+            <Text style={[styles.inputLabel, { color: theme.textMuted }]}>Password</Text>
+            <View style={[styles.passwordInput, { backgroundColor: 'rgba(255, 255, 255, 0.1)' }]}>
               <TextInput
-                style={styles.textInput}
+                style={[styles.textInput, { color: theme.text }]}
                 placeholder="Enter your password"
-                placeholderTextColor="rgba(255, 255, 255, 0.5)"
+                placeholderTextColor={theme.textMuted}
                 secureTextEntry={!showPassword}
                 value={password}
                 onChangeText={setPassword}
@@ -149,19 +150,19 @@ const DeleteAccountPage = () => {
                 <Ionicons
                   name={showPassword ? "eye-off" : "eye"}
                   size={20}
-                  color="rgba(255, 255, 255, 0.5)"
+                  color={theme.textMuted}
                 />
               </TouchableOpacity>
             </View>
           </View>
 
           <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Confirm Password</Text>
-            <View style={styles.passwordInput}>
+            <Text style={[styles.inputLabel, { color: theme.textMuted }]}>Confirm Password</Text>
+            <View style={[styles.passwordInput, { backgroundColor: 'rgba(255, 255, 255, 0.1)' }]}>
               <TextInput
-                style={styles.textInput}
+                style={[styles.textInput, { color: theme.text }]}
                 placeholder="Confirm your password"
-                placeholderTextColor="rgba(255, 255, 255, 0.5)"
+                placeholderTextColor={theme.textMuted}
                 secureTextEntry={!showConfirmPassword}
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
@@ -173,23 +174,23 @@ const DeleteAccountPage = () => {
                 <Ionicons
                   name={showConfirmPassword ? "eye-off" : "eye"}
                   size={20}
-                  color="rgba(255, 255, 255, 0.5)"
+                  color={theme.textMuted}
                 />
               </TouchableOpacity>
             </View>
           </View>
         </View>
-        <View style={styles.buttonContainer}>
+        <View style={[styles.buttonContainer, { backgroundColor: theme.background }]}>
         <TouchableOpacity
-          style={styles.cancelButton}
+          style={[styles.cancelButton, { backgroundColor: 'rgba(255, 255, 255, 0.1)' }]}
           onPress={goBack}
           disabled={isLoading}
         >
-          <Text style={styles.cancelButtonText}>Cancel</Text>
+          <Text style={[styles.cancelButtonText, { color: theme.text }]}>Cancel</Text>
         </TouchableOpacity>
         
         <TouchableOpacity
-          style={[styles.deleteButton, isLoading && styles.deleteButtonDisabled]}
+          style={[styles.deleteButton, { backgroundColor: '#FF6B6B' }, isLoading && styles.deleteButtonDisabled]}
           onPress={handleDeleteAccount}
           disabled={isLoading}
         >
@@ -213,16 +214,12 @@ const DeleteAccountPage = () => {
 export default DeleteAccountPage
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: COLORS.background,
-  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 16,
-    backgroundColor: COLORS.background,
   },
   backButton: {
     padding: 8,
@@ -232,7 +229,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#FFFFFF',
   },
   placeholder: {
     width: 40,
@@ -247,23 +243,19 @@ const styles = StyleSheet.create({
   },
   warningContainer: {
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 107, 107, 0.1)',
     borderRadius: 16,
     padding: 24,
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: 'rgba(255, 107, 107, 0.2)',
   },
   warningTitle: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#FF6B6B',
     marginTop: 16,
     marginBottom: 12,
   },
   warningText: {
     fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.9)',
     textAlign: 'center',
     lineHeight: 24,
     marginBottom: 16,
@@ -274,19 +266,16 @@ const styles = StyleSheet.create({
   },
   warningItem: {
     fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.8)',
     marginBottom: 4,
     paddingLeft: 8,
   },
   formContainer: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderRadius: 16,
     padding: 20,
   },
   formTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFFFFF',
     marginBottom: 20,
   },
   inputContainer: {
@@ -295,19 +284,16 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 14,
     fontWeight: '500',
-    color: 'rgba(255, 255, 255, 0.8)',
     marginBottom: 8,
   },
   passwordInput: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: 12,
     paddingHorizontal: 16,
   },
   textInput: {
     flex: 1,
-    color: '#FFFFFF',
     fontSize: 16,
     paddingVertical: 16,
   },
@@ -319,25 +305,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 16,
     paddingBottom: 32,
-    backgroundColor: COLORS.background,
     gap: 12,
   },
   cancelButton: {
     flex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
   cancelButtonText: {
-    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
   },
   deleteButton: {
     flex: 1,
-    backgroundColor: '#FF6B6B',
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',

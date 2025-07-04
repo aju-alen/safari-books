@@ -1,5 +1,5 @@
-import { StyleSheet, Text, TouchableOpacity, View, Image, ScrollView, Dimensions } from 'react-native'
-import React, { useEffect, useState } from 'react'
+import { StyleSheet, Text, TouchableOpacity, View, Image, ScrollView, Dimensions, RefreshControl, ActivityIndicator } from 'react-native'
+import React, { useEffect, useState, useCallback } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { defaultStyles } from '@/styles'
 import * as SecureStore from 'expo-secure-store';
@@ -8,6 +8,8 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '@/providers/ThemeProvider';
 import { moderateScale, verticalScale } from '@/utils/responsiveSize';
 import { LinearGradient } from 'expo-linear-gradient';
+import { axiosWithAuth } from '@/utils/customAxios';
+import { ipURL } from '@/utils/backendURL';
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
@@ -28,28 +30,48 @@ const { width } = Dimensions.get('window');
 
 const ProfilePage = () => {
   const [userDetails, setUserDetails] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
   const {theme} = useTheme()
+  const [listenerAnalytics, setListenerAnalytics] = useState(null);
+  const getUserDetails = async () => {
+    const details = await SecureStore.getItemAsync('userDetails');
+    console.log(details, 'details in profile');
+
+    const response = await axiosWithAuth.get(`${ipURL}/api/listeners/listener-analytics`)
+    setListenerAnalytics(response.data)
+    if (details) {
+      setUserDetails(JSON.parse(details));
+    }
+    setLoading(false);
+  };
+
   useEffect(() => {
-    const getUserDetails = async () => {
-      const details = await SecureStore.getItemAsync('authToken');
-      console.log(details, 'details in profile');
-      
-      if (details) {
-        setUserDetails(JSON.parse(details));
-      }
-    };
     getUserDetails();
+  }, []);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await getUserDetails();
+      // Add a small delay to show the refresh animation
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    } catch (error) {
+      console.error('Error refreshing profile:', error);
+    } finally {
+      setRefreshing(false);
+    }
   }, []);
 
   const handleLogout = async() => {
     await SecureStore.deleteItemAsync('userDetails');
     await SecureStore.deleteItemAsync('authToken');
-    router.push('/(authenticate)/login');
+    router.replace('/(authenticate)/login');
   }
 
   const stats: Stat[] = [
-    { icon: 'headset-outline', label: 'Listening Hours', value: '24.5' },
-    { icon: 'book-outline', label: 'Books Completed', value: '12' },
+    { icon: 'reader-outline', label: 'Books in Progress', value: listenerAnalytics?.inProgressBooks },
+    { icon: 'book-outline', label: 'Books Completed', value: listenerAnalytics?.finishedBooks },
     { icon: 'time-outline', label: 'Current Streak', value: '7 days' },
   ];
 
@@ -63,15 +85,10 @@ const ProfilePage = () => {
     { 
       icon: 'heart-outline', 
       label: 'Favorites', 
-      route: '/(tabs)/favorites',
+      route: '',
       color: theme.tertiary
     },
-    { 
-      icon: 'download-outline', 
-      label: 'Downloads', 
-      route: '/(tabs)/downloads',
-      color: theme.secondary2
-    },
+  
     { 
       icon: 'notifications-outline', 
       label: 'Notifications', 
@@ -98,12 +115,28 @@ const ProfilePage = () => {
       <ScrollView 
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={theme.primary}
+            colors={[theme.primary]}
+            progressBackgroundColor={theme.background}
+          />
+        }
       >
-        {/* Header with Gradient */}
-        <View
-
-          style={[styles.headerGradient, { backgroundColor: theme.background }]}
-        >
+        {/* Loading State */}
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={theme.primary} />
+            <Text style={[styles.loadingText, { color: theme.textMuted }]}>Loading profile...</Text>
+          </View>
+        ) : (
+          <>
+          {/* Header with Gradient */}
+          <View
+            style={[styles.headerGradient, { backgroundColor: theme.background }]}
+          >
           <View style={styles.header}>
             <Text style={[styles.headerTitle, { color: theme.text }]}>Profile</Text>
             <TouchableOpacity 
@@ -178,6 +211,8 @@ const ProfilePage = () => {
           <MaterialCommunityIcons name="logout" size={24} color={theme.tertiary} style={styles.logoutIcon} />
           <Text style={[styles.logoutText, { color: theme.tertiary }]}>Logout</Text>
         </TouchableOpacity>
+        </>
+        )}
       </ScrollView>
     </SafeAreaView>
   )
@@ -188,6 +223,16 @@ export default ProfilePage
 const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: moderateScale(30),
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: moderateScale(100),
+  },
+  loadingText: {
+    fontSize: moderateScale(16),
+    marginTop: moderateScale(16),
   },
   headerGradient: {
     paddingTop: moderateScale(20),

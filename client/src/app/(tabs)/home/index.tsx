@@ -15,6 +15,7 @@ import axios from 'axios';
 import { router } from 'expo-router';
 
 import { useTheme } from '@/providers/ThemeProvider';
+import { axiosWithAuth } from '@/utils/customAxios';
 
 const { width } = Dimensions.get('window');
 
@@ -37,6 +38,8 @@ type BookData = {
 const HomePage = () => {
   const [bookData, setBookData] = useState<BookData>();
   const [latestRelease, setLatestRelease] = useState([]);
+  const [continueListeningBooks, setContinueListeningBooks] = useState([]);
+  const [featuredBook, setFeaturedBook] = useState(null);
 
   const {theme} = useTheme()
 
@@ -48,8 +51,32 @@ const HomePage = () => {
       id: book.id
     })));
   }
+
+  const getContinueListeningBooks = async () => {
+    try {
+      const response = await axiosWithAuth.get(`${ipURL}/api/library/books/IN_PROGRESS`);
+      setContinueListeningBooks(response.data.books || []);
+    } catch (error) {
+      console.error('Error fetching continue listening books:', error);
+      setContinueListeningBooks([]);
+    }
+  };
+
+  const getFeaturedBook = async () => {
+    try {
+      const response = await axios.get(`${ipURL}/api/listeners/featured-books`);
+      if (response.data.featuredBooks && response.data.featuredBooks.length > 0) {
+        setFeaturedBook(response.data.featuredBooks[0]); // Get the first featured book
+      }
+    } catch (error) {
+      console.error('Error fetching featured book:', error);
+    }
+  };
+
   useEffect(()=>{
     getBooksData();
+    getContinueListeningBooks();
+    getFeaturedBook();
   },[])
 
   const SectionTitle = ({ title, subtitle, onPress, showBadge }: { title: string; subtitle?: string; onPress?: () => void; showBadge?: boolean }) => (
@@ -75,7 +102,10 @@ const HomePage = () => {
   );
 
   const HeroBookCard = ({ book }) => (
-    <TouchableOpacity style={[styles.heroBookCard, { backgroundColor: theme.primary, shadowColor: theme.primary }]}>
+    <TouchableOpacity 
+      style={[styles.heroBookCard, { backgroundColor: theme.primary, shadowColor: theme.primary }]}
+      onPress={() => router.push(`/(tabs)/home/${book.id}`)}
+    >
       <View style={styles.heroContent}>
         <Image source={{ uri: book.coverImage }} style={styles.heroCover} resizeMode='contain' />
         <View style={styles.heroInfo}>
@@ -86,14 +116,20 @@ const HomePage = () => {
           <Text style={[styles.heroAuthor, { color: theme.white, opacity: 0.8 }]}>{book.authorName}</Text>
           <View style={styles.heroMeta}>
             <View style={styles.heroRating}>
-              <Ionicons name="star" size={14} color={theme.tertiary} />
-              <Text style={[styles.heroRatingText, { color: theme.white }]}>{book.rating}</Text>
+              <Ionicons name="eye-outline" size={14} color={theme.white} />
+              <Text style={[styles.heroRatingText, { color: theme.white }]}>{book._count.Library}</Text>
             </View>
             <Text style={[styles.heroDuration, { color: theme.white, opacity: 0.8 }]}>
               {book.durationInHours}h {book.durationInMinutes}m
             </Text>
           </View>
-          <TouchableOpacity style={[styles.heroPlayButton, { backgroundColor: theme.tertiary }]}>
+          <TouchableOpacity 
+            style={[styles.heroPlayButton, { backgroundColor: theme.tertiary }]}
+            onPress={(e) => {
+              e.stopPropagation();
+              router.push(`/(tabs)/home/${book.id}`);
+            }}
+          >
             <Ionicons name="play" size={20} color={theme.white} />
             <Text style={[styles.heroPlayText, { color: theme.white }]}>Listen Now</Text>
           </TouchableOpacity>
@@ -116,10 +152,10 @@ const HomePage = () => {
         <Text style={[styles.bookTitle, isLarge && styles.largeBookTitle, { color: theme.text }]} numberOfLines={2}>{book.title}</Text>
         <Text style={[styles.bookAuthor, { color: theme.textMuted }]}>{book.authorName}</Text>
         <View style={styles.bookMeta}>
-          <View style={styles.bookRating}>
+          {/* <View style={styles.bookRating}>
             <Ionicons name="star" size={12} color={theme.tertiary} />
             <Text style={[styles.bookRatingText, { color: theme.textMuted }]}>{book.rating}</Text>
-          </View>
+          </View> */}
           <Text style={[styles.bookDuration, { color: theme.textMuted }]}>
             {book.durationInHours}h {book.durationInMinutes}m
           </Text>
@@ -187,13 +223,15 @@ const HomePage = () => {
           </View>
 
           {/* Hero Book */}
-          {bookData?.books && bookData.books.length > 0 && (
+          {featuredBook ? (
+            <HeroBookCard book={featuredBook} />
+          ) : bookData?.books && bookData.books.length > 0 && (
             <HeroBookCard book={bookData.books[0]} />
           )}
         </View>
 
         {/* Continue Listening */}
-        {bookData?.books && bookData.books.length > 1 && (
+        {continueListeningBooks.length > 0 && (
           <View style={styles.section}>
             <SectionTitle 
               title="Continue Listening" 
@@ -201,7 +239,7 @@ const HomePage = () => {
               onPress={() => router.push({pathname: '/(tabs)/home/allAudioBooks', params: {continue:"continue"}})}
             />
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
-              {bookData.books.slice(1, 4).map((book, index) => (
+              {continueListeningBooks.slice(0, 4).map((book, index) => (
                 <BookCard key={index} book={book} isContinue={true} />
               ))}
             </ScrollView>
@@ -553,6 +591,18 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(8),
   },
   newBadgeText: {
+    fontSize: moderateScale(8),
+    fontWeight: '700',
+  },
+  continueBadge: {
+    position: 'absolute',
+    top: moderateScale(8),
+    left: moderateScale(8),
+    paddingHorizontal: moderateScale(6),
+    paddingVertical: moderateScale(2),
+    borderRadius: moderateScale(8),
+  },
+  continueBadgeText: {
     fontSize: moderateScale(8),
     fontWeight: '700',
   },

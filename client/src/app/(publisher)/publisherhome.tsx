@@ -6,11 +6,14 @@ import React, { useEffect, useRef, useState } from 'react'
 import { Alert, Animated, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useTheme } from '@/providers/ThemeProvider'
+import { axiosWithAuth } from '@/utils/customAxios'
+import { ipURL } from '@/utils/backendURL'
 
 const PublisherHome = () => {
   const {theme} = useTheme()
 
   const [token, setToken] = useState(null)
+  const [bookStats, setBookStats] = useState(null)
   const fadeAnim = useRef(new Animated.Value(0)).current
   const createCheckbox = () =>
     Alert.alert('Publisher Type', 'Choose your publisher category', [
@@ -43,6 +46,9 @@ const PublisherHome = () => {
     const getAsyncData = async () => {
       const tokenStore = await SecureStore.getItemAsync('userDetails')
       setToken(JSON.parse(tokenStore).userId)
+
+      const response = await axiosWithAuth.get(`${ipURL}/api/publisher/publisher-analytics`)
+      setBookStats(response.data)
     }
     getAsyncData()
 
@@ -257,17 +263,17 @@ const PublisherHome = () => {
               <View style={styles.statIconContainer}>
                 <FontAwesome5 name="book" size={20} color={theme.white} />
               </View>
-              <Text style={styles.statNumber}>0</Text>
+              <Text style={styles.statNumber}>{bookStats?.bookCount}</Text>
               <Text style={styles.statLabel}>Published Books</Text>
             </View>
             <View style={[styles.statBox, styles.statBoxSecondary]}>
               <View style={styles.statIconContainer}>
                 <FontAwesome5 name="headphones" size={20} color={theme.white} />
               </View>
-              <Text style={styles.statNumber}>0</Text>
+              <Text style={styles.statNumber}>{bookStats?.ListenersStats}</Text>
               <Text style={styles.statLabel}>Total Listens</Text>
             </View>
-            <View style={[styles.statBox, styles.statBoxAccent]}>
+            {/* <View style={[styles.statBox, styles.statBoxAccent]}>
               <View style={styles.statIconContainer}>
                 <FontAwesome5 name="dollar-sign" size={20} color={theme.white} />
               </View>
@@ -280,7 +286,7 @@ const PublisherHome = () => {
               </View>
               <Text style={styles.statNumber}>0</Text>
               <Text style={styles.statLabel}>Followers</Text>
-            </View>
+            </View> */}
           </View>
 
           <View style={styles.actionButtons}>
@@ -305,31 +311,18 @@ const PublisherHome = () => {
           <View style={styles.insightsContainer}>
             <Text style={styles.sectionTitle}>Quick Insights</Text>
             <View style={styles.insightCards}>
-              <View style={styles.insightCard}>
-                <View style={styles.insightHeader}>
-                  <View style={styles.insightIconContainer}>
-                    <MaterialIcons name="trending-up" size={18} color={theme.white} />
-                  </View>
-                  <Text style={styles.insightTitle}>Today's Performance</Text>
-                </View>
-                <View style={styles.insightContent}>
-                  <Text style={styles.insightStat}>↑ 0 New Downloads</Text>
-                  <Text style={styles.insightStat}>★ 0 New Reviews</Text>
-                  <Text style={styles.insightStat}>$ 0 Revenue</Text>
-                </View>
-              </View>
-
+            
               <View style={styles.insightCard}>
                 <View style={styles.insightHeader}>
                   <View style={styles.insightIconContainer}>
                     <MaterialIcons name="timeline" size={18} color={theme.white} />
                   </View>
-                  <Text style={styles.insightTitle}>Monthly Overview</Text>
+                  <Text style={styles.insightTitle}>Total Overview</Text>
                 </View>
                 <View style={styles.insightContent}>
                   <Text style={styles.insightStat}>📚 0 Books Published</Text>
                   <Text style={styles.insightStat}>👥 0 New Listeners</Text>
-                  <Text style={styles.insightStat}>⭐ 0 Avg Rating</Text>
+                  <Text style={styles.insightStat}>⭐ 0 Revenue Earned</Text>
                 </View>
               </View>
             </View>

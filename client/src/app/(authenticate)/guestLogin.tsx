@@ -7,7 +7,8 @@ const GuestLogin = () => {
     const handleGuestLogin = async() => {
 
         await SecureStore.setItemAsync("authToken",JSON.stringify({token:"gues_login"}));
-        await SecureStore.setItemAsync("userDetails",JSON.stringify({role:"GUEST",userId:"null",email:"null"}));
+       const user =  await SecureStore.setItemAsync("userDetails",JSON.stringify({role:"GUEST",userId:"null",email:"null"}));
+       console.log(user,'user in guestLogin');
 
         router.replace('/(onboarding)/listeneronboarding');
 

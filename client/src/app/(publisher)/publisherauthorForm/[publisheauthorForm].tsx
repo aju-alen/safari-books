@@ -3,15 +3,15 @@ import { FONT } from '@/constants/tokens'
 import { defaultStyles } from '@/styles'
 import { ipURL } from '@/utils/backendURL'
 import { horizontalScale, moderateScale, verticalScale } from '@/utils/responsiveSize'
-import { MaterialIcons, Ionicons } from '@expo/vector-icons'
 import { createId } from '@paralleldrive/cuid2'
 import axios from 'axios'
 import * as DocumentPicker from 'expo-document-picker'
 import { router, useLocalSearchParams } from 'expo-router'
 import React, { useState } from 'react'
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, ActivityIndicator, Alert } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'   
-import { useTheme } from '@/providers/ThemeProvider';
+import { SafeAreaView } from 'react-native-safe-area-context'
+import { useTheme } from '@/providers/ThemeProvider'
+import { Ionicons, Feather } from '@expo/vector-icons'
 
 const PublishAuthorForm = () => {
     const { theme } = useTheme();
@@ -26,6 +26,7 @@ const PublishAuthorForm = () => {
     const [doc1, setDoc1] = useState(null)
     const [doc2, setDoc2] = useState(null)
     const [loading, setLoading] = useState(false)
+    const [errors, setErrors] = useState<{[key: string]: string}>({})
 
     const pickDocument = async (setDoc) => {
         try {
@@ -81,15 +82,45 @@ const PublishAuthorForm = () => {
         }
     };
 
-    const handleSubmit = async () => {
-        if (!fullname.trim() || !address.trim() || !telephone.trim() || !idppNo.trim() || !kraPin.trim()) {
-            Alert.alert('Missing Information', 'Please fill in all required fields.');
-            return;
+    const validateForm = () => {
+        const newErrors: {[key: string]: string} = {}
+        
+        if (!fullname.trim()) {
+            newErrors.fullname = 'Full name is required'
         }
+        
+        if (!address.trim()) {
+            newErrors.address = 'Address is required'
+        }
+        
+        if (!telephone.trim()) {
+            newErrors.telephone = 'Telephone number is required'
+        }
+        
+        if (!idppNo.trim()) {
+            newErrors.idppNo = 'ID/PP number is required'
+        }
+        
+        if (!kraPin.trim()) {
+            newErrors.kraPin = 'KRA PIN is required'
+        }
+        
+        if (!doc1) {
+            newErrors.doc1 = 'ID/PP document is required'
+        }
+        
+        if (!doc2) {
+            newErrors.doc2 = 'KRA PIN document is required'
+        }
+        
+        setErrors(newErrors)
+        return Object.keys(newErrors).length === 0
+    }
 
-        if (!doc1 || !doc2) {
-            Alert.alert('Missing Documents', 'Please upload both ID/PP and KRA PIN documents.');
-            return;
+    const handleSubmit = async () => {
+        // Validate form before proceeding
+        if (!validateForm()) {
+            return
         }
 
         try {
@@ -110,7 +141,7 @@ const PublishAuthorForm = () => {
             }
             const response = await axios.post(`${ipURL}/api/publisher/create-author`, data);
             console.log(response.data, 'after backend data is saved');
-            router.push(`/(publisher)/${id}`);
+            router.replace(`/(publisher)/${id}`);
             setLoading(false);
         } catch (error) {
             setLoading(false);
@@ -119,323 +150,281 @@ const PublishAuthorForm = () => {
         }
     }
 
-    const renderInput = (label, value, setValue, placeholder, keyboardType = 'default' as any, optional = false, icon = null) => (
-        <View style={styles.inputGroup}>
-            <View style={styles.labelContainer}>
-                {icon && <Ionicons name={icon} size={22} color={theme.primary} style={styles.labelIcon} />}
-                <Text style={styles.label}>
-                    {label} {optional && <Text style={styles.optionalText}>(Optional)</Text>}
-                </Text>
-            </View>
-            <View style={[styles.inputWrapper, value && styles.inputWrapperFocused]}>
-                <TextInput
-                    style={styles.input}
-                    placeholder={placeholder}
-                    placeholderTextColor={theme.textMuted}
-                    value={value}
-                    onChangeText={setValue}
-                    keyboardType={keyboardType}
-                />
-            </View>
-        </View>
-    );
-
-    const renderDocumentUpload = (label, doc, setDoc, icon) => (
-        <View style={styles.uploadContainer}>
-            <View style={styles.uploadHeader}>
-                <Ionicons name={icon} size={22} color={theme.primary} />
-                <Text style={styles.uploadLabel}>{label}</Text>
-            </View>
-            <TouchableOpacity 
-                style={[styles.uploadButton, doc && styles.uploadButtonSuccess]}
-                onPress={() => pickDocument(setDoc)}
-            >
-                <View style={styles.uploadContent}>
-                    <MaterialIcons 
-                        name={doc ? "check-circle" : "cloud-upload"} 
-                        size={32} 
-                        color={doc ? theme.tertiary : theme.primary}
-                    />
-                    <View style={styles.uploadTextContainer}>
-                        <Text style={[styles.uploadButtonText, doc && styles.uploadButtonTextSuccess]}>
-                            {doc ? 'Document Uploaded Successfully' : 'Tap to Upload PDF'}
-                        </Text>
-                        {doc && (
-                            <Text style={styles.fileName}>{doc.name}</Text>
-                        )}
-                    </View>
-                </View>
-                {doc && (
-                    <TouchableOpacity 
-                        style={styles.removeButton}
-                        onPress={() => setDoc(null)}
-                    >
-                        <Ionicons name="close-circle" size={24} color={theme.textMuted} />
-                    </TouchableOpacity>
-                )}
-            </TouchableOpacity>
-        </View>
-    );
-
     const styles = StyleSheet.create({
-        safeArea: {
-            backgroundColor: theme.background,
-        },
         container: {
-            flex: 1,
             backgroundColor: theme.background,
-        },
-        header: {
-            paddingHorizontal: horizontalScale(24),
-            paddingVertical: verticalScale(32),
-            backgroundColor: theme.white,
-            borderBottomWidth: 1,
-            borderBottomColor: theme.gray2,
-        },
-        headerIcon: {
-            width: moderateScale(60),
-            height: moderateScale(60),
-            borderRadius: moderateScale(30),
-            backgroundColor: `${theme.primary}15`,
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginBottom: verticalScale(16),
-        },
-        headerTitle: {
-            fontSize: moderateScale(32),
-            fontWeight: 'bold',
-            color: theme.text,
-            marginBottom: verticalScale(8),
-            fontFamily: FONT.RobotoLight,
-        },
-        headerSubtitle: {
-            fontSize: moderateScale(16),
-            color: theme.textMuted,
-            fontFamily: FONT.RobotoLight,
-            lineHeight: verticalScale(24),
         },
         content: {
             flex: 1,
-            paddingHorizontal: horizontalScale(24),
+            padding: moderateScale(20),
         },
-        section: {
-            marginTop: verticalScale(32),
+        header: {
+            alignItems: 'center',
+            marginBottom: verticalScale(32),
+            paddingTop: verticalScale(20),
         },
-        sectionTitle: {
+        title: {
             fontSize: moderateScale(24),
-            fontWeight: 'bold',
+            fontWeight: '700',
             color: theme.text,
-            marginBottom: verticalScale(24),
-            fontFamily: FONT.RobotoLight,
+            marginBottom: verticalScale(8),
+            textAlign: 'center',
         },
-        inputGroup: {
-            marginBottom: verticalScale(28),
-        },
-        labelContainer: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            marginBottom: verticalScale(12),
-        },
-        labelIcon: {
-            marginRight: horizontalScale(12),
-        },
-        label: {
-            fontSize: moderateScale(18),
-            fontWeight: "600",
-            color: theme.text,
-            fontFamily: FONT.RobotoLight,
-        },
-        optionalText: {
+        subtitle: {
+            fontSize: moderateScale(14),
             color: theme.textMuted,
-            fontSize: moderateScale(16),
-            fontWeight: "400",
+            textAlign: 'center',
+            lineHeight: moderateScale(20),
         },
-        inputWrapper: {
-            borderRadius: moderateScale(12),
-            backgroundColor: theme.white,
-            overflow: 'hidden',
-            borderWidth: 1,
-            borderColor: theme.gray2,
-            shadowColor: theme.text,
-            shadowOffset: {
-                width: 0,
-                height: 2,
-            },
-            
-            shadowRadius: 4,
-            elevation: 2,
+        form: {
+            gap: verticalScale(20),
         },
-        inputWrapperFocused: {
-            borderColor: theme.primary,
-            borderWidth: 2,
-        },
-        input: {
-            height: verticalScale(60),
-            paddingHorizontal: horizontalScale(20),
-            color: theme.text,
-            fontSize: moderateScale(16),
-            fontFamily: FONT.RobotoLight,
-        },
-        uploadContainer: {
-            marginBottom: verticalScale(28),
-        },
-        uploadHeader: {
-            flexDirection: 'row',
-            alignItems: 'center',
+        fieldGroup: {
             marginBottom: verticalScale(16),
         },
-        uploadLabel: {
-            fontSize: moderateScale(18),
-            fontWeight: "600",
+        label: {
+            fontSize: moderateScale(14),
+            fontWeight: '600',
             color: theme.text,
-            fontFamily: FONT.RobotoLight,
-            marginLeft: horizontalScale(12),
+            marginBottom: verticalScale(8),
+            fontFamily: FONT.RobotoMedium,
         },
-        uploadButton: {
+        input: {
+            width: '100%',
+            height: verticalScale(52),
             backgroundColor: theme.white,
             borderRadius: moderateScale(12),
-            borderWidth: 2,
+            paddingHorizontal: horizontalScale(16),
+            color: theme.text,
+            borderWidth: 1.5,
             borderColor: theme.gray2,
-            borderStyle: 'dashed',
-            padding: verticalScale(24),
+            fontSize: moderateScale(16),
             shadowColor: theme.text,
             shadowOffset: {
                 width: 0,
-                height: 2,
+                height: 1,
             },
-            
-            shadowRadius: 4,
+            shadowOpacity: 0.1,
+            shadowRadius: 2,
             elevation: 2,
         },
-        uploadButtonSuccess: {
-            borderColor: theme.tertiary,
-            backgroundColor: `${theme.tertiary}08`,
-            borderStyle: 'solid',
+        documentSection: {
+            marginTop: verticalScale(12),
         },
-        uploadContent: {
-            flexDirection: 'row',
-            alignItems: 'center',
-        },
-        uploadTextContainer: {
-            marginLeft: horizontalScale(20),
-            flex: 1,
-        },
-        uploadButtonText: {
-            color: theme.textMuted,
-            fontSize: moderateScale(16),
-            fontFamily: FONT.RobotoLight,
-            fontWeight: '500',
-        },
-        uploadButtonTextSuccess: {
-            color: theme.tertiary,
-            fontWeight: '600',
-        },
-        fileName: {
-            color: theme.textMuted,
-            fontSize: moderateScale(14),
-            fontFamily: FONT.RobotoLight,
-            marginTop: verticalScale(4),
-        },
-        removeButton: {
-            position: 'absolute',
-            top: moderateScale(12),
-            right: moderateScale(12),
-            padding: moderateScale(4),
-        },
-        submitSection: {
-            paddingHorizontal: horizontalScale(24),
-            paddingVertical: verticalScale(32),
-            backgroundColor: theme.white,
-            borderTopWidth: 1,
-            borderTopColor: theme.gray2,
-        },
-        submitButton: {
-            height: verticalScale(64),
-            borderRadius: moderateScale(16),
+        uploadButton: {
+            paddingVertical: verticalScale(14),
+            paddingHorizontal: horizontalScale(20),
+            borderRadius: moderateScale(10),
             backgroundColor: theme.primary,
-            shadowColor: theme.primary,
+            alignItems: 'center',
+            flexDirection: 'row',
+            justifyContent: 'center',
+            shadowColor: theme.text,
             shadowOffset: {
                 width: 0,
-                height: 8,
+                height: 3,
             },
-            
-            shadowRadius: 16,
-            elevation: 16,
+            shadowOpacity: 0.2,
+            shadowRadius: 6,
+            elevation: 6,
+        },
+        uploadText: {
+            color: theme.white,
+            fontSize: moderateScale(14),
+            fontWeight: '600',
+            marginLeft: horizontalScale(8),
+        },
+        uploadIcon: {
+            marginRight: horizontalScale(4),
+        },
+        submitSection: {
+            marginTop: verticalScale(32),
+            paddingHorizontal: horizontalScale(10),
+        },
+        submitButton: {
+            height: verticalScale(56),
+            backgroundColor: theme.primary,
+            borderRadius: moderateScale(16),
             justifyContent: 'center',
             alignItems: 'center',
+            shadowColor: theme.text,
+            shadowOffset: {
+                width: 0,
+                height: 4,
+            },
+            shadowOpacity: 0.3,
+            shadowRadius: 8,
+            elevation: 8,
         },
-        buttonText: {
+        submitText: {
             color: theme.white,
             fontSize: moderateScale(18),
+            fontWeight: '700',
+            fontFamily: FONT.RobotoMedium,
+        },
+        loadingContainer: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+        },
+        loadingText: {
+            color: theme.white,
+            fontSize: moderateScale(16),
+            fontWeight: '600',
+            marginLeft: horizontalScale(8),
+        },
+        errorText: {
+            color: '#FF6B6B',
+            fontSize: moderateScale(12),
+            marginTop: verticalScale(4),
             fontFamily: FONT.RobotoLight,
-            fontWeight: 'bold',
-            textTransform: 'uppercase',
-            letterSpacing: 1,
+        },
+        inputError: {
+            borderColor: '#FF6B6B',
+            borderWidth: 2,
         },
     });
 
     return (
-        <SafeAreaView style={[defaultStyles.container, styles.safeArea]}>
-            <View style={styles.container}>
-                
-
-                <ScrollView 
-                    style={styles.content}
-                    showsVerticalScrollIndicator={false}
-                    contentContainerStyle={{ paddingBottom: verticalScale(100) }}
-                >
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Personal Information</Text>
-                        
-                        {renderInput("Full Name", fullname, setFullname, "Enter your full name", "default", false, "person")}
-                        {renderInput("Address", address, setAddress, "Enter your complete address", "default", false, "location")}
-                        {renderInput("Telephone Number", telephone, setTelephone, "Enter your phone number", "phone-pad" as any, false, "call")}
-                    </View>
-
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Identity Documents</Text>
-                        
-                        {renderInput("ID/PP Number", idppNo, setIdppNo, "Enter your ID or Passport number", "default", false, "card")}
-                        {renderDocumentUpload("ID/PP Document", doc1, setDoc1, "document")}
-                        
-                        {renderInput("KRA PIN Number", kraPin, setKraPin, "Enter your KRA PIN number", "default", false, "business")}
-                        {renderDocumentUpload("KRA PIN Document", doc2, setDoc2, "document-text")}
+        <SafeAreaView style={[defaultStyles.container, styles.container, { backgroundColor: theme.background }]}>
+            <ScrollView showsVerticalScrollIndicator={false}>
+                <View style={styles.content}>
+                    {/* Header Section */}
+                    <View style={styles.header}>
+                        <Text style={styles.title}>Author Registration</Text>
+                        <Text style={styles.subtitle}>Complete your author profile to start publishing</Text>
                     </View>
                     
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Professional Information</Text>
-                        
-                        {renderInput(
-                            "Writers Guild Member No.", 
-                            writersGuildMemberNo, 
-                            setWritersGuildMemberNo, 
-                            "Enter your Writers Guild membership number",
-                            "default",
-                            true,
-                            "people"
-                        )}
-                    </View>
-                </ScrollView>
+                    <View style={styles.form}>
+                        {/* Personal Information Section */}
+                        <View style={styles.fieldGroup}>
+                            <Text style={styles.label}>Full Name</Text>
+                            <TextInput
+                                placeholder="Enter your full name"
+                                placeholderTextColor={theme.textMuted}
+                                value={fullname}
+                                onChangeText={setFullname}
+                                style={[styles.input, errors.fullname && styles.inputError]}
+                            />
+                            {errors.fullname && <Text style={styles.errorText}>{errors.fullname}</Text>}
+                        </View>
 
-                <View style={styles.submitSection}>
-                    <TouchableOpacity
-                        style={styles.submitButton}
-                        onPress={handleSubmit}
-                        disabled={loading}
-                    >
-                       {loading ? (
-                           <ActivityIndicator
-                               size='large'
-                               color={theme.white}
-                           />
-                       ) : (
-                           <Text style={styles.buttonText}>
-                               Submit Application
-                           </Text>
-                       )}
-                    </TouchableOpacity>
+                        <View style={styles.fieldGroup}>
+                            <Text style={styles.label}>Address</Text>
+                            <TextInput
+                                placeholder="Enter your complete address"
+                                placeholderTextColor={theme.textMuted}
+                                value={address}
+                                onChangeText={setAddress}
+                                style={[styles.input, errors.address && styles.inputError]}
+                            />
+                            {errors.address && <Text style={styles.errorText}>{errors.address}</Text>}
+                        </View>
+
+                        <View style={styles.fieldGroup}>
+                            <Text style={styles.label}>Telephone Number</Text>
+                            <TextInput
+                                placeholder="Enter your phone number"
+                                placeholderTextColor={theme.textMuted}
+                                value={telephone}
+                                onChangeText={setTelephone}
+                                keyboardType="phone-pad"
+                                style={[styles.input, errors.telephone && styles.inputError]}
+                            />
+                            {errors.telephone && <Text style={styles.errorText}>{errors.telephone}</Text>}
+                        </View>
+
+                        {/* Identity Documents Section */}
+                        <View style={styles.fieldGroup}>
+                            <Text style={styles.label}>ID/PP Number</Text>
+                            <TextInput
+                                placeholder="Enter your ID or Passport number"
+                                placeholderTextColor={theme.textMuted}
+                                value={idppNo}
+                                onChangeText={setIdppNo}
+                                style={[styles.input, errors.idppNo && styles.inputError]}
+                            />
+                            {errors.idppNo && <Text style={styles.errorText}>{errors.idppNo}</Text>}
+                            <View style={styles.documentSection}>
+                                <TouchableOpacity 
+                                    onPress={() => pickDocument(setDoc1)}
+                                    style={[styles.uploadButton, errors.doc1 && { backgroundColor: '#FF6B6B' }]}
+                                >
+                                    <Feather 
+                                        name={doc1 ? "check-circle" : "upload"} 
+                                        size={moderateScale(18)} 
+                                        color={theme.white} 
+                                        style={styles.uploadIcon}
+                                    />
+                                    <Text style={styles.uploadText}>
+                                        {doc1 ? 'Document uploaded' : 'Upload ID/PP document'}
+                                    </Text>
+                                </TouchableOpacity>
+                                {errors.doc1 && <Text style={styles.errorText}>{errors.doc1}</Text>}
+                            </View>
+                        </View>
+
+                        <View style={styles.fieldGroup}>
+                            <Text style={styles.label}>KRA PIN Number</Text>
+                            <TextInput
+                                placeholder="Enter your KRA PIN number"
+                                placeholderTextColor={theme.textMuted}
+                                value={kraPin}
+                                onChangeText={setKraPin}
+                                style={[styles.input, errors.kraPin && styles.inputError]}
+                            />
+                            {errors.kraPin && <Text style={styles.errorText}>{errors.kraPin}</Text>}
+                            <View style={styles.documentSection}>
+                                <TouchableOpacity 
+                                    onPress={() => pickDocument(setDoc2)}
+                                    style={[styles.uploadButton, errors.doc2 && { backgroundColor: '#FF6B6B' }]}
+                                >
+                                    <Feather 
+                                        name={doc2 ? "check-circle" : "upload"} 
+                                        size={moderateScale(18)} 
+                                        color={theme.white} 
+                                        style={styles.uploadIcon}
+                                    />
+                                    <Text style={styles.uploadText}>
+                                        {doc2 ? 'Document uploaded' : 'Upload KRA PIN document'}
+                                    </Text>
+                                </TouchableOpacity>
+                                {errors.doc2 && <Text style={styles.errorText}>{errors.doc2}</Text>}
+                            </View>
+                        </View>
+
+                        {/* Professional Information Section */}
+                        <View style={styles.fieldGroup}>
+                            <Text style={styles.label}>Writers Guild Member No. (Optional)</Text>
+                            <TextInput
+                                placeholder="Enter your Writers Guild membership number"
+                                placeholderTextColor={theme.textMuted}
+                                value={writersGuildMemberNo}
+                                onChangeText={setWritersGuildMemberNo}
+                                style={styles.input}
+                            />
+                        </View>
+
+                        {/* Submit Section */}
+                        <View style={styles.submitSection}>
+                            <TouchableOpacity
+                                style={styles.submitButton}
+                                onPress={handleSubmit}
+                                disabled={loading}
+                            >
+                                {loading ? (
+                                    <View style={styles.loadingContainer}>
+                                        <ActivityIndicator size="small" color={theme.white} />
+                                        <Text style={styles.loadingText}>Submitting...</Text>
+                                    </View>
+                                ) : (
+                                    <Text style={styles.submitText}>Submit Application</Text>
+                                )}
+                            </TouchableOpacity>
+                        </View>
+                    </View>
                 </View>
-            </View>
+            </ScrollView>
         </SafeAreaView>
     );
 }

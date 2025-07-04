@@ -14,7 +14,7 @@ const listeneronboarding = () => {
     
     const handleSkipOnboarding = async () => {
         await SecureStore.setItemAsync('sb-onboarding', 'false');
-        router.push('/(tabs)/home');
+        router.replace('/(tabs)/home');
     }
 
     const styles = StyleSheet.create({
