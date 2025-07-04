@@ -5,6 +5,7 @@ import * as SecureStore from 'expo-secure-store';
 import { useRouter } from 'expo-router';
 import { MaterialIcons, Ionicons, FontAwesome5, Feather } from '@expo/vector-icons';
 import { useTheme } from '@/providers/ThemeProvider';
+import { clearPushTokenCache } from '@/utils/registerForPushNotificationsAsync';
 
 const SettingsPage = () => {
   const router = useRouter();
@@ -41,6 +42,7 @@ const publisherOptions = [
   const handleLogout = async () => {
     await SecureStore.deleteItemAsync('userDetails');
     await SecureStore.deleteItemAsync('authToken');
+    await clearPushTokenCache(); // Clear push token cache on logout
     router.replace('/(authenticate)/login');
   };
 
@@ -68,7 +70,7 @@ const publisherOptions = [
             <TouchableOpacity
               key={option.label}
               style={[styles.optionButton, { backgroundColor: `${theme.primary}10` }]}
-              onPress={() => router.push(option.route)}
+              onPress={() => router.push(option.route as any)}
             >
               <View style={styles.optionIcon}>{option.icon}</View>
               <Text style={[styles.optionLabel, { color: theme.text }]}>{option.label}</Text>

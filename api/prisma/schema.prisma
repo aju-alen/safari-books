@@ -23,6 +23,7 @@ model User{
   emailVerificationToken String?
   emailVerified Boolean @default(false)
   firstTimeLogin Boolean @default(true)
+  pushToken String? // Store push notification token
   
   updatedAt DateTime @updatedAt
   createdAt DateTime @default(now())

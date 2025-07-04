@@ -36,10 +36,10 @@
           "backgroundColor": "#000000"
         }
       },
-      "buildNumber": "2"
+      "buildNumber": "3"
     },
     "android": {
-      "versionCode": 6,
+      "versionCode": 7,
       "adaptiveIcon": {
         "foregroundImage": "./assets/sbLogo.png",
         "backgroundColor": "#000000"

@@ -6,6 +6,7 @@ import * as SecureStore from 'expo-secure-store';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme, ThemeType } from '@/providers/ThemeProvider';
+import { clearPushTokenCache } from '@/utils/registerForPushNotificationsAsync';
 
 const SettingsPage = () => {
   const [userData, setUserData] = useState<any>(null);
@@ -17,6 +18,11 @@ const SettingsPage = () => {
     { id: 'desert', name: 'Desert', icon: '🏜️', description: 'Warm earth tones' },
     { id: 'ocean', name: 'Ocean', icon: '🌊', description: 'Cool blue tones' },
     { id: 'pastel', name: 'Pastel', icon: '🌸', description: 'Soft pink theme' },
+    { id: 'sunset', name: 'Sunset', icon: '🌅', description: 'Vibrant orange-pink' },
+    { id: 'royal', name: 'Royal', icon: '🧘🏼‍♀️', description: 'Sophisticated purple' },
+    { id: 'autumn', name: 'Autumn', icon: '🍂', description: 'Warm earth tones' },
+    { id: 'mint', name: 'Mint', icon: '🌱', description: 'Fresh cool green' },
+    { id: 'neon', name: 'Neon', icon: '⚡', description: 'Bold cyberpunk style' },
   ];
 
   useEffect(() => {
@@ -50,6 +56,7 @@ const SettingsPage = () => {
   const handleLogout = async() => {
     await SecureStore.deleteItemAsync('userDetails');
     await SecureStore.deleteItemAsync('authToken');
+    await clearPushTokenCache(); // Clear push token cache on logout
     router.replace('/(authenticate)/login');
   }
 

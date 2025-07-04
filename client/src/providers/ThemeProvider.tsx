@@ -9,11 +9,21 @@ import {
   OCEAN_LIGHT, 
   OCEAN_DARK, 
   PASTEL_LIGHT, 
-  PASTEL_DARK 
+  PASTEL_DARK,
+  SUNSET_LIGHT,
+  SUNSET_DARK,
+  ROYAL_LIGHT,
+  ROYAL_DARK,
+  AUTUMN_LIGHT,
+  AUTUMN_DARK,
+  MINT_LIGHT,
+  MINT_DARK,
+  NEON_LIGHT,
+  NEON_DARK
 } from '@/constants/tokens'
 import * as SecureStore from 'expo-secure-store';
 
-export type ThemeType = 'nature' | 'desert' | 'ocean' | 'pastel';
+export type ThemeType = 'nature' | 'desert' | 'ocean' | 'pastel' | 'sunset' | 'royal' | 'autumn' | 'mint' | 'neon';
 
 const ThemeContext = createContext({
   theme: COLORS, 
@@ -37,6 +47,16 @@ const ThemeProvider = ({children}:{children:React.ReactNode}) => {
                 return dark ? OCEAN_DARK : OCEAN_LIGHT;
             case 'pastel':
                 return dark ? PASTEL_DARK : PASTEL_LIGHT;
+            case 'sunset':
+                return dark ? SUNSET_DARK : SUNSET_LIGHT;
+            case 'royal':
+                return dark ? ROYAL_DARK : ROYAL_LIGHT;
+            case 'autumn':
+                return dark ? AUTUMN_DARK : AUTUMN_LIGHT;
+            case 'mint':
+                return dark ? MINT_DARK : MINT_LIGHT;
+            case 'neon':
+                return dark ? NEON_DARK : NEON_LIGHT;
             default:
                 return dark ? NATURE_DARK : NATURE_LIGHT;
         }

@@ -5,6 +5,16 @@ import { useEffect } from 'react';
 import {  Stack } from 'expo-router'
 import { AudioProvider } from '@/store/AudioContext';
 import ThemeProvider from '@/providers/ThemeProvider';
+import { NotificationProvider } from '@/providers/NotificationsProvider';
+import * as Notifications from "expo-notifications";
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+  }),
+});
 
 
 SplashScreen.preventAutoHideAsync();
@@ -44,6 +54,7 @@ const MainLayout = () => {
         return null;
       }
   return (
+    <NotificationProvider>
       <ThemeProvider>
     <AudioProvider>
     <Stack>
@@ -56,6 +67,7 @@ const MainLayout = () => {
   </Stack>
   </AudioProvider>
   </ThemeProvider>
+  </NotificationProvider>
   )
 }
 

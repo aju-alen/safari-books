@@ -486,3 +486,39 @@ export const deleteAccount = async (req, res) => {
         res.status(500).json({ message: "An error occurred while deleting the account" });
     }
 };
+
+export const registerPushToken = async (req, res) => {
+    try {
+        const { pushToken } = req.body;
+        const userId = req.userId; // Get userId from JWT middleware
+
+        if (!pushToken) {
+            return res.status(400).json({ message: "Push token is required" });
+        }
+
+        // Check if user exists
+        const user = await prisma.user.findUnique({
+            where: { id: userId }
+        });
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        // Update user with push token
+        await prisma.user.update({
+            where: { id: userId },
+            data: {
+                pushToken: pushToken
+            }
+        });
+
+        await prisma.$disconnect();
+        
+        console.log(`Push token registered for user ${userId}: ${pushToken}`);
+        res.status(200).json({ message: "Push token registered successfully" });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "An error occurred while registering push token" });
+    }
+};

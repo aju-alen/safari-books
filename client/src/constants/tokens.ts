@@ -154,6 +154,201 @@ export const PASTEL_DARK = {
     error: '#FF6B6B', // Error color
 };
 
+// Sunset Theme (Vibrant Orange-Pink)
+export const SUNSET_LIGHT = {
+    primary: '#FF6B35', // Vibrant Orange - Energetic and bold
+    secondary2: '#FF8E72', // Coral Pink - Warm and inviting
+    secondary: '#E85A4F', // Deep Coral - Sophisticated accent
+    tertiary: '#FFB347', // Golden Amber - Bright highlight
+    background: '#FFF5F0', // Warm Cream - Soft and welcoming
+    text: '#2D1B1A', // Deep Brown - Strong contrast
+    textMuted: '#8B5A5A', // Muted Rose - Gentle secondary text
+    icon: '#FF6B35', // Vibrant Orange - Matching primary
+    maximumTrackTintColor: 'rgba(255,107,53,0.1)',
+    minimumTrackTintColor: 'rgba(255,107,53,0.4)',
+    gray: '#E8C4B8', // Soft Peach - Neutral outline
+    gray2: '#F7E8E0', // Light Cream - Card backgrounds
+    white: '#FFF5F0', // Warm white
+    lightWhite: '#FFFBF8', // Ultra-light cream
+    tabs: '#FFFFFF', // Clean tabs
+    error: '#FF6B6B', // Error color
+};
+
+export const SUNSET_DARK = {
+    primary: '#FF8A65', // Soft Coral - Bold but not harsh
+    secondary2: '#FFAB91', // Light Coral - Gentle highlights
+    secondary: '#D84315', // Deep Orange - Rich accent
+    tertiary: '#FFCC02', // Bright Gold - Eye-catching
+    background: '#1A0F0A', // Deep Charcoal - Rich dark base
+    text: '#FBE9E7', // Soft Cream - Easy on eyes
+    textMuted: '#D7CCC8', // Muted Beige - Secondary text
+    icon: '#FF8A65', // Soft Coral - Matches primary
+    maximumTrackTintColor: 'rgba(255,138,101,0.15)',
+    minimumTrackTintColor: 'rgba(255,138,101,0.4)',
+    gray: '#8D6E63', // Brown Gray - Balanced neutral
+    gray2: '#2A1A15', // Dark Brown - Cards and dividers
+    white: '#2D1B1A', // Very dark brown background
+    lightWhite: '#4A2C25', // Mid-tone for interactions
+    tabs: '#2D1B1A', // Tab separation
+    error: '#FF6B6B', // Error color
+};
+
+// Royal Theme (Purple)
+export const ROYAL_LIGHT = {
+    primary: '#6A4C93', // Royal Purple - Sophisticated and elegant
+    secondary2: '#B39DDB', // Light Lavender - Soft accent
+    secondary: '#8E6C88', // Muted Plum - Professional
+    tertiary: '#E1BEE7', // Pale Violet - Delicate highlight
+    background: '#F8F5FF', // Lavender Mist - Clean and airy
+    text: '#2D1B3D', // Deep Purple - Rich contrast
+    textMuted: '#7B6B8A', // Muted Lavender - Secondary text
+    icon: '#6A4C93', // Royal Purple - Matching primary
+    maximumTrackTintColor: 'rgba(106,76,147,0.1)',
+    minimumTrackTintColor: 'rgba(106,76,147,0.4)',
+    gray: '#D1C4E9', // Light Purple - Neutral outline
+    gray2: '#EDE7F6', // Pale Lavender - Card backgrounds
+    white: '#F8F5FF', // Lavender white
+    lightWhite: '#FDFBFF', // Ultra-light lavender
+    tabs: '#FFFFFF', // Clean tabs
+    error: '#FF6B6B', // Error color
+};
+
+export const ROYAL_DARK = {
+    primary: '#B39DDB', // Soft Lavender - Elegant and modern
+    secondary2: '#D1C4E9', // Light Purple - Gentle highlights
+    secondary: '#7E57C2', // Medium Purple - Rich accent
+    tertiary: '#E1BEE7', // Pale Violet - Subtle glow
+    background: '#1A1625', // Deep Purple Night - Mysterious base
+    text: '#F3E5F5', // Soft Lavender White - Easy reading
+    textMuted: '#CE93D8', // Muted Violet - Secondary text
+    icon: '#B39DDB', // Soft Lavender - Matches primary
+    maximumTrackTintColor: 'rgba(179,157,219,0.15)',
+    minimumTrackTintColor: 'rgba(179,157,219,0.4)',
+    gray: '#7B6B8A', // Purple Gray - Balanced neutral
+    gray2: '#2A1F35', // Dark Purple - Cards and dividers
+    white: '#2D1B3D', // Very dark purple background
+    lightWhite: '#4A2C5A', // Mid-tone for interactions
+    tabs: '#2D1B3D', // Tab separation
+    error: '#FF6B6B', // Error color
+};
+
+// Autumn Theme (Warm Earth Tones)
+export const AUTUMN_LIGHT = {
+    primary: '#D2691E', // Chocolate Orange - Warm and inviting
+    secondary2: '#CD853F', // Peru Brown - Rich accent
+    secondary: '#A0522D', // Sienna - Deep and grounded
+    tertiary: '#F4A460', // Sandy Brown - Bright highlight
+    background: '#FFF8DC', // Cornsilk - Warm and bright
+    text: '#2F1B14', // Deep Brown - Strong contrast
+    textMuted: '#8B7355', // Tan Brown - Muted secondary
+    icon: '#D2691E', // Chocolate Orange - Matching primary
+    maximumTrackTintColor: 'rgba(210,105,30,0.1)',
+    minimumTrackTintColor: 'rgba(210,105,30,0.4)',
+    gray: '#DEB887', // Burlywood - Neutral outline
+    gray2: '#F5DEB3', // Wheat - Card backgrounds
+    white: '#FFF8DC', // Cornsilk white
+    lightWhite: '#FFFEF8', // Ultra-light cream
+    tabs: '#FFFFFF', // Clean tabs
+    error: '#FF6B6B', // Error color
+};
+
+export const AUTUMN_DARK = {
+    primary: '#F4A460', // Sandy Brown - Warm and accessible
+    secondary2: '#DEB887', // Burlywood - Gentle highlights
+    secondary: '#CD853F', // Peru Brown - Rich accent
+    tertiary: '#FFD700', // Gold - Bright highlight
+    background: '#1A0F0A', // Deep Brown - Rich dark base
+    text: '#F5F5DC', // Beige - Soft contrast
+    textMuted: '#D2B48C', // Tan - Muted secondary
+    icon: '#F4A460', // Sandy Brown - Matches primary
+    maximumTrackTintColor: 'rgba(244,164,96,0.15)',
+    minimumTrackTintColor: 'rgba(244,164,96,0.4)',
+    gray: '#A0522D', // Sienna - Balanced neutral
+    gray2: '#2A1F15', // Dark Brown - Cards and dividers
+    white: '#2F1B14', // Very dark brown background
+    lightWhite: '#4A2C1A', // Mid-tone for interactions
+    tabs: '#2F1B14', // Tab separation
+    error: '#FF6B6B', // Error color
+};
+
+// Mint Theme (Cool Green)
+export const MINT_LIGHT = {
+    primary: '#20B2AA', // Light Sea Green - Fresh and modern
+    secondary2: '#98D8C8', // Pale Green - Soft accent
+    secondary: '#48C9B0', // Medium Aquamarine - Professional
+    tertiary: '#A8E6CF', // Mint Green - Bright highlight
+    background: '#F0FFF0', // Honeydew - Clean and fresh
+    text: '#1B3D2A', // Dark Green - Strong contrast
+    textMuted: '#6B8E6B', // Muted Green - Secondary text
+    icon: '#20B2AA', // Light Sea Green - Matching primary
+    maximumTrackTintColor: 'rgba(32,178,170,0.1)',
+    minimumTrackTintColor: 'rgba(32,178,170,0.4)',
+    gray: '#C8E6C9', // Light Green - Neutral outline
+    gray2: '#E8F5E8', // Pale Mint - Card backgrounds
+    white: '#F0FFF0', // Honeydew white
+    lightWhite: '#F8FFFA', // Ultra-light mint
+    tabs: '#FFFFFF', // Clean tabs
+    error: '#FF6B6B', // Error color
+};
+
+export const MINT_DARK = {
+    primary: '#98D8C8', // Pale Green - Fresh and accessible
+    secondary2: '#A8E6CF', // Mint Green - Gentle highlights
+    secondary: '#48C9B0', // Medium Aquamarine - Rich accent
+    tertiary: '#B8E6B8', // Light Green - Subtle glow
+    background: '#0A1A0A', // Deep Green Night - Cool base
+    text: '#E8F5E8', // Pale Mint White - Easy reading
+    textMuted: '#A8D8A8', // Muted Green - Secondary text
+    icon: '#98D8C8', // Pale Green - Matches primary
+    maximumTrackTintColor: 'rgba(152,216,200,0.15)',
+    minimumTrackTintColor: 'rgba(152,216,200,0.4)',
+    gray: '#6B8E6B', // Muted Green - Balanced neutral
+    gray2: '#1A2A1A', // Dark Green - Cards and dividers
+    white: '#1B3D2A', // Very dark green background
+    lightWhite: '#2A4A2A', // Mid-tone for interactions
+    tabs: '#1B3D2A', // Tab separation
+    error: '#FF6B6B', // Error color
+};
+
+// Neon Theme (Bold Cyberpunk)
+export const NEON_LIGHT = {
+    primary: '#00FF88', // Neon Green - Bold and futuristic
+    secondary2: '#FF00FF', // Magenta - Vibrant accent
+    secondary: '#0080FF', // Electric Blue - Professional
+    tertiary: '#FFFF00', // Neon Yellow - Bright highlight
+    background: '#0A0A0A', // Near Black - High contrast
+    text: '#FFFFFF', // Pure White - Maximum contrast
+    textMuted: '#CCCCCC', // Light Gray - Secondary text
+    icon: '#00FF88', // Neon Green - Matching primary
+    maximumTrackTintColor: 'rgba(0,255,136,0.1)',
+    minimumTrackTintColor: 'rgba(0,255,136,0.4)',
+    gray: '#333333', // Dark Gray - Neutral outline
+    gray2: '#1A1A1A', // Very Dark Gray - Card backgrounds
+    white: '#0A0A0A', // Near black white
+    lightWhite: '#1A1A1A', // Dark gray
+    tabs: '#000000', // Pure black tabs
+    error: '#FF0066', // Neon Pink error
+};
+
+export const NEON_DARK = {
+    primary: '#00FF88', // Neon Green - Bold and futuristic
+    secondary2: '#FF00FF', // Magenta - Vibrant accent
+    secondary: '#0080FF', // Electric Blue - Rich accent
+    tertiary: '#FFFF00', // Neon Yellow - Bright highlight
+    background: '#000000', // Pure Black - Maximum contrast
+    text: '#FFFFFF', // Pure White - Maximum contrast
+    textMuted: '#CCCCCC', // Light Gray - Secondary text
+    icon: '#00FF88', // Neon Green - Matches primary
+    maximumTrackTintColor: 'rgba(0,255,136,0.15)',
+    minimumTrackTintColor: 'rgba(0,255,136,0.4)',
+    gray: '#333333', // Dark Gray - Balanced neutral
+    gray2: '#1A1A1A', // Very Dark Gray - Cards and dividers
+    white: '#000000', // Pure black background
+    lightWhite: '#1A1A1A', // Dark gray for interactions
+    tabs: '#000000', // Pure black tabs
+    error: '#FF0066', // Neon Pink error
+};
+
 // Default themes (for backward compatibility)
 export const COLORS = NATURE_LIGHT;
 export const DARK_COLORS = NATURE_DARK;
