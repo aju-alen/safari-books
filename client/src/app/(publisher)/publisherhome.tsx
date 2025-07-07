@@ -8,12 +8,14 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useTheme } from '@/providers/ThemeProvider'
 import { axiosWithAuth } from '@/utils/customAxios'
 import { ipURL } from '@/utils/backendURL'
+import HomeLoadingSkeleton from '@/components/HomeLoadingSkeleton'
 
 const PublisherHome = () => {
   const {theme} = useTheme()
 
   const [token, setToken] = useState(null)
   const [bookStats, setBookStats] = useState(null)
+  const [loading, setLoading] = useState(true)
   const fadeAnim = useRef(new Animated.Value(0)).current
   const createCheckbox = () =>
     Alert.alert('Publisher Type', 'Choose your publisher category', [
@@ -44,11 +46,17 @@ const PublisherHome = () => {
 
   useEffect(() => {
     const getAsyncData = async () => {
-      const tokenStore = await SecureStore.getItemAsync('userDetails')
-      setToken(JSON.parse(tokenStore).userId)
+      try {
+        const tokenStore = await SecureStore.getItemAsync('userDetails')
+        setToken(JSON.parse(tokenStore).userId)
 
-      const response = await axiosWithAuth.get(`${ipURL}/api/publisher/publisher-analytics`)
-      setBookStats(response.data)
+        const response = await axiosWithAuth.get(`${ipURL}/api/publisher/publisher-analytics`)
+        setBookStats(response.data)
+      } catch (error) {
+        console.error('Error fetching data:', error)
+      } finally {
+        setLoading(false)
+      }
     }
     getAsyncData()
 
@@ -244,6 +252,10 @@ const PublisherHome = () => {
     },
   })
 
+  if (loading) {
+    return <HomeLoadingSkeleton />
+  }
+
   return (
     <SafeAreaView style={[defaultStyles.container, styles.container, { backgroundColor: theme.background }]}>
       <View style={styles.header}>
@@ -320,9 +332,9 @@ const PublisherHome = () => {
                   <Text style={styles.insightTitle}>Total Overview</Text>
                 </View>
                 <View style={styles.insightContent}>
-                  <Text style={styles.insightStat}>📚 0 Books Published</Text>
-                  <Text style={styles.insightStat}>👥 0 New Listeners</Text>
-                  <Text style={styles.insightStat}>⭐ 0 Revenue Earned</Text>
+                  <Text style={styles.insightStat}>📚 {bookStats?.bookCount || 0} Books Published</Text>
+                  <Text style={styles.insightStat}>👥 {bookStats?.ListenersStats || 0} New Listeners</Text>
+                  <Text style={styles.insightStat}>⭐ {bookStats?.RevenueStats || 'AED 0'} Revenue Earned</Text>
                 </View>
               </View>
             </View>

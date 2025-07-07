@@ -9,10 +9,10 @@ import { COLORS, FONT, welcomeCOLOR } from '../../constants/tokens';
 import { defaultStyles } from '../../styles/index';
 import { ipURL } from '../../utils/backendURL';
 import { horizontalScale, moderateScale, verticalScale } from '../../utils/responsiveSize';
-
+import { useTheme } from '@/providers/ThemeProvider';
 
 const LoginPage = () => {
-
+    const { theme } = useTheme();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isPasswordShown, setIsPasswordShown] = useState(true);
@@ -33,10 +33,6 @@ const LoginPage = () => {
     //     checkLogin();
 
     // }, []);
-
-
-
-
 
     const handleAdminLoin = async () => {
         const user = {
@@ -74,7 +70,7 @@ const LoginPage = () => {
 
     return (
        
-        <SafeAreaView style={defaultStyles.container }>
+        <SafeAreaView style={[defaultStyles.container, { backgroundColor: theme.background }]}>
           
                 <View style={{ flex: 1, 
                     marginHorizontal: horizontalScale(22),
@@ -87,7 +83,7 @@ const LoginPage = () => {
                                 fontSize: moderateScale(22),
                                 fontWeight: 'bold',
                                 marginVertical: verticalScale(12),
-                                color: welcomeCOLOR.white
+                                color: theme.text
                             }}>
                                 Admin Portal
                             </Text>
@@ -102,7 +98,7 @@ const LoginPage = () => {
                                 fontSize: moderateScale(16),
                                 fontWeight: "200",
                                 marginVertical: verticalScale(8),
-                                color: welcomeCOLOR.black,
+                                color: theme.text,
                                 fontFamily:FONT.RobotoLight
                                 
                             }}>Email address</Text>
@@ -110,23 +106,24 @@ const LoginPage = () => {
                             <View style={[{
                                 width: "100%",
                                 height: verticalScale(48),
-                                borderColor: welcomeCOLOR.black,
+                                borderColor: theme.gray2,
                                 borderWidth: moderateScale(1),
                                 borderRadius: moderateScale(8),
                                 alignItems: "center",
                                 justifyContent: "center",
-                                paddingLeft: horizontalScale(22)
+                                paddingLeft: horizontalScale(22),
+                                backgroundColor: theme.white
                             },]}>
                                 <TextInput
                                     placeholder="Enter Your Email"
-                                    placeholderTextColor="gray"
+                                    placeholderTextColor={theme.textMuted}
                                     autoCapitalize="none"
                                     value={email}
                                     onChangeText={setEmail}
                                     keyboardType='email-address'
                                     style={{
                                         width: "100%",
-                                        color: COLORS.white
+                                        color: theme.text
                                     }}
                                 />
                             </View>
@@ -138,28 +135,30 @@ const LoginPage = () => {
                             <Text style={{
                                 fontSize: moderateScale(16),
                                 fontWeight: "400",
-                                marginVertical: verticalScale(8)
+                                marginVertical: verticalScale(8),
+                                color: theme.text
                             }}>Password</Text>
 
                             <View style={[{
                                 width: "100%",
                                 height: verticalScale(48),
-                                borderColor: welcomeCOLOR.black,
+                                borderColor: theme.gray2,
                                 borderWidth: moderateScale(1),
                                 borderRadius: moderateScale(8),
                                 alignItems: "center",
                                 justifyContent: "center",
-                                paddingLeft: horizontalScale(22)
+                                paddingLeft: horizontalScale(22),
+                                backgroundColor: theme.white
                             },]}>
                                 <TextInput
                                     placeholder='Enter your password'
                                     value={password}
                                     onChangeText={setPassword}
-                                    placeholderTextColor="gray"
+                                    placeholderTextColor={theme.textMuted}
                                     secureTextEntry={isPasswordShown}
                                     style={{
                                         width: "100%",
-                                        color: COLORS.white
+                                        color: theme.text
                                     }}
                                 />
 
@@ -172,9 +171,9 @@ const LoginPage = () => {
                                 >
                                     {
                                         isPasswordShown == true ? (
-                                            <Ionicons name="eye-off" size={24} color={COLORS.secondary} />
+                                            <Ionicons name="eye-off" size={24} color={theme.textMuted} />
                                         ) : (
-                                            <Ionicons name="eye" size={24} color={COLORS.white} />
+                                            <Ionicons name="eye" size={24} color={theme.text} />
                                         )
                                     }
 
@@ -184,24 +183,20 @@ const LoginPage = () => {
                     
                    
                     <TouchableOpacity
-
-                        filled
-                        color={COLORS.secondary
-                        }
                         style={{
                             padding: moderateScale(12),
-                            backgroundColor: COLORS.secondary,
+                            backgroundColor: theme.primary,
                             borderRadius: moderateScale(8),
                         }}
                         onPress={handleAdminLoin}
                     >
                         {loading?
-                         <ActivityIndicator/>
+                         <ActivityIndicator color={theme.white}/>
                          :
                         <Text style={{
                             fontSize: moderateScale(16),
                             fontWeight: "bold",
-                            color: welcomeCOLOR.white,
+                            color: theme.white,
                         textAlign: "center"
                         }}>Login</Text>
                         }

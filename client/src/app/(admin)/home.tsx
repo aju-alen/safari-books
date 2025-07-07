@@ -8,8 +8,10 @@ import React, { useEffect, useRef, useState } from 'react'
 import { Alert, Animated, ScrollView, StyleSheet, Text, TouchableOpacity, View, ActivityIndicator, Linking, RefreshControl } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { axiosWithAuth } from '@/utils/customAxios';
+import { useTheme } from '@/providers/ThemeProvider';
 
 const AdminDashboard = () => {
+  const { theme } = useTheme();
   const [token, setToken] = useState(null)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -200,14 +202,14 @@ const AdminDashboard = () => {
   const pendingCount = filteredPublishers.filter(pub => !pub.isVerified).length;
 
   return (
-    <SafeAreaView style={[defaultStyles.container, styles.container]}>
-      <View style={styles.header}>
+    <SafeAreaView style={[defaultStyles.container, styles.container, { backgroundColor: theme.background }]}>
+      <View style={[styles.header, { borderBottomColor: theme.gray2 }]}>
         <View>
-          <Text style={styles.welcomeText}>Admin Portal</Text>
-          <Text style={styles.adminTitle}>Publisher Verification</Text>
+          <Text style={[styles.welcomeText, { color: theme.textMuted }]}>Admin Portal</Text>
+          <Text style={[styles.adminTitle, { color: theme.text }]}>Publisher Verification</Text>
         </View>
-        <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
-          <MaterialIcons name="logout" size={22} color="white" />
+        <TouchableOpacity onPress={handleLogout} style={[styles.logoutButton, { backgroundColor: theme.primary, shadowColor: theme.primary }]}>
+          <MaterialIcons name="logout" size={22} color={theme.white} />
         </TouchableOpacity>
       </View>
 
@@ -218,41 +220,41 @@ const AdminDashboard = () => {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={['#4F46E5']}
-            tintColor="#4F46E5"
+            colors={[theme.primary]}
+            tintColor={theme.primary}
             title="Pull to refresh"
-            titleColor="#94A3B8"
+            titleColor={theme.textMuted}
           />
         }
       >
         <Animated.View style={[styles.mainContent, { opacity: fadeAnim }]}>
           <View style={styles.statsGrid}>
-            <View style={[styles.statBox, styles.statBoxPrimary]}>
+            <View style={[styles.statBox, styles.statBoxPrimary, { backgroundColor: theme.primary, borderLeftColor: theme.white, shadowColor: theme.text }]}>
               <View style={styles.statIconContainer}>
-                <FontAwesome5 name="clock" size={20} color="white" />
+                <FontAwesome5 name="clock" size={20} color={theme.white} />
               </View>
               <Text style={styles.statNumber}>{pendingCount}</Text>
               <Text style={styles.statLabel}>Pending Verification</Text>
             </View>
-            <View style={[styles.statBox, styles.statBoxSecondary]}>
+            <View style={[styles.statBox, styles.statBoxSecondary, { backgroundColor: theme.secondary, borderLeftColor: theme.white, shadowColor: theme.text }]}>
               <View style={styles.statIconContainer}>
-                <FontAwesome5 name="check-circle" size={20} color="white" />
+                <FontAwesome5 name="check-circle" size={20} color={theme.white} />
               </View>
               <Text style={styles.statNumber}>
                 {filteredPublishers.filter(pub => pub.isVerified).length}
               </Text>
               <Text style={styles.statLabel}>Verified Publishers</Text>
             </View>
-            <View style={[styles.statBox, styles.statBoxAccent]}>
+            <View style={[styles.statBox, styles.statBoxAccent, { backgroundColor: theme.tertiary, borderLeftColor: theme.white, shadowColor: theme.text }]}>
               <View style={styles.statIconContainer}>
-                <FontAwesome5 name="building" size={20} color="white" />
+                <FontAwesome5 name="building" size={20} color={theme.white} />
               </View>
               <Text style={styles.statNumber}>{publisherData.companies.length}</Text>
               <Text style={styles.statLabel}>Companies</Text>
             </View>
-            <View style={[styles.statBox, styles.statBoxDark]}>
+            <View style={[styles.statBox, styles.statBoxDark, { backgroundColor: theme.secondary2, borderLeftColor: theme.white, shadowColor: theme.text }]}>
               <View style={styles.statIconContainer}>
-                <FontAwesome5 name="user" size={20} color="white" />
+                <FontAwesome5 name="user" size={20} color={theme.white} />
               </View>
               <Text style={styles.statNumber}>{publisherData.authors.length}</Text>
               <Text style={styles.statLabel}>Authors</Text>
@@ -260,108 +262,98 @@ const AdminDashboard = () => {
           </View>
 
           <View style={styles.filtersContainer}>
-            <Text style={styles.sectionTitle}>Publishers Pending Verification</Text>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>Publishers Pending Verification</Text>
             <View style={styles.filters}>
               <TouchableOpacity 
-                style={[styles.filterButton, filterType === 'all' && styles.activeFilter]}
+                style={[styles.filterButton, { backgroundColor: theme.white, borderColor: theme.gray2 }, filterType === 'all' && { backgroundColor: theme.primary, borderColor: theme.primary }]}
                 onPress={() => setFilterType('all')}
               >
-                <Text style={styles.filterText}>All</Text>
+                <Text style={[styles.filterText, { color: filterType === 'all' ? theme.white : theme.text }]}>All</Text>
               </TouchableOpacity>
               <TouchableOpacity 
-                style={[styles.filterButton, filterType === 'companies' && styles.activeFilter]}
+                style={[styles.filterButton, { backgroundColor: theme.white, borderColor: theme.gray2 }, filterType === 'companies' && { backgroundColor: theme.primary, borderColor: theme.primary }]}
                 onPress={() => setFilterType('companies')}
               >
-                <Text style={styles.filterText}>Companies</Text>
+                <Text style={[styles.filterText, { color: filterType === 'companies' ? theme.white : theme.text }]}>Companies</Text>
               </TouchableOpacity>
               <TouchableOpacity 
-                style={[styles.filterButton, filterType === 'authors' && styles.activeFilter]}
+                style={[styles.filterButton, { backgroundColor: theme.white, borderColor: theme.gray2 }, filterType === 'authors' && { backgroundColor: theme.primary, borderColor: theme.primary }]}
                 onPress={() => setFilterType('authors')}
               >
-                <Text style={styles.filterText}>Authors</Text>
+                <Text style={[styles.filterText, { color: filterType === 'authors' ? theme.white : theme.text }]}>Authors</Text>
               </TouchableOpacity>
             </View>
           </View>
 
           {loading ? (
-            <ActivityIndicator size="large" color="#4F46E5" style={styles.loader} />
+            <ActivityIndicator size="large" color={theme.primary} style={styles.loader} />
           ) : (
             <View style={styles.publisherList}>
               {filteredPublishers.length === 0 ? (
-                <Text style={styles.noDataText}>No publishers found matching the selected filter</Text>
+                <Text style={[styles.noDataText, { color: theme.textMuted }]}>No publishers found matching the selected filter</Text>
               ) : (
                 filteredPublishers.map((publisher) => (
-                  <View key={publisher.id} style={styles.publisherCard}>
+                  <View key={publisher.id} style={[styles.publisherCard, { backgroundColor: theme.white, shadowColor: theme.text, borderLeftColor: theme.primary }]}>
                     <TouchableOpacity
                       style={styles.publisherInfo}
                       onPress={() => handleViewDetails(publisher.id, publisher.isCompany)}
                     >
-                      <View style={styles.publisherIconContainer}>
+                      <View style={[styles.publisherIconContainer, { backgroundColor: theme.primary }]}>
                         {publisher.isCompany ? (
-                          <FontAwesome5 name="building" size={20} color="white" />
+                          <FontAwesome5 name="building" size={20} color={theme.white} />
                         ) : (
-                          <FontAwesome5 name="user" size={20} color="white" />
+                          <FontAwesome5 name="user" size={20} color={theme.white} />
                         )}
                       </View>
                       <View style={styles.publisherDetails}>
-                        <Text style={styles.publisherName}>{publisher.name}</Text>
+                        <Text style={[styles.publisherName, { color: theme.text }]}>{publisher.name}</Text>
                         <View style={styles.publisherMeta}>
-                          <Text style={styles.publisherType}>
+                          <Text style={[styles.publisherType, { color: theme.textMuted }]}>
                             {publisher.isCompany ? 'Publishing Company' : 'Independent Author'}
                           </Text>
-                          <Text style={styles.publisherDate}>Submitted: {publisher.submissionDate}</Text>
-                          <Text style={styles.bookTitle}>Book: {publisher.bookTitle}</Text>
+                          <Text style={[styles.publisherDate, { color: theme.textMuted }]}>Submitted: {publisher.submissionDate}</Text>
+                          <Text style={[styles.bookTitle, { color: theme.textMuted }]}>Book: {publisher.bookTitle}</Text>
                         </View>
                         <View style={styles.publisherStats}>
-                          <View style={styles.statusBadge}>
+                          <View style={[styles.statusBadge, { backgroundColor: theme.gray2 }]}>
                             {publisher.isVerified ? (
-                              <Text style={styles.verifiedStatusText}>Verified</Text>
+                              <Text style={[styles.verifiedStatusText, { color: theme.secondary }]}>Verified</Text>
                             ) : (
-                              <Text style={styles.pendingStatusText}>Pending</Text>
+                              <Text style={[styles.pendingStatusText, { color: theme.tertiary }]}>Pending</Text>
                             )}
                           </View>
                         </View>
                       </View>
                     </TouchableOpacity>
                     
-                    <View style={styles.documentsSection}>
-                      <Text style={styles.documentsSectionTitle}>Verification Documents</Text>
+                    <View style={[styles.documentsSection, { borderTopColor: theme.gray2 }]}>
+                      <Text style={[styles.documentsSectionTitle, { color: theme.text }]}>Verification Documents</Text>
                       <View style={styles.documents}>
                         <TouchableOpacity 
-                          style={styles.documentItem}
+                          style={[styles.documentItem, { backgroundColor: `${theme.gray2}15` }]}
                           onPress={() => handleOpenDocument(publisher.document1)}
                         >
-                          <MaterialIcons name="description" size={18} color="#94A3B8" />
+                          <MaterialIcons name="description" size={18} color={theme.textMuted} />
                           <View style={styles.documentDetails}>
-                            <Text style={styles.documentLabel}>{publisher.document1Label}</Text>
-                            <Text style={styles.documentNumber}>{publisher.documentNumber1}</Text>
+                            <Text style={[styles.documentLabel, { color: theme.textMuted }]}>{publisher.document1Label}</Text>
+                            <Text style={[styles.documentNumber, { color: theme.textMuted }]}>{publisher.documentNumber1}</Text>
                           </View>
                         </TouchableOpacity>
                         
                         <TouchableOpacity 
-                          style={styles.documentItem}
+                          style={[styles.documentItem, { backgroundColor: `${theme.gray2}15` }]}
                           onPress={() => handleOpenDocument(publisher.document2)}
                         >
-                          <MaterialIcons name="description" size={18} color="#94A3B8" />
+                          <MaterialIcons name="description" size={18} color={theme.textMuted} />
                           <View style={styles.documentDetails}>
-                            <Text style={styles.documentLabel}>{publisher.document2Label}</Text>
-                            <Text style={styles.documentNumber}>{publisher.documentNumber2}</Text>
+                            <Text style={[styles.documentLabel, { color: theme.textMuted }]}>{publisher.document2Label}</Text>
+                            <Text style={[styles.documentNumber, { color: theme.textMuted }]}>{publisher.documentNumber2}</Text>
                           </View>
                         </TouchableOpacity>
                       </View>
                     </View>
                     
-                    {!publisher.isVerified && (
-                      <View style={styles.actionButtons}>
-                        <TouchableOpacity 
-                          style={styles.verifyButton}
-                          onPress={() => handleVerifyPublisher(publisher.id, publisher.isCompany)}
-                        >
-                          <MaterialIcons name="verified" size={18} color="white" />
-                          <Text style={styles.buttonText}>Verify Publisher</Text>
-                        </TouchableOpacity>
-                      </View>
-                    )}
+                   
                   </View>
                 ))
               )}
@@ -375,7 +367,7 @@ const AdminDashboard = () => {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#0F172A', // Darker blue background
+    // backgroundColor removed - now using theme
   },
   header: {
     flexDirection: 'row',
@@ -384,24 +376,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 24,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.1)',
+    // borderBottomColor removed - now using theme
   },
   welcomeText: {
     fontSize: 16,
-    color: '#94A3B8',
+    // color removed - now using theme
     marginBottom: 4,
     fontWeight: '500',
   },
   adminTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#fff',
+    // color removed - now using theme
   },
   logoutButton: {
     padding: 10,
-    backgroundColor: '#4F46E5',
+    // backgroundColor removed - now using theme
     borderRadius: 12,
-    shadowColor: '#4F46E5',
+    // shadowColor removed - now using theme
     shadowOffset: { width: 0, height: 4 },
     
     shadowRadius: 8,
@@ -425,7 +417,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: 'center',
     width: '47%',
-    shadowColor: '#000',
+    // shadowColor removed - now using theme
     shadowOffset: { width: 0, height: 4 },
     
     shadowRadius: 8,
@@ -433,24 +425,24 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   statBoxPrimary: {
-    backgroundColor: '#4F46E5', // Indigo
+    // backgroundColor removed - now using theme
     borderLeftWidth: 4,
-    borderLeftColor: '#818CF8',
+    // borderLeftColor removed - now using theme
   },
   statBoxSecondary: {
-    backgroundColor: '#059669', // Green
+    // backgroundColor removed - now using theme
     borderLeftWidth: 4,
-    borderLeftColor: '#34D399',
+    // borderLeftColor removed - now using theme
   },
   statBoxAccent: {
-    backgroundColor: '#2563EB', // Blue
+    // backgroundColor removed - now using theme
     borderLeftWidth: 4,
-    borderLeftColor: '#60A5FA',
+    // borderLeftColor removed - now using theme
   },
   statBoxDark: {
-    backgroundColor: '#6D28D9', // Violet
+    // backgroundColor removed - now using theme
     borderLeftWidth: 4,
-    borderLeftColor: '#A78BFA',
+    // borderLeftColor removed - now using theme
   },
   statIconContainer: {
     backgroundColor: 'rgba(255,255,255,0.2)',
@@ -477,7 +469,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 16,
-    color: '#fff',
+    // color removed - now using theme
     paddingLeft: 4,
   },
   filters: {
@@ -489,23 +481,23 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 10,
-    backgroundColor: '#1E293B',
+    // backgroundColor removed - now using theme
     borderWidth: 1,
-    borderColor: '#334155',
+    // borderColor removed - now using theme
   },
   activeFilter: {
-    backgroundColor: '#4F46E5',
-    borderColor: '#4F46E5',
+    // backgroundColor removed - now using theme
+    // borderColor removed - now using theme
   },
   filterText: {
-    color: '#fff',
+    // color removed - now using theme
     fontWeight: '500',
   },
   loader: {
     marginTop: 40,
   },
   noDataText: {
-    color: '#94A3B8',
+    // color removed - now using theme
     fontSize: 16,
     textAlign: 'center',
     marginTop: 40,
@@ -516,14 +508,14 @@ const styles = StyleSheet.create({
   publisherCard: {
     borderRadius: 16,
     padding: 16,
-    backgroundColor: '#1E293B',
-    shadowColor: '#000',
+    // backgroundColor removed - now using theme
+    // shadowColor removed - now using theme
     shadowOffset: { width: 0, height: 4 },
     
     shadowRadius: 8,
     elevation: 5,
     borderLeftWidth: 4,
-    borderLeftColor: '#4F46E5',
+    // borderLeftColor removed - now using theme
     marginBottom: 16,
   },
   publisherInfo: {
@@ -531,7 +523,7 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   publisherIconContainer: {
-    backgroundColor: '#4F46E5',
+    // backgroundColor removed - now using theme
     padding: 12,
     borderRadius: 12,
     alignSelf: 'flex-start',
@@ -542,7 +534,7 @@ const styles = StyleSheet.create({
   publisherName: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#fff',
+    // color removed - now using theme
     marginBottom: 4,
   },
   publisherMeta: {
@@ -550,17 +542,17 @@ const styles = StyleSheet.create({
   },
   publisherType: {
     fontSize: 14,
-    color: '#94A3B8',
+    // color removed - now using theme
     marginBottom: 2,
   },
   publisherDate: {
     fontSize: 13,
-    color: '#64748B',
+    // color removed - now using theme
     marginBottom: 2,
   },
   bookTitle: {
     fontSize: 13,
-    color: '#64748B',
+    // color removed - now using theme
     fontStyle: 'italic',
   },
   publisherStats: {
@@ -573,28 +565,28 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     paddingHorizontal: 8,
     borderRadius: 6,
-    backgroundColor: '#334155',
+    // backgroundColor removed - now using theme
   },
   pendingStatusText: {
-    color: '#FBBF24',
+    // color removed - now using theme
     fontSize: 12,
     fontWeight: '600',
   },
   verifiedStatusText: {
-    color: '#34D399',
+    // color removed - now using theme
     fontSize: 12,
     fontWeight: '600',
   },
   documentsSection: {
     marginTop: 16,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.1)',
+    // borderTopColor removed - now using theme
     paddingTop: 16,
   },
   documentsSectionTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#fff',
+    // color removed - now using theme
     marginBottom: 10,
   },
   documents: {
@@ -605,7 +597,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     padding: 10,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    // backgroundColor removed - now using theme
     borderRadius: 8,
   },
   documentDetails: {
@@ -614,11 +606,11 @@ const styles = StyleSheet.create({
   documentLabel: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#94A3B8',
+    // color removed - now using theme
   },
   documentNumber: {
     fontSize: 12,
-    color: '#64748B',
+    // color removed - now using theme
   },
   actionButtons: {
     flexDirection: 'row',
@@ -632,11 +624,11 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingVertical: 10,
     paddingHorizontal: 16,
-    backgroundColor: '#4F46E5',
+    // backgroundColor removed - now using theme
     borderRadius: 10,
   },
   buttonText: {
-    color: 'white',
+    // color removed - now using theme
     fontWeight: '600',
     fontSize: 14,
   },

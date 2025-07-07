@@ -117,7 +117,9 @@ export const verifyPublisher = async (req, res) => {
                     completeAudioUrl: completeAudioSample,
                     companyId: publisher.id,
                     isPublished: true,
-                    amount: publisher.amount
+                    amount: publisher.amount,
+                    publishedAt: new Date()
+
                 }
             })
             res.status(200).json({message: "Company verified successfully",});
@@ -154,7 +156,8 @@ export const verifyPublisher = async (req, res) => {
                     completeAudioUrl: completeAudioSample,
                     authorId: publisher.id,
                     isPublished: true,
-                    amount: publisher.amount
+                    amount: publisher.amount,
+                    publishedAt: new Date()
                 }})
             res.status(200).json({message: "Company verified successfully", publisher});
         }

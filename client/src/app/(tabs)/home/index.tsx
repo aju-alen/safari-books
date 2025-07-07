@@ -1,12 +1,9 @@
-import HomeOnboarding from '@/components/HomeOnboarding';
-import ImageGrid from '@/components/ImageGrid';
 import TrendingRelease from '@/components/TrendingRelease';
 import { defaultStyles } from '@/styles';
 import HomeLoadingSkeleton from '@/components/HomeLoadingSkeleton';
 
-import { eBookData } from '@/utils/flatlistData';
 import { moderateScale, verticalScale, horizontalScale } from '@/utils/responsiveSize';
-import { EvilIcons, Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -42,7 +39,7 @@ const HomePage = () => {
   const [continueListeningBooks, setContinueListeningBooks] = useState([]);
   const [featuredBook, setFeaturedBook] = useState(null);
   const [loading, setLoading] = useState(true);
-
+  const [recentBooks, setRecentBooks] = useState([]);
   const {theme} = useTheme()
 
   const getBooksData = async()=>{
@@ -75,6 +72,15 @@ const HomePage = () => {
     }
   };
 
+  const getRecentBooks = async () => {
+    try {
+      const response = await axios.get(`${ipURL}/api/listeners/get-all-books/recent`);
+      setRecentBooks(response.data.books);
+    } catch (error) {
+      console.error('Error fetching recent books:', error);
+    }
+  };
+
   useEffect(() => {
     let isMounted = true;
     const fetchAll = async () => {
@@ -82,7 +88,8 @@ const HomePage = () => {
       await Promise.all([
         getBooksData(),
         getContinueListeningBooks(),
-        getFeaturedBook()
+        getFeaturedBook(),
+        getRecentBooks()
       ]);
       if (isMounted) setLoading(false);
     };
@@ -152,7 +159,7 @@ const HomePage = () => {
   const BookCard = ({ book, isContinue = false, isLarge = false }) => (
     <TouchableOpacity style={[styles.bookCard, isLarge && styles.largeBookCard, { backgroundColor: theme.white, borderColor: theme.gray2, shadowColor: theme.text }]} onPress={() => router.push(`/(tabs)/home/${book.id}`)}>
       <View style={styles.bookCardHeader}>
-        <Image source={{ uri: book.coverImage }} style={[styles.bookCover, isLarge && styles.largeBookCover]} />
+        <Image source={{ uri: book.coverImage }} style={[styles.bookCover, isLarge && styles.largeBookCover]} resizeMode='contain' />
         {book.isNew && (
           <View style={[styles.newBadge, { backgroundColor: theme.tertiary }]}>
             <Text style={[styles.newBadgeText, { color: theme.white }]}>NEW</Text>
@@ -222,14 +229,14 @@ const HomePage = () => {
               />
               <Text style={[styles.appName, { color: theme.text }]}>Safari Books</Text>
             </View>
-            <View style={styles.headerActions}>
+            {/* <View style={styles.headerActions}>
               <TouchableOpacity style={[styles.headerButton, { backgroundColor: theme.white, shadowColor: theme.text }]}>
                 <Ionicons name="notifications-outline" size={24} color={theme.text} />
               </TouchableOpacity>
               <TouchableOpacity style={[styles.headerButton, { backgroundColor: theme.white, shadowColor: theme.text }]}>
                 <Ionicons name="search" size={24} color={theme.text} />
               </TouchableOpacity>
-            </View>
+            </View> */}
           </View>
           
           <View style={styles.welcomeSection}>
@@ -318,7 +325,7 @@ const HomePage = () => {
         </View>
 
         {/* Recently Added */}
-        {bookData?.books && bookData.books.length < 7 && (
+        {recentBooks && recentBooks.length >2 && (
           <View style={styles.section}>
             <SectionTitle 
               title="Recently Added" 
@@ -326,7 +333,7 @@ const HomePage = () => {
               onPress={() => router.push({pathname: '/(tabs)/home/allAudioBooks', params: {recent:"recent"}})}
             />
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
-              {bookData.books.slice(7, 10).map((book, index) => (
+              {recentBooks.slice(0, 4).map((book, index) => (
                 <BookCard key={index} book={book} />
               ))}
             </ScrollView>

@@ -1,9 +1,8 @@
 import { StyleSheet, Text, View, Image, TouchableOpacity, ScrollView, Modal, Alert } from 'react-native';
 import React, { useEffect, useState } from 'react';
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { defaultStyles } from '@/styles';
-import { eBookData } from '@/utils/flatlistData';
 import { horizontalScale, moderateScale, verticalScale } from '@/utils/responsiveSize';
 import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
@@ -31,31 +30,49 @@ const SingleBookPage = () => {
   const [currentAudioUrl, setCurrentAudioUrl] = useState('');
   const [loading, setLoading] = useState(true);
   const { isPro } = useRevenueCat();
-
+  const [bookRecommendations, setBookRecommendations] = useState([]);
   console.log(singleBookData,'singleBookData');
   
-
+  // useEffect(() => {
+  //   const book = eBookData.find((book) => book.id === singleBook);
+  //   setSingleBookData([book]);
+  // }, []);
 
   const getSingleBookData = async () => {
     try {
-      setLoading(true);
       const resp = await axios.get(`${ipURL}/api/listeners/book-data/${singleBook}`);
       setSingleBookData([resp.data]);
     } catch (error) {
       console.error('Error fetching single book data:', error);
-    } finally {
-      setLoading(false);
     }
   };
 
-  useEffect(() => {
-    getSingleBookData();
-  }, []);
-
-  // Show loading skeleton while data is being fetched
-  if (loading) {
-    return <HomeLoadingSkeleton />;
+  const getBookRecommendations = async () => {
+    try {
+      const resp = await axios.get(`${ipURL}/api/listeners/book-recommendations/${singleBook}`);
+      setBookRecommendations(resp.data.books);
+    } catch (error) {
+      console.error('Error fetching book recommendations:', error);
+    }
   }
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        await Promise.all([
+          getSingleBookData(),
+          getBookRecommendations()
+        ]);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchData();
+  }, []);
 
   const { playTrack } = useAudio();
 
@@ -150,33 +167,36 @@ const SingleBookPage = () => {
       imageContainer: {
         alignItems: 'center',
         paddingHorizontal: horizontalScale(20),
-        marginTop: verticalScale(40)
+        marginTop: verticalScale(20),
+        marginBottom: verticalScale(20),
       },
       coverImage: {
-        width: horizontalScale(250),
-        height: verticalScale(350),
-        borderRadius: moderateScale(12),
+        width: horizontalScale(300),
+        height: verticalScale(450),
+        borderRadius: moderateScale(16),
         shadowColor: theme.text,
-        shadowOffset: { width: 0, height: 4 },
-
-        shadowRadius: 8,
-        elevation: 5,
+        shadowOffset: { width: 0, height: 8 },
+        shadowRadius: 16,
+        elevation: 8,
       },
       titleContainer: {
         alignItems: 'center',
-        marginTop: verticalScale(24)
+        marginTop: verticalScale(16),
+        paddingHorizontal: horizontalScale(10),
       },
       title: {
-        fontSize: moderateScale(24),
+        fontSize: moderateScale(28),
         fontWeight: '700',
         color: theme.text,
-        textAlign: 'center'
+        textAlign: 'center',
+        lineHeight: moderateScale(34),
       },
       description: {
-        fontSize: moderateScale(14),
+        fontSize: moderateScale(16),
         color: theme.textMuted,
         textAlign: 'center',
-        marginTop: verticalScale(8)
+        marginTop: verticalScale(12),
+        lineHeight: moderateScale(22),
       },
       infoContainer: {
         flexDirection: 'row',
@@ -431,18 +451,26 @@ const SingleBookPage = () => {
     },
   });
 
+  if (loading) {
+    return <HomeLoadingSkeleton />;
+  }
+
   return (
-    <ScrollView style={[defaultStyles.container, { backgroundColor: theme.background }]}>
+    <ScrollView 
+      style={[defaultStyles.container, { backgroundColor: theme.background }]}
+      contentContainerStyle={{ paddingBottom: verticalScale(30) }}
+      showsVerticalScrollIndicator={false}
+    >
       <SafeAreaView>
         <View
           style={styles.gradientContainer}
          
         >
           <View style={styles.header}>
-            <TouchableOpacity style={styles.backButton}>
+            <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
               <Ionicons name="arrow-back" size={24} color={theme.text} />
             </TouchableOpacity>
-            <View style={styles.headerRightButtons}>
+            {/* <View style={styles.headerRightButtons}>
               <TouchableOpacity style={styles.iconButton} onPress={handleShare}>
                 <Ionicons name="share-social-outline" size={22} color={theme.text} />
               </TouchableOpacity>
@@ -453,7 +481,7 @@ const SingleBookPage = () => {
                   color={isBookmarked ? theme.tertiary : theme.text} 
                 />
               </TouchableOpacity>
-            </View>
+            </View> */}
           </View>
 
           <View style={styles.imageContainer}>
@@ -578,7 +606,7 @@ const SingleBookPage = () => {
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>You May Also Like</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.recommendationsScroll}>
-                {eBookData.slice(0, 5).map((book, index) => (
+                {bookRecommendations.slice(0, 5).map((book, index) => (
                   <View key={index} style={styles.recommendationItem}>
                     <Image source={{ uri: book.coverImage }} style={styles.recommendationCover} />
                     <Text style={styles.recommendationTitle} numberOfLines={1}>{book.title}</Text>

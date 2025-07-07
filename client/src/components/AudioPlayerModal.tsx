@@ -474,6 +474,15 @@ const AudioPlayer = ({
         </View>
         {/* Main Content */}
         <View style={styles.contentWrap}>
+          {/* Book Cover Image */}
+          <View style={styles.bookCoverContainer}>
+            <Image 
+              source={{ uri: bookCover }} 
+              style={styles.bookCoverImage}
+              resizeMode="contain"
+            />
+          </View>
+          
           {/* Title & Author */}
           <View style={styles.titleBlock}>
             <Text style={[styles.bigTitle, { color: theme.text }]} numberOfLines={2}>{title}</Text>
@@ -668,6 +677,21 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '400',
     opacity: 0.9,
+  },
+  bookCoverContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 24,
+    paddingHorizontal: 20,
+  },
+  bookCoverImage: {
+    width: horizontalScale(200),
+    height: verticalScale(280),
+    borderRadius: moderateScale(12),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowRadius: 16,
+    elevation: 8,
   },
 });
 

@@ -88,6 +88,9 @@ model Book{
   companyId         String? 
   authorId          String?
   featuredBook      Boolean @default(false)
+  createdAt         DateTime @default(now()) 
+  updatedAt         DateTime @updatedAt @default(now())
+  publishedAt       DateTime? @default(now())
 
   company           Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
   author            Author?  @relation(fields: [authorId], references: [id], onDelete: Cascade)

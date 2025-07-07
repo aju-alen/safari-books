@@ -4,7 +4,7 @@ import { getUsersWithUnfinishedBooks } from './cronFunctions.js';
 import { sendPushNotification } from './expoPushNotif.js';
 
 export const startNotificationCron = () => {
-  cron.schedule('0 21 * * *', async () => {
+  cron.schedule('0 17 * * *', async () => {
     console.log('Cron job ran');
     const users = await getUsersWithUnfinishedBooks();
 

@@ -20,8 +20,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { axiosWithAuth } from '@/utils/customAxios';
+import { useTheme } from '@/providers/ThemeProvider';
 
 const PublisherDetails = () => {
+  const { theme } = useTheme();
   const { id, isCompany } = useLocalSearchParams();
   const isCompanyBoolean = isCompany === 'true';
   console.log(id, isCompanyBoolean, 'this is id and isCompany');
@@ -164,98 +166,98 @@ const PublisherDetails = () => {
     return (
       <View style={styles.detailsContainer}>
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Company Information</Text>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Company Name:</Text>
-            <Text style={styles.infoValue}>{company.companyName}</Text>
+          <Text style={[styles.sectionTitle, { color: theme.text, borderLeftColor: theme.primary }]}>Company Information</Text>
+          <View style={[styles.infoRow, { borderBottomColor: theme.gray2 }]}>
+            <Text style={[styles.infoLabel, { color: theme.textMuted }]}>Company Name:</Text>
+            <Text style={[styles.infoValue, { color: theme.text }]}>{company.companyName}</Text>
           </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Registration No:</Text>
-            <Text style={styles.infoValue}>{company.companyRegNo}</Text>
+          <View style={[styles.infoRow, { borderBottomColor: theme.gray2 }]}>
+            <Text style={[styles.infoLabel, { color: theme.textMuted }]}>Registration No:</Text>
+            <Text style={[styles.infoValue, { color: theme.text }]}>{company.companyRegNo}</Text>
           </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>KRA PIN:</Text>
-            <Text style={styles.infoValue}>{company.kraPin}</Text>
+          <View style={[styles.infoRow, { borderBottomColor: theme.gray2 }]}>
+            <Text style={[styles.infoLabel, { color: theme.textMuted }]}>KRA PIN:</Text>
+            <Text style={[styles.infoValue, { color: theme.text }]}>{company.kraPin}</Text>
           </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Telephone:</Text>
-            <Text style={styles.infoValue}>{company.telephone}</Text>
+          <View style={[styles.infoRow, { borderBottomColor: theme.gray2 }]}>
+            <Text style={[styles.infoLabel, { color: theme.textMuted }]}>Telephone:</Text>
+            <Text style={[styles.infoValue, { color: theme.text }]}>{company.telephone}</Text>
           </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Address:</Text>
-            <Text style={styles.infoValue}>{company.address}</Text>
-          </View>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Book Information</Text>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Title:</Text>
-            <Text style={styles.infoValue}>{company.title}</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Language:</Text>
-            <Text style={styles.infoValue}>{company.language}</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Category:</Text>
-            <Text style={styles.infoValue}>{company.categories}</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>ISBN/DOI/ISRC:</Text>
-            <Text style={styles.infoValue}>{company.ISBNDOIISRC}</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Publication Date:</Text>
-            <Text style={styles.infoValue}>{new Date(company.date).toLocaleDateString()}</Text>
+          <View style={[styles.infoRow, { borderBottomColor: theme.gray2 }]}>
+            <Text style={[styles.infoLabel, { color: theme.textMuted }]}>Address:</Text>
+            <Text style={[styles.infoValue, { color: theme.text }]}>{company.address}</Text>
           </View>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Synopsis</Text>
-          <View style={styles.synopsisContainer}>
-            <Text style={styles.synopsisText}>{company.synopsis}</Text>
+          <Text style={[styles.sectionTitle, { color: theme.text, borderLeftColor: theme.primary }]}>Book Information</Text>
+          <View style={[styles.infoRow, { borderBottomColor: theme.gray2 }]}>
+            <Text style={[styles.infoLabel, { color: theme.textMuted }]}>Title:</Text>
+            <Text style={[styles.infoValue, { color: theme.text }]}>{company.title}</Text>
+          </View>
+          <View style={[styles.infoRow, { borderBottomColor: theme.gray2 }]}>
+            <Text style={[styles.infoLabel, { color: theme.textMuted }]}>Language:</Text>
+            <Text style={[styles.infoValue, { color: theme.text }]}>{company.language}</Text>
+          </View>
+          <View style={[styles.infoRow, { borderBottomColor: theme.gray2 }]}>
+            <Text style={[styles.infoLabel, { color: theme.textMuted }]}>Category:</Text>
+            <Text style={[styles.infoValue, { color: theme.text }]}>{company.categories}</Text>
+          </View>
+          <View style={[styles.infoRow, { borderBottomColor: theme.gray2 }]}>
+            <Text style={[styles.infoLabel, { color: theme.textMuted }]}>ISBN/DOI/ISRC:</Text>
+            <Text style={[styles.infoValue, { color: theme.text }]}>{company.ISBNDOIISRC}</Text>
+          </View>
+          <View style={[styles.infoRow, { borderBottomColor: theme.gray2 }]}>
+            <Text style={[styles.infoLabel, { color: theme.textMuted }]}>Publication Date:</Text>
+            <Text style={[styles.infoValue, { color: theme.text }]}>{new Date(company.date).toLocaleDateString()}</Text>
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: theme.text, borderLeftColor: theme.primary }]}>Synopsis</Text>
+          <View style={[styles.synopsisContainer, { backgroundColor: `${theme.gray2}15` }]}>
+            <Text style={[styles.synopsisText, { color: theme.text }]}>{company.synopsis}</Text>
           </View>
         </View>
 
         {company.narrator && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Narration Information</Text>
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Narrator:</Text>
-              <Text style={styles.infoValue}>{company.narrator}</Text>
+            <Text style={[styles.sectionTitle, { color: theme.text, borderLeftColor: theme.primary }]}>Narration Information</Text>
+            <View style={[styles.infoRow, { borderBottomColor: theme.gray2 }]}>
+              <Text style={[styles.infoLabel, { color: theme.textMuted }]}>Narrator:</Text>
+              <Text style={[styles.infoValue, { color: theme.text }]}>{company.narrator}</Text>
             </View>
             <View style={styles.narratorStyles}>
-              <Text style={styles.infoLabel}>Narration Style:</Text>
+              <Text style={[styles.infoLabel, { color: theme.textMuted }]}>Narration Style:</Text>
               <View style={styles.stylesContainer}>
                 {company.narrationStyleSlow && (
-                  <View style={styles.styleBadge}>
-                    <Text style={styles.styleBadgeText}>Slow</Text>
+                  <View style={[styles.styleBadge, { backgroundColor: `${theme.primary}15`, borderColor: theme.primary }]}>
+                    <Text style={[styles.styleBadgeText, { color: theme.text }]}>Slow</Text>
                   </View>
                 )}
                 {company.narrationStyleFast && (
-                  <View style={styles.styleBadge}>
-                    <Text style={styles.styleBadgeText}>Fast</Text>
+                  <View style={[styles.styleBadge, { backgroundColor: `${theme.primary}15`, borderColor: theme.primary }]}>
+                    <Text style={[styles.styleBadgeText, { color: theme.text }]}>Fast</Text>
                   </View>
                 )}
                 {company.narrationStyleIntimate && (
-                  <View style={styles.styleBadge}>
-                    <Text style={styles.styleBadgeText}>Intimate</Text>
+                  <View style={[styles.styleBadge, { backgroundColor: `${theme.primary}15`, borderColor: theme.primary }]}>
+                    <Text style={[styles.styleBadgeText, { color: theme.text }]}>Intimate</Text>
                   </View>
                 )}
                 {company.narrationStyleCasual && (
-                  <View style={styles.styleBadge}>
-                    <Text style={styles.styleBadgeText}>Casual</Text>
+                  <View style={[styles.styleBadge, { backgroundColor: `${theme.primary}15`, borderColor: theme.primary }]}>
+                    <Text style={[styles.styleBadgeText, { color: theme.text }]}>Casual</Text>
                   </View>
                 )}
                 {company.narrationStyleStatic && (
-                  <View style={styles.styleBadge}>
-                    <Text style={styles.styleBadgeText}>Static</Text>
+                  <View style={[styles.styleBadge, { backgroundColor: `${theme.primary}15`, borderColor: theme.primary }]}>
+                    <Text style={[styles.styleBadgeText, { color: theme.text }]}>Static</Text>
                   </View>
                 )}
                 {company.narrationStyleOratoric && (
-                  <View style={styles.styleBadge}>
-                    <Text style={styles.styleBadgeText}>Oratoric</Text>
+                  <View style={[styles.styleBadge, { backgroundColor: `${theme.primary}15`, borderColor: theme.primary }]}>
+                    <Text style={[styles.styleBadgeText, { color: theme.text }]}>Oratoric</Text>
                   </View>
                 )}
               </View>
@@ -266,27 +268,27 @@ const PublisherDetails = () => {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Verification Documents</Text>
           <TouchableOpacity 
-            style={styles.documentItem}
+            style={[styles.documentItem, { backgroundColor: `${theme.gray2}15` }]}
             onPress={() => handleOpenDocument(company.companyRegNoPdfUrl)}
           >
-            <MaterialIcons name="description" size={20} color="#94A3B8" />
+            <MaterialIcons name="description" size={20} color={theme.textMuted} />
             <View style={styles.documentDetails}>
-              <Text style={styles.documentLabel}>Company Registration Document</Text>
-              <Text style={styles.documentNumber}>{company.companyRegNo}</Text>
+              <Text style={[styles.documentLabel, { color: theme.text }]}>Company Registration Document</Text>
+              <Text style={[styles.documentNumber, { color: theme.textMuted }]}>{company.companyRegNo}</Text>
             </View>
-            <MaterialIcons name="open-in-new" size={20} color="#4F46E5" />
+            <MaterialIcons name="open-in-new" size={20} color={theme.primary} />
           </TouchableOpacity>
           
           <TouchableOpacity 
-            style={styles.documentItem}
+            style={[styles.documentItem, { backgroundColor: `${theme.gray2}15` }]}
             onPress={() => handleOpenDocument(company.kraPinPdfUrl)}
           >
-            <MaterialIcons name="description" size={20} color="#94A3B8" />
+            <MaterialIcons name="description" size={20} color={theme.textMuted} />
             <View style={styles.documentDetails}>
-              <Text style={styles.documentLabel}>KRA PIN Document</Text>
-              <Text style={styles.documentNumber}>{company.kraPin}</Text>
+              <Text style={[styles.documentLabel, { color: theme.text }]}>KRA PIN Document</Text>
+              <Text style={[styles.documentNumber, { color: theme.textMuted }]}>{company.kraPin}</Text>
             </View>
-            <MaterialIcons name="open-in-new" size={20} color="#4F46E5" />
+            <MaterialIcons name="open-in-new" size={20} color={theme.primary} />
           </TouchableOpacity>
         </View>
 
@@ -294,46 +296,46 @@ const PublisherDetails = () => {
           <Text style={styles.sectionTitle}>Sample Files</Text>
           {company.audioSampleURL && (
             <TouchableOpacity 
-              style={styles.documentItem}
+              style={[styles.documentItem, { backgroundColor: `${theme.gray2}15` }]}
               onPress={() => handleOpenDocument(company.audioSampleURL)}
             >
-              <FontAwesome5 name="file-audio" size={20} color="#94A3B8" />
+              <FontAwesome5 name="file-audio" size={20} color={theme.textMuted} />
               <View style={styles.documentDetails}>
-                <Text style={styles.documentLabel}>Audio Sample</Text>
-                <Text style={styles.documentNumber}>Open to listen</Text>
+                <Text style={[styles.documentLabel, { color: theme.text }]}>Audio Sample</Text>
+                <Text style={[styles.documentNumber, { color: theme.textMuted }]}>Open to listen</Text>
               </View>
-              <MaterialIcons name="play-circle-filled" size={24} color="#4F46E5" />
+              <MaterialIcons name="play-circle-filled" size={24} color={theme.primary} />
             </TouchableOpacity>
           )}
           
           {company.pdfURL && (
             <TouchableOpacity 
-              style={styles.documentItem}
+              style={[styles.documentItem, { backgroundColor: `${theme.gray2}15` }]}
               onPress={() => handleOpenDocument(company.pdfURL)}
             >
-              <FontAwesome5 name="file-pdf" size={20} color="#94A3B8" />
+              <FontAwesome5 name="file-pdf" size={20} color={theme.textMuted} />
               <View style={styles.documentDetails}>
-                <Text style={styles.documentLabel}>PDF Sample</Text>
-                <Text style={styles.documentNumber}>Open to view</Text>
+                <Text style={[styles.documentLabel, { color: theme.text }]}>PDF Sample</Text>
+                <Text style={[styles.documentNumber, { color: theme.textMuted }]}>Open to view</Text>
               </View>
-              <MaterialIcons name="open-in-new" size={20} color="#4F46E5" />
+              <MaterialIcons name="open-in-new" size={20} color={theme.primary} />
             </TouchableOpacity>
           )}
           
           {company.coverImage && (
-            <View style={styles.imageContainer}>
-              <Text style={styles.documentLabel}>Cover Image</Text>
+            <View style={[styles.imageContainer, { backgroundColor: theme.white }]}>
+              <Text style={[styles.documentLabel, { color: theme.text }]}>Cover Image</Text>
               <Image 
                 source={{ uri: company.coverImage }} 
                 style={styles.coverImage}
                 resizeMode="cover"
               />
               <TouchableOpacity 
-                style={styles.viewImageButton}
+                style={[styles.viewImageButton, { backgroundColor: theme.primary }]}
                 onPress={() => handleOpenDocument(company.coverImage)}
               >
-                <Text style={styles.viewImageButtonText}>View Full Image</Text>
-                <MaterialIcons name="open-in-new" size={20} color="#FFFFFF" />
+                <Text style={[styles.viewImageButtonText, { color: theme.white }]}>View Full Image</Text>
+                <MaterialIcons name="open-in-new" size={20} color={theme.white} />
               </TouchableOpacity>
             </View>
           )}
@@ -342,9 +344,9 @@ const PublisherDetails = () => {
 
         <View style={styles.accountInfo}>
           <View style={styles.statusIndicator}>
-            <Text style={styles.statusLabel}>Rights Holder:</Text>
-            <View style={[styles.statusBadge, company.rightsHolder ? styles.statusActive : styles.statusInactive]}>
-              <Text style={styles.statusText}>{company.rightsHolder ? 'Yes' : 'No'}</Text>
+            <Text style={[styles.statusLabel, { color: theme.textMuted }]}>Rights Holder:</Text>
+            <View style={[styles.statusBadge, company.rightsHolder ? { backgroundColor: `${theme.secondary}15`, borderColor: theme.secondary } : { backgroundColor: `${theme.secondary2}15`, borderColor: theme.secondary2 }]}>
+              <Text style={[styles.statusText, { color: theme.text }]}>{company.rightsHolder ? 'Yes' : 'No'}</Text>
             </View>
           </View>
         </View>
@@ -465,27 +467,27 @@ const PublisherDetails = () => {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Verification Documents</Text>
           <TouchableOpacity 
-            style={styles.documentItem}
+            style={[styles.documentItem, { backgroundColor: `${theme.gray2}15` }]}
             onPress={() => handleOpenDocument(author.idppPdfUrl)}
           >
-            <MaterialIcons name="description" size={20} color="#94A3B8" />
+            <MaterialIcons name="description" size={20} color={theme.textMuted} />
             <View style={styles.documentDetails}>
-              <Text style={styles.documentLabel}>ID/Passport Document</Text>
-              <Text style={styles.documentNumber}>{author.idppNo}</Text>
+              <Text style={[styles.documentLabel, { color: theme.text }]}>ID/Passport Document</Text>
+              <Text style={[styles.documentNumber, { color: theme.textMuted }]}>{author.idppNo}</Text>
             </View>
-            <MaterialIcons name="open-in-new" size={20} color="#4F46E5" />
+            <MaterialIcons name="open-in-new" size={20} color={theme.primary} />
           </TouchableOpacity>
           
           <TouchableOpacity 
-            style={styles.documentItem}
+            style={[styles.documentItem, { backgroundColor: `${theme.gray2}15` }]}
             onPress={() => handleOpenDocument(author.kraPinPdfUrl)}
           >
-            <MaterialIcons name="description" size={20} color="#94A3B8" />
+            <MaterialIcons name="description" size={20} color={theme.textMuted} />
             <View style={styles.documentDetails}>
-              <Text style={styles.documentLabel}>KRA PIN Document</Text>
-              <Text style={styles.documentNumber}>{author.kraPin}</Text>
+              <Text style={[styles.documentLabel, { color: theme.text }]}>KRA PIN Document</Text>
+              <Text style={[styles.documentNumber, { color: theme.textMuted }]}>{author.kraPin}</Text>
             </View>
-            <MaterialIcons name="open-in-new" size={20} color="#4F46E5" />
+            <MaterialIcons name="open-in-new" size={20} color={theme.primary} />
           </TouchableOpacity>
         </View>
 
@@ -493,46 +495,46 @@ const PublisherDetails = () => {
           <Text style={styles.sectionTitle}>Sample Files</Text>
           {author.audioSampleURL && (
             <TouchableOpacity 
-              style={styles.documentItem}
+              style={[styles.documentItem, { backgroundColor: `${theme.gray2}15` }]}
               onPress={() => handleOpenDocument(author.audioSampleURL)}
             >
-              <FontAwesome5 name="file-audio" size={20} color="#94A3B8" />
+              <FontAwesome5 name="file-audio" size={20} color={theme.textMuted} />
               <View style={styles.documentDetails}>
-                <Text style={styles.documentLabel}>Audio Sample</Text>
-                <Text style={styles.documentNumber}>Open to listen</Text>
+                <Text style={[styles.documentLabel, { color: theme.text }]}>Audio Sample</Text>
+                <Text style={[styles.documentNumber, { color: theme.textMuted }]}>Open to listen</Text>
               </View>
-              <MaterialIcons name="play-circle-filled" size={24} color="#4F46E5" />
+              <MaterialIcons name="play-circle-filled" size={24} color={theme.primary} />
             </TouchableOpacity>
           )}
           
           {author.pdfURL && (
             <TouchableOpacity 
-              style={styles.documentItem}
+              style={[styles.documentItem, { backgroundColor: `${theme.gray2}15` }]}
               onPress={() => handleOpenDocument(author.pdfURL)}
             >
-              <FontAwesome5 name="file-pdf" size={20} color="#94A3B8" />
+              <FontAwesome5 name="file-pdf" size={20} color={theme.textMuted} />
               <View style={styles.documentDetails}>
-                <Text style={styles.documentLabel}>PDF Sample</Text>
-                <Text style={styles.documentNumber}>Open to view</Text>
+                <Text style={[styles.documentLabel, { color: theme.text }]}>PDF Sample</Text>
+                <Text style={[styles.documentNumber, { color: theme.textMuted }]}>Open to view</Text>
               </View>
-              <MaterialIcons name="open-in-new" size={20} color="#4F46E5" />
+              <MaterialIcons name="open-in-new" size={20} color={theme.primary} />
             </TouchableOpacity>
           )}
           
           {author.coverImage && (
-            <View style={styles.imageContainer}>
-              <Text style={styles.documentLabel}>Cover Image</Text>
+            <View style={[styles.imageContainer, { backgroundColor: theme.white }]}>
+              <Text style={[styles.documentLabel, { color: theme.text }]}>Cover Image</Text>
               <Image 
                 source={{ uri: author.coverImage }} 
                 style={styles.coverImage}
                 resizeMode="cover"
               />
               <TouchableOpacity 
-                style={styles.viewImageButton}
+                style={[styles.viewImageButton, { backgroundColor: theme.primary }]}
                 onPress={() => handleOpenDocument(author.coverImage)}
               >
-                <Text style={styles.viewImageButtonText}>View Full Image</Text>
-                <MaterialIcons name="open-in-new" size={20} color="#FFFFFF" />
+                <Text style={[styles.viewImageButtonText, { color: theme.white }]}>View Full Image</Text>
+                <MaterialIcons name="open-in-new" size={20} color={theme.white} />
               </TouchableOpacity>
             </View>
           )}
@@ -540,9 +542,9 @@ const PublisherDetails = () => {
 
         <View style={styles.accountInfo}>
           <View style={styles.statusIndicator}>
-            <Text style={styles.statusLabel}>Rights Holder:</Text>
-            <View style={[styles.statusBadge, author.rightsHolder ? styles.statusActive : styles.statusInactive]}>
-              <Text style={styles.statusText}>{author.rightsHolder ? 'Yes' : 'No'}</Text>
+            <Text style={[styles.statusLabel, { color: theme.textMuted }]}>Rights Holder:</Text>
+            <View style={[styles.statusBadge, author.rightsHolder ? { backgroundColor: `${theme.secondary}15`, borderColor: theme.secondary } : { backgroundColor: `${theme.secondary2}15`, borderColor: theme.secondary2 }]}>
+              <Text style={[styles.statusText, { color: theme.text }]}>{author.rightsHolder ? 'Yes' : 'No'}</Text>
             </View>
           </View>
         </View>
@@ -678,12 +680,12 @@ const PublisherDetails = () => {
   };
 
   return (
-    <SafeAreaView style={[defaultStyles.container, styles.container]}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleGoBack} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="white" />
+    <SafeAreaView style={[defaultStyles.container, styles.container, { backgroundColor: theme.background }]}>
+      <View style={[styles.header, { borderBottomColor: theme.gray2 }]}>
+        <TouchableOpacity onPress={handleGoBack} style={[styles.backButton, { backgroundColor: `${theme.gray2}15` }]}>
+          <Ionicons name="arrow-back" size={24} color={theme.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>
+        <Text style={[styles.headerTitle, { color: theme.text }]}>
           {isCompanyBoolean ? 'Company Details' : 'Author Details'}
         </Text>
         <View style={styles.placeholderView} />
@@ -691,15 +693,15 @@ const PublisherDetails = () => {
 
       {loading ? (
         <View style={styles.loaderContainer}>
-          <ActivityIndicator size="large" color="#4F46E5" />
-          <Text style={styles.loadingText}>Loading publisher details...</Text>
+          <ActivityIndicator size="large" color={theme.primary} />
+          <Text style={[styles.loadingText, { color: theme.textMuted }]}>Loading publisher details...</Text>
         </View>
       ) : error ? (
         <View style={styles.errorContainer}>
-          <FontAwesome5 name="exclamation-circle" size={50} color="#EF4444" />
-          <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={() => router.back()}>
-            <Text style={styles.retryButtonText}>Go Back</Text>
+          <FontAwesome5 name="exclamation-circle" size={50} color={theme.secondary2} />
+          <Text style={[styles.errorText, { color: theme.secondary2 }]}>{error}</Text>
+          <TouchableOpacity style={[styles.retryButton, { backgroundColor: theme.primary }]} onPress={() => router.back()}>
+            <Text style={[styles.retryButtonText, { color: theme.white }]}>Go Back</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -710,39 +712,39 @@ const PublisherDetails = () => {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              colors={['#4F46E5']}
-              tintColor="#4F46E5"
+              colors={[theme.primary]}
+              tintColor={theme.primary}
               title="Pull to refresh"
-              titleColor="#94A3B8"
+              titleColor={theme.textMuted}
             />
           }
         >
-          <View style={styles.publisherHeader}>
-            <View style={styles.publisherIconContainer}>
+          <View style={[styles.publisherHeader, { borderBottomColor: theme.gray2 }]}>
+            <View style={[styles.publisherIconContainer, { backgroundColor: theme.primary }]}>
               {isCompanyBoolean ? (
-                <FontAwesome5 name="building" size={30} color="white" />
+                <FontAwesome5 name="building" size={30} color={theme.white} />
               ) : (
-                <FontAwesome5 name="user" size={30} color="white" />
+                <FontAwesome5 name="user" size={30} color={theme.white} />
               )}
             </View>
             <View style={styles.publisherBasicInfo}>
-              <Text style={styles.publisherName}>
+              <Text style={[styles.publisherName, { color: theme.text }]}>
                 {isCompanyBoolean ? publisherData.companyName : publisherData.fullName}
               </Text>
               <View style={styles.publisherMeta}>
-                <Text style={styles.publisherType}>
+                <Text style={[styles.publisherType, { color: theme.textMuted }]}>
                   {isCompanyBoolean ? 'Publishing Company' : 'Independent Author'}
                 </Text>
                 <View style={styles.verificationStatus}>
                   {publisherData.isVerified ? (
                     <>
-                      <FontAwesome5 name="check-circle" size={14} color="#34D399" />
-                      <Text style={styles.verifiedText}>Verified</Text>
+                      <FontAwesome5 name="check-circle" size={14} color={theme.secondary} />
+                      <Text style={[styles.verifiedText, { color: theme.secondary }]}>Verified</Text>
                     </>
                   ) : (
                     <>
-                      <FontAwesome5 name="clock" size={14} color="#FBBF24" />
-                      <Text style={styles.pendingText}>Pending Verification</Text>
+                      <FontAwesome5 name="clock" size={14} color={theme.tertiary} />
+                      <Text style={[styles.pendingText, { color: theme.tertiary }]}>Pending Verification</Text>
                     </>
                   )}
                 </View>
@@ -754,13 +756,13 @@ const PublisherDetails = () => {
           
           {!publisherData.isVerified && (
             <View style={styles.actionButtonsContainer}>
-              <TouchableOpacity style={styles.rejectButton} onPress={handleRejectPublisher}>
-                <MaterialIcons name="close" size={20} color="white" />
-                <Text style={styles.buttonText}>Reject</Text>
+              <TouchableOpacity style={[styles.rejectButton, { backgroundColor: theme.secondary2 }]} onPress={handleRejectPublisher}>
+                <MaterialIcons name="close" size={20} color={theme.white} />
+                <Text style={[styles.buttonText, { color: theme.white }]}>Reject</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.verifyButton} onPress={() => handleVerifyPublisher(id)}>
-                <MaterialIcons name="verified" size={20} color="white" />
-                <Text style={styles.buttonText}>Verify Publisher</Text>
+              <TouchableOpacity style={[styles.verifyButton, { backgroundColor: theme.primary }]} onPress={() => handleVerifyPublisher(id)}>
+                <MaterialIcons name="verified" size={20} color={theme.white} />
+                <Text style={[styles.buttonText, { color: theme.white }]}>Verify Publisher</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -776,7 +778,7 @@ const PublisherDetails = () => {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#0F172A', // Dark blue background
+    // backgroundColor removed - now using theme
   },
   header: {
     flexDirection: 'row',
@@ -785,17 +787,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.1)',
+    // borderBottomColor removed - now using theme
   },
   backButton: {
     padding: 8,
     borderRadius: 8,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    // backgroundColor removed - now using theme
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#fff',
+    // color removed - now using theme
   },
   placeholderView: {
     width: 40, // To balance the header
@@ -807,7 +809,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 16,
-    color: '#94A3B8',
+    // color removed - now using theme
     fontSize: 16,
   },
   errorContainer: {
@@ -817,7 +819,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   errorText: {
-    color: '#EF4444',
+    // color removed - now using theme
     fontSize: 18,
     fontWeight: '500',
     marginTop: 16,
@@ -825,13 +827,13 @@ const styles = StyleSheet.create({
   },
   retryButton: {
     marginTop: 24,
-    backgroundColor: '#4F46E5',
+    // backgroundColor removed - now using theme
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 10,
   },
   retryButtonText: {
-    color: 'white',
+    // color removed - now using theme
     fontSize: 16,
     fontWeight: '600',
   },
@@ -843,10 +845,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.1)',
+    // borderBottomColor removed - now using theme
   },
   publisherIconContainer: {
-    backgroundColor: '#4F46E5',
+    // backgroundColor removed - now using theme
     padding: 16,
     borderRadius: 16,
     marginRight: 16,
@@ -857,7 +859,7 @@ const styles = StyleSheet.create({
   publisherName: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#fff',
+    // color removed - now using theme
     marginBottom: 4,
   },
   publisherMeta: {
@@ -867,20 +869,20 @@ const styles = StyleSheet.create({
   },
   publisherType: {
     fontSize: 14,
-    color: '#94A3B8',
+    // color removed - now using theme
   },
   verificationStatus: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   verifiedText: {
-    color: '#34D399',
+    // color removed - now using theme
     marginLeft: 4,
     fontSize: 14,
     fontWeight: '600',
   },
   pendingText: {
-    color: '#FBBF24',
+    // color removed - now using theme
     marginLeft: 4,
     fontSize: 14,
     fontWeight: '600',
@@ -894,36 +896,36 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#E2E8F0',
+    // color removed - now using theme
     marginBottom: 12,
     borderLeftWidth: 3,
-    borderLeftColor: '#4F46E5',
+    // borderLeftColor removed - now using theme
     paddingLeft: 10,
   },
   infoRow: {
     flexDirection: 'row',
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    // borderBottomColor removed - now using theme
   },
   infoLabel: {
     width: '40%',
     fontSize: 14,
-    color: '#94A3B8',
+    // color removed - now using theme
     fontWeight: '500',
   },
   infoValue: {
     flex: 1,
     fontSize: 14,
-    color: '#E2E8F0',
+    // color removed - now using theme
   },
   synopsisContainer: {
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    // backgroundColor removed - now using theme
     borderRadius: 8,
     padding: 12,
   },
   synopsisText: {
-    color: '#E2E8F0',
+    // color removed - now using theme
     fontSize: 14,
     lineHeight: 20,
   },
@@ -937,22 +939,22 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   styleBadge: {
-    backgroundColor: 'rgba(79, 70, 229, 0.2)',
+    // backgroundColor removed - now using theme
     paddingVertical: 4,
     paddingHorizontal: 10,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#4F46E5',
+    // borderColor removed - now using theme
   },
   styleBadgeText: {
-    color: '#E2E8F0',
+    // color removed - now using theme
     fontSize: 12,
     fontWeight: '500',
   },
   documentItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    // backgroundColor removed - now using theme
     borderRadius: 8,
     padding: 12,
     marginBottom: 8,
@@ -963,12 +965,12 @@ const styles = StyleSheet.create({
   },
   documentLabel: {
     fontSize: 14,
-    color: '#E2E8F0',
+    // color removed - now using theme
     fontWeight: '500',
   },
   documentNumber: {
     fontSize: 12,
-    color: '#94A3B8',
+    // color removed - now using theme
     marginTop: 2,
   },
   accountInfo: {
@@ -1015,7 +1017,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#4F46E5',
+    // backgroundColor removed - now using theme
     paddingVertical: 14,
     paddingHorizontal: 20,
     borderRadius: 12,
@@ -1026,14 +1028,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#EF4444',
+    // backgroundColor removed - now using theme
     paddingVertical: 14,
     paddingHorizontal: 20,
     borderRadius: 12,
     gap: 8,
   },
   buttonText: {
-    color: 'white',
+    // color removed - now using theme
     fontSize: 16,
     fontWeight: '600',
   },

@@ -40,7 +40,7 @@ const SkeletonItem = ({ width: itemWidth, height, borderRadius, style = {} }) =>
           width: itemWidth,
           height,
           borderRadius,
-          backgroundColor: theme.gray2,
+          backgroundColor: theme.primary,
           opacity,
         },
         style,

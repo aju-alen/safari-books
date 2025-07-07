@@ -72,7 +72,7 @@ const ProfilePage = () => {
   const stats: Stat[] = [
     { icon: 'reader-outline', label: 'Books in Progress', value: listenerAnalytics?.inProgressBooks },
     { icon: 'book-outline', label: 'Books Completed', value: listenerAnalytics?.finishedBooks },
-    { icon: 'time-outline', label: 'Current Streak', value: '7 days' },
+    { icon: 'time-outline', label: 'Current Streak', value: '1 day' },
   ];
 
   const menuItems: MenuItem[] = [
@@ -82,23 +82,23 @@ const ProfilePage = () => {
       route: '/(tabs)/library',
       color: theme.secondary
     },
-    { 
-      icon: 'heart-outline', 
-      label: 'Favorites', 
-      route: '',
-      color: theme.tertiary
-    },
+    // { 
+    //   icon: 'heart-outline', 
+    //   label: 'Favorites', 
+    //   route: '',
+    //   color: theme.tertiary
+    // },
   
-    { 
-      icon: 'notifications-outline', 
-      label: 'Notifications', 
-      route: '/(tabs)/notifications',
-      color: theme.primary
-    },
+    // { 
+    //   icon: 'notifications-outline', 
+    //   label: 'Notifications', 
+    //   route: '/(tabs)/notifications',
+    //   color: theme.primary
+    // },
     { 
       icon: 'help-circle-outline', 
       label: 'Help & Support', 
-      route: '/(tabs)/support',
+      route: '/(tabs)/profile/support',
       color: theme.secondary
     },
   ];

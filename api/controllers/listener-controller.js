@@ -232,3 +232,74 @@ export const listenerAnalytics = async (req,res)=>{
     }
     
     }
+
+export const getBookRecommendations = async (req,res)=>{
+    const {id} = req.params;
+    try{
+        const book = await prisma.book.findUnique({
+            where: {
+                id: id
+            }
+        });
+        if(!book){
+            return res.status(404).json({message: "Book not found"});
+        }
+        const bookCategories = book.categories;
+        
+        // First, try to find books with the same categories
+        let bookRecommendations = await prisma.book.findMany({
+            where: {
+                categories: bookCategories,
+                id: {
+                    not: id // Exclude the current book from recommendations
+                }
+            }
+        });
+
+        // If no recommendations found, get the latest books instead
+        if (bookRecommendations.length === 0) {
+            bookRecommendations = await prisma.book.findMany({
+                where: {
+                    id: {
+                        not: id // Still exclude the current book
+                    }
+                },
+                orderBy: {
+                    releaseDate: 'desc' // Get latest books
+                },
+                take: 10 // Limit to 10 latest books
+            });
+        }
+
+        res.status(200).json({books: bookRecommendations});
+    }
+    catch(err){
+        console.log(err,'error in getBookRecommendations api');
+        res.status(500).json({message: "Internal server error"});
+    }
+}
+
+export const getAllBooksDataByRecent = async (req,res)=>{
+    try{
+        // Calculate the date 2 weeks ago from current date
+        const twoWeeksAgo = new Date();
+        twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
+        
+        const books = await prisma.book.findMany({
+            where: {
+                publishedAt: {
+                    gte: twoWeeksAgo,
+                    lte: new Date()
+                }
+            },
+            orderBy: {
+                publishedAt: 'desc'
+            }
+        });
+        res.status(200).json({books});
+    }
+    catch(err){
+        console.log(err,'error in getAllBooksDataByRecent api');
+        res.status(500).json({message: "Internal server error"});
+    }
+}

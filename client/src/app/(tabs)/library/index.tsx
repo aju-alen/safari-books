@@ -18,7 +18,7 @@ const status = {
 
 const LibraryPage = () => {
   const { theme } = useTheme();
-  const data = ["All", "Audiobooks", "Podcast"];
+  const data = ["All", "Audiobooks"];
   const subData = ["All Titles","In Progress", "Finished"];
 
   const [selectedItem, setSelectedItem] = useState("All");
@@ -310,9 +310,7 @@ const LibraryPage = () => {
     <SafeAreaView style={[defaultStyles.container, styles.safeArea]}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Library</Text>
-        <TouchableOpacity style={styles.settingsButton}>
-          <Ionicons name="settings-outline" size={24} color={theme.primary} />
-        </TouchableOpacity>
+       
       </View>
       
       <View style={styles.filterContainer}>
