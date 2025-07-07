@@ -120,7 +120,7 @@ export const publisherCompanyUpdate = async (req, res) => {
         }
 
         sendConfirmationEmailToPublisher(req.email, req.name);
-        // sendConfirmationEmailToAdmin(process.env.GMAIL_AUTH_USER, req.name);
+        // sendConfirmationEmailToAdmin(process.env.NAMECHEAP_EMAIL, req.name);
        
         await prisma.$disconnect();
         res.status(204).json({ message: "Company updated successfully"});
@@ -134,19 +134,21 @@ export const publisherCompanyUpdate = async (req, res) => {
 }
 
 const sendConfirmationEmailToPublisher = async (email, name) => {
-    console.log(process.env.GMAIL_AUTH_USER);
-    console.log(process.env.GMAIL_AUTH_PASS);
+    console.log(process.env.NAMECHEAP_EMAIL);
+    console.log(process.env.NAMECHEAP_EMAIL_PASSWORD);
 
     const transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-            user: process.env.GMAIL_AUTH_USER,
-            pass: process.env.GMAIL_AUTH_PASS
-        }
+        host: 'mail.privateemail.com',
+        port: 587,
+        secure: false,
+          auth: {
+              user: process.env.NAMECHEAP_EMAIL,
+              pass: process.env.NAMECHEAP_EMAIL_PASSWORD
+          }
     });
 
     const mailOptions = {
-        from: process.env.GMAIL_AUTH_USER,
+        from: process.env.NAMECHEAP_EMAIL,
         to: email,
         subject: 'Publisher Confirmation',
         html: `
@@ -175,12 +177,12 @@ const sendConfirmationEmailToPublisher = async (email, name) => {
            
             <tr>
               <td style="font-family:sans-serif;color:#888;font-size:14px;padding-bottom:8px;">
-                If you have any questions, please contact us at ${process.env.GMAIL_AUTH_USER}
+                If you have any questions, please contact us at ${process.env.NAMECHEAP_EMAIL}
               </td>
             </tr>
             <tr>
               <td style="font-family:monospace;color:#4A4DFF;font-size:13px;word-break:break-all;">
-                ${process.env.GMAIL_AUTH_USER}
+                ${process.env.NAMECHEAP_EMAIL}
               </td>            
           </table>
         </td>
@@ -202,14 +204,16 @@ const sendConfirmationEmailToPublisher = async (email, name) => {
 
 const sendConfirmationEmailToAdmin = async (email, name) => {
     const transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-            user: process.env.GMAIL_AUTH_USER,
-            pass: process.env.GMAIL_AUTH_PASS
-        }
+        host: 'mail.privateemail.com',
+        port: 587,
+        secure: false,
+          auth: {
+              user: process.env.NAMECHEAP_EMAIL,
+              pass: process.env.NAMECHEAP_EMAIL_PASSWORD
+          }
     });
     const mailOptions = {
-        from: process.env.GMAIL_AUTH_USER,
+        from: process.env.NAMECHEAP_EMAIL,
         to: email,
         subject: 'Publisher Confirmation',
         html: `

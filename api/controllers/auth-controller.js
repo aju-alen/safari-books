@@ -54,20 +54,22 @@ export const register = async (req, res) => {
 };
 
 const createTransport = nodemailer.createTransport({
-    service: 'gmail',
+  host: 'mail.privateemail.com',
+  port: 587,
+  secure: false,
     auth: {
-        user: process.env.GMAIL_AUTH_USER,
-        pass: process.env.GMAIL_AUTH_PASS
+        user: process.env.NAMECHEAP_EMAIL,
+        pass: process.env.NAMECHEAP_EMAIL_PASSWORD
     }
 })
 
 const sendVerificationEmail = async (email, verificationToken, name) => {
-    console.log(process.env.GMAIL_AUTH_USER);
-    console.log(process.env.GMAIL_AUTH_PASS);
+    console.log(process.env.NAMECHEAP_EMAIL);
+    console.log(process.env.NAMECHEAP_EMAIL_PASSWORD);
 
     const transporter = createTransport;
     const mailOptions = {
-        from: process.env.GMAIL_AUTH_USER,
+        from: process.env.NAMECHEAP_EMAIL,
         to: email,
         subject: 'Verify Your Email Address',
         html: `
@@ -197,7 +199,7 @@ const sendWelcomeEmail = async (email,name) => {
 
     const transporter = createTransport;
     const mailOptions = {
-        from: process.env.GMAIL_AUTH_USER,
+        from: process.env.NAMECHEAP_EMAIL,
         to: email,
         subject: 'Welcome to Safari Books',
         html: `
