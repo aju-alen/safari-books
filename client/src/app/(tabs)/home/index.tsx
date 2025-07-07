@@ -2,6 +2,7 @@ import HomeOnboarding from '@/components/HomeOnboarding';
 import ImageGrid from '@/components/ImageGrid';
 import TrendingRelease from '@/components/TrendingRelease';
 import { defaultStyles } from '@/styles';
+import HomeLoadingSkeleton from '@/components/HomeLoadingSkeleton';
 
 import { eBookData } from '@/utils/flatlistData';
 import { moderateScale, verticalScale, horizontalScale } from '@/utils/responsiveSize';
@@ -40,6 +41,7 @@ const HomePage = () => {
   const [latestRelease, setLatestRelease] = useState([]);
   const [continueListeningBooks, setContinueListeningBooks] = useState([]);
   const [featuredBook, setFeaturedBook] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   const {theme} = useTheme()
 
@@ -73,11 +75,20 @@ const HomePage = () => {
     }
   };
 
-  useEffect(()=>{
-    getBooksData();
-    getContinueListeningBooks();
-    getFeaturedBook();
-  },[])
+  useEffect(() => {
+    let isMounted = true;
+    const fetchAll = async () => {
+      setLoading(true);
+      await Promise.all([
+        getBooksData(),
+        getContinueListeningBooks(),
+        getFeaturedBook()
+      ]);
+      if (isMounted) setLoading(false);
+    };
+    fetchAll();
+    return () => { isMounted = false; };
+  }, []);
 
   const SectionTitle = ({ title, subtitle, onPress, showBadge }: { title: string; subtitle?: string; onPress?: () => void; showBadge?: boolean }) => (
     <View style={styles.sectionTitleContainer}>
@@ -139,7 +150,7 @@ const HomePage = () => {
   );
 
   const BookCard = ({ book, isContinue = false, isLarge = false }) => (
-    <TouchableOpacity style={[styles.bookCard, isLarge && styles.largeBookCard, { backgroundColor: theme.white, borderColor: theme.gray2, shadowColor: theme.text }]}>
+    <TouchableOpacity style={[styles.bookCard, isLarge && styles.largeBookCard, { backgroundColor: theme.white, borderColor: theme.gray2, shadowColor: theme.text }]} onPress={() => router.push(`/(tabs)/home/${book.id}`)}>
       <View style={styles.bookCardHeader}>
         <Image source={{ uri: book.coverImage }} style={[styles.bookCover, isLarge && styles.largeBookCover]} />
         {book.isNew && (
@@ -187,6 +198,10 @@ const HomePage = () => {
       <Ionicons name="chevron-forward" size={20} color={theme.secondary} />
     </TouchableOpacity>
   );
+
+  if (loading) {
+    return <HomeLoadingSkeleton />;
+  }
 
   return (
     <SafeAreaView style={[defaultStyles.container, { flex: 1, backgroundColor: theme.background }]}>

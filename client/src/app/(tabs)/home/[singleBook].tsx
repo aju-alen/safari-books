@@ -5,10 +5,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { defaultStyles } from '@/styles';
 import { eBookData } from '@/utils/flatlistData';
 import { horizontalScale, moderateScale, verticalScale } from '@/utils/responsiveSize';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
-import AudioPlayer from '@/components/AudioPlayer';
 import AudioPlayerModal from '@/components/AudioPlayerModal';
 import { useAudio } from '@/store/AudioContext';
 import { ipURL } from '@/utils/backendURL';
@@ -19,6 +17,7 @@ import RevenueCatUI, { PAYWALL_RESULT } from 'react-native-purchases-ui';
 import * as Sharing from 'expo-sharing';
 import { useTheme } from '@/providers/ThemeProvider';
 import { axiosWithAuth } from '@/utils/customAxios';
+import HomeLoadingSkeleton from '@/components/HomeLoadingSkeleton';
 
 const SingleBookPage = () => {
   const { theme } = useTheme();
@@ -30,27 +29,33 @@ const SingleBookPage = () => {
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [showFullSummary, setShowFullSummary] = useState(false);
   const [currentAudioUrl, setCurrentAudioUrl] = useState('');
+  const [loading, setLoading] = useState(true);
   const { isPro } = useRevenueCat();
 
   console.log(singleBookData,'singleBookData');
   
-  // useEffect(() => {
-  //   const book = eBookData.find((book) => book.id === singleBook);
-  //   setSingleBookData([book]);
-  // }, []);
+
 
   const getSingleBookData = async () => {
     try {
+      setLoading(true);
       const resp = await axios.get(`${ipURL}/api/listeners/book-data/${singleBook}`);
       setSingleBookData([resp.data]);
     } catch (error) {
       console.error('Error fetching single book data:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
     getSingleBookData();
   }, []);
+
+  // Show loading skeleton while data is being fetched
+  if (loading) {
+    return <HomeLoadingSkeleton />;
+  }
 
   const { playTrack } = useAudio();
 
