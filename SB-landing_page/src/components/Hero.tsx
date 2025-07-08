@@ -57,7 +57,7 @@ const Hero: React.FC = () => {
                     </div>
                     <div>
                       <h3 className="font-semibold text-gray-900">The Adventure Begins</h3>
-                      <p className="text-gray-600">Chapter 1 of 12</p>
+
                     </div>
                   </div>
                   

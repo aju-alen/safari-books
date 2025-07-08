@@ -14,7 +14,6 @@ const Header: React.FC = () => {
           
           <nav className="hidden md:flex items-center space-x-8">
             <a href="#features" className="text-gray-700 hover:text-amber-600 transition-colors duration-200">Features</a>
-            <a href="#audiobooks" className="text-gray-700 hover:text-amber-600 transition-colors duration-200">Audiobooks</a>
             <a href="#faq" className="text-gray-700 hover:text-amber-600 transition-colors duration-200">FAQ</a>
             <a href="#download" className="bg-amber-600 text-white px-6 py-2 rounded-full hover:bg-amber-700 transition-colors duration-200">
               Download
