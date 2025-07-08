@@ -6,6 +6,7 @@ import Error404 from './pages/Error404';
 
 
 
+
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const hideNavBarPages = ['/'];
@@ -26,6 +27,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 };
 
 const Home = lazy(() => import('./pages/Home'));
+const DeleteAccountGuide = lazy(() => import('./pages/DeleteAccountGuide'));
 
 
 const App = () => {
@@ -158,7 +160,10 @@ const App = () => {
           index: true,
           element: <Home />,
         },
-       
+        {
+          path: "/delete-account-guide",
+          element: <DeleteAccountGuide />,
+        },
         {
           path: "/404",
           element: <Error404 /> // Wrap Dashboard inside ProtectedRoute
