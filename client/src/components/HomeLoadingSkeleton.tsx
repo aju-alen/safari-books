@@ -50,8 +50,9 @@ const SkeletonItem = ({ width: itemWidth, height, borderRadius, style = {} }) =>
 };
 
 const HomeLoadingSkeleton = () => {
+  const {theme} = useTheme()
   return (
-    <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView contentContainerStyle={[styles.container,{backgroundColor: theme.background}]} showsVerticalScrollIndicator={false}>
       {/* Header Section */}
       <View style={styles.headerSection}>
         <View style={styles.headerTop}>
@@ -176,6 +177,7 @@ const HomeLoadingSkeleton = () => {
 const styles = StyleSheet.create({
   container: {
     paddingBottom: verticalScale(30),
+    
   },
   headerSection: {
     paddingTop: verticalScale(20),

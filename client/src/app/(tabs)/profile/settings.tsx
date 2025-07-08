@@ -7,6 +7,7 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme, ThemeType } from '@/providers/ThemeProvider';
 import { clearPushTokenCache } from '@/utils/registerForPushNotificationsAsync';
+import { verticalScale, horizontalScale, moderateScale } from '@/utils/responsiveSize';
 
 const SettingsPage = () => {
   const [userData, setUserData] = useState<any>(null);
@@ -19,7 +20,7 @@ const SettingsPage = () => {
     { id: 'ocean', name: 'Ocean', icon: '🌊', description: 'Cool blue tones' },
     { id: 'pastel', name: 'Pastel', icon: '🌸', description: 'Soft pink theme' },
     { id: 'sunset', name: 'Sunset', icon: '🌅', description: 'Vibrant orange-pink' },
-    { id: 'royal', name: 'Royal', icon: '🧘🏼‍♀️', description: 'Sophisticated purple' },
+    { id: 'royal', name: 'Royal', icon: '✨', description: 'Sophisticated purple' },
     { id: 'autumn', name: 'Autumn', icon: '🍂', description: 'Warm earth tones' },
     { id: 'mint', name: 'Mint', icon: '🌱', description: 'Fresh cool green' },
     { id: 'neon', name: 'Neon', icon: '⚡', description: 'Bold cyberpunk style' },
@@ -76,10 +77,10 @@ const SettingsPage = () => {
           >
             <View style={styles.menuItemContent}>
               <View style={styles.menuItemLeft}>
-                  <Ionicons name={item.icon as keyof typeof Ionicons.glyphMap} size={24} color={theme.text} />
+                  <Ionicons name={item.icon as keyof typeof Ionicons.glyphMap} size={moderateScale(24)} color={theme.text} />
                 <Text style={[styles.menuItemText, { color: theme.text }]}>{item.title}</Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color={theme.textMuted} />
+              <Ionicons name="chevron-forward" size={moderateScale(20)} color={theme.textMuted} />
             </View>
           </TouchableOpacity>
         ))}
@@ -90,7 +91,7 @@ const SettingsPage = () => {
             <View style={styles.menuItemLeft}>
               <Ionicons 
                 name={isDarkMode ? "moon" : "sunny"} 
-                size={24} 
+                size={moderateScale(24)} 
                 color={theme.text} 
               />
               <Text style={[styles.menuItemText, { color: theme.text }]}>
@@ -113,10 +114,10 @@ const SettingsPage = () => {
           >
             <View style={styles.menuItemContent}>
               <View style={styles.menuItemLeft}>
-                <Ionicons name="person-outline" size={24} color={theme.text} />
+                <Ionicons name="person-outline" size={moderateScale(24)} color={theme.text} />
                 <Text style={[styles.menuItemText, { color: theme.text }]}>Switch to Publisher</Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color={theme.textMuted} />
+              <Ionicons name="chevron-forward" size={moderateScale(20)} color={theme.textMuted} />
             </View>
           </TouchableOpacity>}
       </View>
@@ -126,7 +127,7 @@ const SettingsPage = () => {
           onPress={handleLogout}
           style={[styles.logoutButton, { backgroundColor: theme.primary, shadowColor: theme.primary }]}
         >
-          <Ionicons name="log-out-outline" size={20} color={theme.white} style={styles.logoutIcon} />
+          <Ionicons name="log-out-outline" size={moderateScale(20)} color={theme.white} style={styles.logoutIcon} />
           <Text style={[styles.logoutText, { color: theme.white }]}>Logout</Text>
         </TouchableOpacity>
       </View>
@@ -141,21 +142,34 @@ const SettingsPage = () => {
       >
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: theme.white }]}>
-            <View style={styles.modalHeader}>
+            {/* Header */}
+            <View style={[styles.modalHeader, { borderBottomColor: theme.gray2 }]}>
               <Text style={[styles.modalTitle, { color: theme.text }]}>Choose Theme</Text>
-              <TouchableOpacity onPress={() => setShowThemeModal(false)}>
-                <Ionicons name="close" size={24} color={theme.text} />
+              <TouchableOpacity 
+                onPress={() => setShowThemeModal(false)}
+                style={[styles.closeButton, { backgroundColor: `${theme.gray2}15` }]}
+              >
+                <Ionicons name="close" size={moderateScale(20)} color={theme.text} />
               </TouchableOpacity>
             </View>
             
-            <ScrollView style={styles.themeList} showsVerticalScrollIndicator={false}>
+            {/* Theme Options */}
+            <ScrollView 
+              style={[styles.themeList, { backgroundColor: theme.white }]} 
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.themeListContent}
+            >
               {themes.map((themeOption) => (
                 <TouchableOpacity
                   key={themeOption.id}
                   style={[
                     styles.themeOption,
                     { backgroundColor: theme.background },
-                    currentTheme === themeOption.id && { borderColor: theme.primary, borderWidth: 2 }
+                    currentTheme === themeOption.id && { 
+                      borderColor: theme.primary, 
+                      borderWidth: 2,
+                      backgroundColor: `${theme.primary}05`
+                    }
                   ]}
                   onPress={() => {
                     setTheme(themeOption.id as ThemeType);
@@ -163,7 +177,9 @@ const SettingsPage = () => {
                   }}
                 >
                   <View style={styles.themeOptionContent}>
-                    <Text style={styles.themeIcon}>{themeOption.icon}</Text>
+                    <View style={[styles.themeIconContainer, { backgroundColor: `${theme.primary}10` }]}>
+                      <Text style={styles.themeIcon}>{themeOption.icon}</Text>
+                    </View>
                     <View style={styles.themeInfo}>
                       <Text style={[styles.themeName, { color: theme.text }]}>
                         {themeOption.name}
@@ -173,7 +189,9 @@ const SettingsPage = () => {
                       </Text>
                     </View>
                     {currentTheme === themeOption.id && (
-                      <Ionicons name="checkmark-circle" size={24} color={theme.primary} />
+                      <View style={[styles.checkmarkContainer, { backgroundColor: theme.primary }]}>
+                        <Ionicons name="checkmark" size={moderateScale(16)} color={theme.white} />
+                      </View>
                     )}
                   </View>
                 </TouchableOpacity>
@@ -196,21 +214,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingHorizontal: horizontalScale(16),
+    paddingVertical: verticalScale(16),
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: moderateScale(28),
     fontWeight: '700',
   },
   settingsButton: {
-    padding: 8,
-    borderRadius: 20,
+    padding: moderateScale(8),
+    borderRadius: moderateScale(20),
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
   },
   menuContainer: {
     marginTop: 20,
-    paddingHorizontal: 16,
+    paddingHorizontal: horizontalScale(16),
   },
   menuItem: {
     marginBottom: 8,
@@ -228,28 +246,28 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
+    padding: moderateScale(16),
   },
   menuItemLeft: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   menuItemText: {
-    marginLeft: 12,
-    fontSize: 16,
+    marginLeft: moderateScale(12),
+    fontSize: moderateScale(16),
     fontWeight: '500',
   },
   logoutContainer: {
-    paddingHorizontal: 16,
-    paddingBottom: 32,
+    paddingHorizontal: horizontalScale(16),
+    paddingBottom: verticalScale(32),
     marginTop: 20,
   },
   logoutButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
-    borderRadius: 28,
+    paddingVertical: verticalScale(16),
+    borderRadius: moderateScale(28),
     shadowOffset: {
       width: 0,
       height: 4,
@@ -258,65 +276,105 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   logoutIcon: {
-    marginRight: 8,
+    marginRight: horizontalScale(8),
   },
   logoutText: {
-    fontSize: 16,
+    fontSize: moderateScale(16),
     fontWeight: '600',
   },
   // Modal styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
     justifyContent: 'flex-end',
+    paddingBottom: verticalScale(60),
   },
   modalContent: {
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingTop: 20,
-    maxHeight: '80%',
+    borderTopLeftRadius: moderateScale(24),
+    borderTopRightRadius: moderateScale(24),
+    paddingTop: verticalScale(24),
+    maxHeight: '85%',
+    minHeight: '50%',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: -4,
+    },
+    shadowRadius: 20,
+    elevation: 10,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingBottom: 20,
+    paddingHorizontal: horizontalScale(24),
+    paddingBottom: verticalScale(24),
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
+    // borderBottomColor removed - now using theme
   },
   modalTitle: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: moderateScale(22),
+    fontWeight: '700',
   },
   themeList: {
-    paddingHorizontal: 20,
-    paddingVertical: 20,
+    paddingHorizontal: horizontalScale(24),
+    paddingVertical: verticalScale(16),
+    flex: 1,
+  },
+  themeListContent: {
+    paddingBottom: verticalScale(20),
+    flexGrow: 1,
   },
   themeOption: {
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
+    borderRadius: moderateScale(16),
+    padding: moderateScale(20),
+    marginBottom: moderateScale(16),
     borderWidth: 1,
     borderColor: 'transparent',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowRadius: 8,
+    elevation: 3,
   },
   themeOptionContent: {
     flexDirection: 'row',
     alignItems: 'center',
   },
+  themeIconContainer: {
+    width: moderateScale(48),
+    height: moderateScale(48),
+    borderRadius: moderateScale(14),
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: horizontalScale(16),
+  },
   themeIcon: {
-    fontSize: 32,
-    marginRight: 16,
+    fontSize: moderateScale(28),
   },
   themeInfo: {
     flex: 1,
   },
   themeName: {
-    fontSize: 16,
+    fontSize: moderateScale(18),
     fontWeight: '600',
-    marginBottom: 4,
+    marginBottom: moderateScale(4),
   },
   themeDescription: {
-    fontSize: 14,
+    fontSize: moderateScale(14),
+    lineHeight: moderateScale(20),
+  },
+  closeButton: {
+    padding: moderateScale(10),
+    borderRadius: moderateScale(22),
+  },
+  checkmarkContainer: {
+    width: moderateScale(24),
+    height: moderateScale(24),
+    borderRadius: moderateScale(12),
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

@@ -223,6 +223,11 @@ export const listenerAnalytics = async (req,res)=>{
                 status: "IN_PROGRESS"
             }
         });
+
+        if(finishedBooks === 0 && inProgressBooks === 0){
+          finishedBooks = 0;
+          inProgressBooks = 0;
+        }
     
         await prisma.$disconnect();
         res.status(200).json({ message: "Publisher insights fetched successfully", finishedBooks, inProgressBooks });

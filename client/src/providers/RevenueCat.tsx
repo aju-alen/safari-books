@@ -49,7 +49,7 @@ export const RevenueCatProvider = ({ children }: any) => {
   };
 
   const value = {
-    isPro:true,
+    isPro,
   };
 
   // Return empty fragment if provider is not ready (Purchase not yet initialised)

@@ -35,7 +35,7 @@ const Support = () => {
       title: "Email Support",
       subtitle: "Get detailed assistance via email",
       icon: <Ionicons name="mail-outline" size={24} color={theme.primary} />,
-      action: () => Linking.openURL('mailto:support@safaribooks.com?subject=Publisher Support Request')
+      action: () => Linking.openURL('mailto:support@safbooks.com?subject=Publisher Support Request')
     },
     // {
     //   title: "Live Chat",

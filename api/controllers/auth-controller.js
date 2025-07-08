@@ -64,8 +64,6 @@ const createTransport = nodemailer.createTransport({
 })
 
 const sendVerificationEmail = async (email, verificationToken, name) => {
-    console.log(process.env.NAMECHEAP_EMAIL);
-    console.log(process.env.NAMECHEAP_EMAIL_PASSWORD);
 
     const transporter = createTransport;
     const mailOptions = {
@@ -491,8 +489,12 @@ export const deleteAccount = async (req, res) => {
 
 export const registerPushToken = async (req, res) => {
     try {
+
         const { pushToken } = req.body;
         const userId = req.userId; // Get userId from JWT middleware
+
+        console.log(pushToken, 'pushToken in push token api');
+        console.log(userId, 'userId in push token api');
 
         if (!pushToken) {
             return res.status(400).json({ message: "Push token is required" });

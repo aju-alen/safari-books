@@ -17,6 +17,7 @@ import * as Sharing from 'expo-sharing';
 import { useTheme } from '@/providers/ThemeProvider';
 import { axiosWithAuth } from '@/utils/customAxios';
 import HomeLoadingSkeleton from '@/components/HomeLoadingSkeleton';
+import * as ExpoSecureStore from 'expo-secure-store';
 
 const SingleBookPage = () => {
   const { theme } = useTheme();
@@ -134,6 +135,16 @@ const SingleBookPage = () => {
   console.log('singleBookData', singleBookData);
 
   const handlePurchase = async() => {
+
+    const userDetails = JSON.parse(await ExpoSecureStore.getItemAsync("userDetails"));
+    console.log(userDetails, 'userDetails');
+    if(userDetails.role === 'GUEST'){
+      Alert.alert('Please login to continue');
+      router.replace('/(authenticate)/login');
+    }
+    else{
+      
+    }
     if (isPro) {
       // Logic for already subscribed users
       const resp = await axiosWithAuth.post(`${ipURL}/api/library/create-library/${singleBook}`);

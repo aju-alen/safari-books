@@ -281,42 +281,42 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     header: {
-        fontSize: 24,
+        fontSize: moderateScale(24),
         fontWeight: 'bold',
-        marginBottom:50,
+        marginBottom:verticalScale(50),
         alignItems: 'center',
 
     },
     inputContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 10,
+        marginBottom: verticalScale(10),
     },
     icon: {
-        marginRight: 10,
+        marginRight: horizontalScale(10),
     },
     input: {
-        width: 300,
-        height: 40,
-        borderWidth: 1,
-        borderRadius: 5,
-        paddingLeft: 10,
+        width: horizontalScale(300),
+        height: verticalScale(40),
+        borderWidth: moderateScale(1),
+        borderRadius: moderateScale(5),
+        paddingLeft: horizontalScale(10),
     },
     button: {
-        padding: 10,
-        borderRadius: 5,
-        marginTop: 25,
-        width: 150,
+        padding: moderateScale(10),
+        borderRadius: moderateScale(5),
+        marginTop: verticalScale(25),
+        width: horizontalScale(150),
     },
     buttonText: {
         fontWeight: 'bold',
         textAlign: 'center',
-        fontSize: 22,
+        fontSize: moderateScale(22),
     },
     link: {
-        marginTop: 10,
+        marginTop: verticalScale(10),
         textAlign: 'center',
-        fontSize: 14,
+        fontSize: moderateScale(14),
     }
 });
 

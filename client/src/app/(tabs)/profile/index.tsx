@@ -34,16 +34,24 @@ const ProfilePage = () => {
   const [loading, setLoading] = useState(true);
   const {theme} = useTheme()
   const [listenerAnalytics, setListenerAnalytics] = useState(null);
-  const getUserDetails = async () => {
-    const details = await SecureStore.getItemAsync('userDetails');
-    console.log(details, 'details in profile');
+  const [userRole, setUserRole] = useState(null);
 
-    const response = await axiosWithAuth.get(`${ipURL}/api/listeners/listener-analytics`)
-    setListenerAnalytics(response.data)
-    if (details) {
-      setUserDetails(JSON.parse(details));
+  const getUserDetails = async () => {
+    try {
+      const details = await SecureStore.getItemAsync('userDetails');
+      console.log(details, 'details in profile');
+      setUserRole(JSON.parse(details).role);
+      const response = await axiosWithAuth.get(`${ipURL}/api/listeners/listener-analytics`)
+      setListenerAnalytics(response.data)
+      if (details) {
+        setUserDetails(JSON.parse(details));
+      }
+      setLoading(false);
+    } catch (error) {
+      setLoading(false);
+      console.log(error, 'error in profile');
     }
-    setLoading(false);
+    
   };
 
   useEffect(() => {
@@ -70,8 +78,8 @@ const ProfilePage = () => {
   }
 
   const stats: Stat[] = [
-    { icon: 'reader-outline', label: 'Books in Progress', value: listenerAnalytics?.inProgressBooks },
-    { icon: 'book-outline', label: 'Books Completed', value: listenerAnalytics?.finishedBooks },
+    { icon: 'reader-outline', label: 'Books in Progress', value: userRole === 'LISTENER' ? listenerAnalytics?.inProgressBooks : 'N/A' },
+    { icon: 'book-outline', label: 'Books Completed', value: userRole === 'LISTENER' ? listenerAnalytics?.finishedBooks : 'N/A' },
     { icon: 'time-outline', label: 'Current Streak', value: '1 day' },
   ];
 
@@ -99,6 +107,12 @@ const ProfilePage = () => {
       icon: 'help-circle-outline', 
       label: 'Help & Support', 
       route: '/(tabs)/profile/support',
+      color: theme.secondary
+    },
+    { 
+      icon: 'notifications-outline', 
+      label: 'Notifications', 
+      route: '/(tabs)/profile/notifications',
       color: theme.secondary
     },
   ];

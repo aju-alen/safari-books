@@ -13,6 +13,7 @@ const ProfileLayout = () => {
         <Stack.Screen name="deleteAccount" options={{ headerShown: false }} />
         <Stack.Screen name="favorites" options={{ headerShown: false }} />
         <Stack.Screen name="support" options={{ headerShown: false }} />
+        <Stack.Screen name="notifications" options={{ headerShown: false }} />
     </Stack>
   )
 }
