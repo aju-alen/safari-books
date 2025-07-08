@@ -510,6 +510,7 @@ const styles = StyleSheet.create({
   section: {
     marginTop: verticalScale(30),
     paddingHorizontal: horizontalScale(20),
+    paddingBottom: verticalScale(30),
   },
   sectionTitleContainer: {
     marginBottom: verticalScale(15),
