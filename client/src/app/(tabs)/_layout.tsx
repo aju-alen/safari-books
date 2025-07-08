@@ -8,9 +8,11 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { RevenueCatProvider } from '../../providers/RevenueCat';
 import { useTheme } from '@/providers/ThemeProvider';
+import { Platform } from 'react-native';
 
 const TabsLayout = () => {
     const {theme} = useTheme()
+    const isAndroid = Platform.OS === 'android';
     return (
         <RevenueCatProvider>
         <View style={styles.container}>
@@ -29,6 +31,9 @@ const TabsLayout = () => {
                     borderTopWidth: 0,
                     paddingTop: 8,
                     backgroundColor: theme.background,
+                    ...(isAndroid && {
+                        height: 60,
+                    }),
                 },
             }}>
                 <Tabs.Screen
