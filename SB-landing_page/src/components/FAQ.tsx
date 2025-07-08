@@ -10,7 +10,7 @@ const FAQ: React.FC = () => {
 
   const faqs = [
     {
-      question: "How many audiobooks can I download?",
+      question: "How many audiobooks can I listen to?",
       answer: "With Safari Books Premium, you can listen to unlimited audiobooks. Free users can listen to the sample and then subscribe to the book."
     },
     {
