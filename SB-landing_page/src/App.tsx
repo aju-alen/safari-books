@@ -3,6 +3,7 @@ import Header from './components/Header';
 import Footer from './components/Footer';
 import { lazy, Suspense } from 'react';
 import Error404 from './pages/Error404';
+import ContactForm from './pages/ContactUs';
 
 
 
@@ -163,6 +164,10 @@ const App = () => {
         {
           path: "/delete-account-guide",
           element: <DeleteAccountGuide />,
+        },
+        {
+          path: "/contact-us",
+          element: <ContactForm />,
         },
         {
           path: "/404",
