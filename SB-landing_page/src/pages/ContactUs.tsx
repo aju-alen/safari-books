@@ -122,7 +122,6 @@ function ContactForm() {
                 <p className="mb-2">For urgent matters, you can also reach us at:</p>
                 <ul className="space-y-1">
                   <li>📧 Email: support@safbooks.com</li>
-                  <li>📱 Mobile App: Use the in-app support chat</li>
                   <li>⏰ Response Time: Usually within 24 hours</li>
                 </ul>
               </div>
