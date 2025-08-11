@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as SecureStore from 'expo-secure-store';
 import { useRouter } from 'expo-router';
@@ -37,6 +37,17 @@ const publisherOptions = [
     label: 'Support',
     route: '/(publisher)/support',
   },
+  {
+    icon: <Ionicons name="document-text-outline" size={24} color={theme.primary} />,
+    label: 'Terms of Use (EULA)',
+    onPress: () => Linking.openURL('https://safari-books-mobile.s3.ap-south-1.amazonaws.com/Assets/EULA.pdf')
+  },
+  {
+    icon: <Ionicons name="shield-checkmark-outline" size={24} color={theme.primary} />,
+    label: 'Privacy Policy',
+    onPress: () => Linking.openURL('https://safari-books-mobile.s3.ap-south-1.amazonaws.com/Assets/privacy-policy.pdf')
+  },
+  
 ];
 
   const handleLogout = async () => {
@@ -70,7 +81,7 @@ const publisherOptions = [
             <TouchableOpacity
               key={option.label}
               style={[styles.optionButton, { backgroundColor: `${theme.primary}10` }]}
-              onPress={() => router.push(option.route as any)}
+              onPress={() => option.onPress ? option.onPress() : router.push(option.route as any)}
             >
               <View style={styles.optionIcon}>{option.icon}</View>
               <Text style={[styles.optionLabel, { color: theme.text }]}>{option.label}</Text>

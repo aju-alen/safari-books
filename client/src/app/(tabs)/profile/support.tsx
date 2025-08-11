@@ -34,7 +34,7 @@ const SupportPage = () => {
     },
     {
         question: "How do I cancel my subscription?",
-        answer: "You can cancel your subscription by going to the your App/Play Store and canceling the subscription as they are not managed by us."
+        answer: "You can cancel your subscription by going to the your Store and canceling the subscription as they are not managed by us."
     }
 
   ]

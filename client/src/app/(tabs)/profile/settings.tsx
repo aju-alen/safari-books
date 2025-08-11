@@ -1,4 +1,4 @@
-import { StyleSheet, Text, TouchableOpacity, View, Switch, ScrollView, Modal, Alert } from 'react-native'
+import { StyleSheet, Text, TouchableOpacity, View, Switch, ScrollView, Modal, Alert, Linking } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { defaultStyles } from '@/styles'
@@ -46,6 +46,16 @@ const SettingsPage = () => {
       title: 'App Theme',
       icon: 'color-palette-outline',
       onPress: () => setShowThemeModal(true)
+    },
+    {
+      title: 'Terms of Use (EULA)',
+      icon: 'document-text-outline',
+      onPress: () => Linking.openURL('https://safari-books-mobile.s3.ap-south-1.amazonaws.com/Assets/EULA.pdf')
+    },
+    {
+      title: 'Privacy Policy',
+      icon: 'shield-checkmark-outline',
+      onPress: () => Linking.openURL('https://safari-books-mobile.s3.ap-south-1.amazonaws.com/Assets/privacy-policy.pdf')
     },
     {
       title: 'Delete Account',
