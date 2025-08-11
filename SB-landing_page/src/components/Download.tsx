@@ -33,26 +33,34 @@ const Download: React.FC = () => {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4">
-              <button className="bg-black hover:bg-gray-800 text-white px-8 py-4 rounded-2xl font-semibold transition-colors duration-200 flex items-center justify-center space-x-3">
+              <button className="bg-black hover:bg-gray-800 text-white px-8 py-4 rounded-2xl font-semibold transition-colors duration-200 flex items-center justify-center space-x-3" 
+              onClick={() => {
+                window.location.href = 'https://apps.apple.com/us/app/safari-books/id6741313582';
+              }}
+              >
                 <div className="flex items-center space-x-2">
                   <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
                     <span className="text-black font-bold text-xs">📱</span>
                   </div>
                   <div className="text-left">
                     <div className="text-xs text-gray-300">Download on the</div>
-                    <div className="text-sm font-semibold">App Store (Coming Soon)</div>
+                    <div className="text-sm font-semibold">App Store</div>
                   </div>
                 </div>
               </button>
               
-              <button className="bg-black hover:bg-gray-800 text-white px-8 py-4 rounded-2xl font-semibold transition-colors duration-200 flex items-center justify-center space-x-3">
+              <button className="bg-black hover:bg-gray-800 text-white px-8 py-4 rounded-2xl font-semibold transition-colors duration-200 flex items-center justify-center space-x-3"
+              onClick={() => {
+                window.location.href = 'https://play.google.com/store/apps/details?id=com.rise.safaribooks&hl=en';
+              }}
+              >
                 <div className="flex items-center space-x-2">
                   <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
                     <span className="text-black font-bold text-xs">🤖</span>
                   </div>
                   <div className="text-left">
                     <div className="text-xs text-gray-300">Get it on</div>
-                    <div className="text-sm font-semibold">Google Play (Coming Soon)</div>
+                    <div className="text-sm font-semibold">Google Play</div>
                   </div>
                 </div>
               </button>

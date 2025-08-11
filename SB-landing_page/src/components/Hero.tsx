@@ -1,5 +1,5 @@
 import React from 'react';
-import { Play, Download, Star, BookOpen } from 'lucide-react';
+import { Play, Apple, Star, BookOpen } from 'lucide-react';
 
 const Hero: React.FC = () => {
   return (
@@ -17,14 +17,24 @@ const Hero: React.FC = () => {
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 mt-8 justify-center lg:justify-start">
-              <button className="bg-amber-600 text-white px-8 py-4 rounded-full font-semibold hover:bg-amber-700 transition-all duration-200 flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl">
-                <Download className="h-5 w-5" />
-                <span>Coming Soon</span>
-              </button>
-              {/* <button className="border-2 border-amber-600 text-amber-600 px-8 py-4 rounded-full font-semibold hover:bg-amber-600 hover:text-white transition-all duration-200 flex items-center justify-center space-x-2">
+              <a
+                href="https://apps.apple.com/us/app/safari-books/id6741313582"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-black text-white px-8 py-4 rounded-full font-semibold hover:bg-gray-900 transition-all duration-200 flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl"
+              >
+                <Apple className="h-5 w-5" />
+                <span>App Store</span>
+              </a>
+              <a
+                href="https://play.google.com/store/apps/details?id=com.rise.safaribooks&hl=en"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="border-2 border-amber-600 text-amber-600 px-8 py-4 rounded-full font-semibold hover:bg-amber-600 hover:text-white transition-all duration-200 flex items-center justify-center space-x-2"
+              >
                 <Play className="h-5 w-5" />
-                <span>Watch Demo</span>
-              </button> */}
+                <span>Google Play</span>
+              </a>
             </div>
 
             {/* <div className="mt-12 flex items-center justify-center lg:justify-start space-x-6">

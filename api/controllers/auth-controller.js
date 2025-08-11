@@ -268,14 +268,22 @@ const sendWelcomeEmail = async (email,name) => {
 
 export const login = async (req, res, next) => {
     try {
+      let user;
         const { email,password } = req.body;
         console.log(email, password,'email, password');
         
-        const user = await prisma.user.findUnique({
+        user = await prisma.user.findUnique({
             where: {
                 email
             }
         });
+        if(!user){
+          user = await prisma.admin.findUnique({
+            where: {
+              email
+            }
+          });
+        }
         console.log(user, 'user');
        
         if (!user) {

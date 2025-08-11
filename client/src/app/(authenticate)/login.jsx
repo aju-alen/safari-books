@@ -262,13 +262,13 @@ console.log(clickCount, 'this is click count');
                 <Pressable
                     onPress={handleAdminLogin}
                     >
-                <Text style={{
+                {/* <Text style={{
                                 alignSelf: "center",
                                 fontSize: moderateScale(10),
                                 color: theme.primary,
                                 fontWeight: "bold",
                                 marginLeft: horizontalScale(6)
-                            }}>Admin Panel</Text>
+                            }}>Admin Panel</Text> */}
                 </Pressable>
         </SafeAreaView>
     )
