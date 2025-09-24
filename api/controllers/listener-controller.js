@@ -1,9 +1,8 @@
-import { PrismaClient } from '@prisma/client'
 
 import dotenv from "dotenv";
 dotenv.config();
 
-const prisma = new PrismaClient();
+import { prisma } from '../utils/database.js'
 
 export const getAllBooksData = async (req,res)=>{
     const { page = 1, limit = 7 } = req.query;
@@ -228,8 +227,7 @@ export const listenerAnalytics = async (req,res)=>{
           finishedBooks = 0;
           inProgressBooks = 0;
         }
-    
-        await prisma.$disconnect();
+        
         res.status(200).json({ message: "Publisher insights fetched successfully", finishedBooks, inProgressBooks });
     } catch (error) {
             console.log(error);

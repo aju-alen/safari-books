@@ -13,8 +13,9 @@
   "license": "ISC",
   "dependencies": {
     "@aws-sdk/lib-storage": "^3.735.0",
+    "@google-cloud/text-to-speech": "^6.3.0",
     "@prisma/client": "^5.14.0",
-    "aws-sdk": "^2.1632.0",
+    "aws-sdk": "^2.1692.0",
     "aws-sdk-js-codemod": "^2.4.5",
     "bcrypt": "^5.1.1",
     "body-parser": "^1.20.2",
@@ -26,7 +27,8 @@
     "node-cron": "^4.2.0",
     "node-fetch": "^3.3.2",
     "nodemailer": "^6.9.13",
-    "nodemon": "^3.1.1"
+    "nodemon": "^3.1.1",
+    "pdf-parse": "^1.1.1"
   },
   "devDependencies": {
     "prisma": "^5.14.0"

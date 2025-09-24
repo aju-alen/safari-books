@@ -1,9 +1,7 @@
-import { PrismaClient } from '@prisma/client'
-
 import dotenv from "dotenv";
 dotenv.config();
 
-const prisma = new PrismaClient();
+import { prisma } from '../utils/database.js'
 
 export const createLibrary = async (req,res)=>{
     console.log(req.userId,'req.userId');

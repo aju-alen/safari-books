@@ -1,9 +1,9 @@
-import { PrismaClient } from '@prisma/client'
+
 import nodemailer from 'nodemailer';
 import dotenv from "dotenv";
 dotenv.config();
 
-const prisma = new PrismaClient();
+import { prisma } from '../utils/database.js'
 
 export const publisherCompany = async (req, res) => {
     console.log(req.body);
@@ -21,7 +21,6 @@ export const publisherCompany = async (req, res) => {
                 userId: req.body.userId
             }
         });
-        await prisma.$disconnect();
         res.status(201).json({ message: "Company registered successfully", createCompany });
     }
     catch (error) {
@@ -47,7 +46,6 @@ export const publisherAuthor = async (req, res) => {
                 userId: req.body.userId
             }
         });
-        await prisma.$disconnect();
         res.status(201).json({ message: "Author registered successfully", createAuthor });
     }
     catch (error) {
@@ -122,7 +120,6 @@ export const publisherCompanyUpdate = async (req, res) => {
         sendConfirmationEmailToPublisher(req.email, req.name);
         // sendConfirmationEmailToAdmin(process.env.NAMECHEAP_EMAIL, req.name);
        
-        await prisma.$disconnect();
         res.status(204).json({ message: "Company updated successfully"});
 
     }
@@ -249,7 +246,6 @@ export const getAllAuthorData = async (req, res) => {
             isVerified:true
            }
         });
-        await prisma.$disconnect();
         res.status(200).json({ message: "All data fetched successfully", authorData });
     }
     catch (error) {
@@ -268,7 +264,6 @@ export const getSingleAuthorData = async (req, res) => {
                 id: req.params.userId,
             }
         });
-        await prisma.$disconnect();
         res.status(200).json({ message: "All data fetched successfully", authorData });
     }
     catch (error) {
@@ -287,7 +282,6 @@ export const getAllCompanyData = async (req, res) => {
                 userId: req.body.userId,
             }
         });
-        await prisma.$disconnect();
         res.status(200).json({ message: "All data fetched successfully", companyData });
     }
     catch (error) {
@@ -306,7 +300,6 @@ export const getSingleCompanyData = async (req, res) => {
                 id: req.params.userId,
             }
         });
-        await prisma.$disconnect();
         res.status(200).json({ message: "All data fetched successfully", companyData });
     }
     catch (error) {
@@ -331,7 +324,6 @@ export const publishBook = async (req, res) => {
                 
             }
         });
-        await prisma.$disconnect();
         res.status(201).json({ message: "Book published successfully", publishBook });
     }
     catch (error) {
@@ -346,7 +338,6 @@ export const createPostmanBook = async (req, res) => {
         const createPostmanBook = await prisma.book.create({
             data: req.body
         });
-        await prisma.$disconnect();
         res.status(201).json({ message: "Book created successfully", createPostmanBook });
     }
     catch (error) {
@@ -371,7 +362,6 @@ try {
     });
 
     console.log(bookCount, ListenersStats);
-    await prisma.$disconnect();
     res.status(200).json({ message: "Publisher insights fetched successfully", bookCount, ListenersStats });
 } catch (error) {
         console.log(error);
