@@ -132,6 +132,8 @@ kraPin String
 companyRegNoPdfUrl String
 kraPinPdfUrl String
 isVerified Boolean @default(false)
+isRegistrationComplete Boolean @default(false) // Track if registration is complete
+registrationStartedAt DateTime @default(now()) // Track when registration started
 
 // Add a foreign key to reference the user
   userId                String   
@@ -147,13 +149,13 @@ date DateTime?
 ISBNDOIISRC String?
 synopsis String? @db.LongText
 narrator String?
-narrationStyleSlow Boolean?
-narrationStyleFast Boolean?
-narrationStyleIntimate Boolean?
-narrationStyleCasual Boolean?
-narrationStyleStatic Boolean?
-narrationStyleOratoric Boolean?
+narrationSampleHeartzRate String?
+narrationSpeakingRate String?
+narrationGender String?
+narrationLanguageCode String?
+narrationVoiceName String?
 audioSampleURL String?
+completeAudioUrl String?
 pdfURL String?
 rightsHolder Boolean?
 coverImage String?
@@ -173,6 +175,8 @@ kraPinPdfUrl String
 writersGuildNo String?
 amount Int  @default(0) // default amount is 0
 isVerified Boolean @default(false)
+isRegistrationComplete Boolean @default(false) // Track if registration is complete
+registrationStartedAt DateTime @default(now()) // Track when registration started
 
   // Add a foreign key to reference the user
 userId                String   
@@ -187,13 +191,13 @@ date DateTime?
 ISBNDOIISRC String?
 synopsis String? @db.LongText
 narrator String?
-narrationStyleSlow Boolean?
-narrationStyleFast Boolean?
-narrationStyleIntimate Boolean?
-narrationStyleCasual Boolean?
-narrationStyleStatic Boolean?
-narrationStyleOratoric Boolean?
+narrationSampleHeartzRate String?
+narrationSpeakingRate String?
+narrationGender String?
+narrationLanguageCode String?
+narrationVoiceName String?
 audioSampleURL String?
+completeAudioUrl String?
 pdfURL String?
 rightsHolder Boolean?
 coverImage String?
