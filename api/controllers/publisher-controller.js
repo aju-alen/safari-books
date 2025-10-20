@@ -74,18 +74,17 @@ export const publisherCompanyUpdate = async (req, res) => {
                     date:req.body.date,
                     ISBNDOIISRC:req.body.ISBNDOIISRC,
                     synopsis:req.body.synopsis,
-                    narrator:req.body.narrator,
-                    narrationStyleSlow:req.body.narrationStyleSlow,
-                    narrationStyleFast:req.body.narrationStyleFast,
-                    narrationStyleIntimate:req.body.narrationStyleIntimate,
-                    narrationStyleCasual:req.body.narrationStyleCasual,
-                    narrationStyleStatic:req.body.narrationStyleStatic,
-                    narrationStyleOratoric:req.body.narrationStyleOratoric,
+                    narrationSampleHeartzRate:JSON.stringify(req.body.voiceConfig.sampleRate),
+                    narrationSpeakingRate:JSON.stringify(req.body.voiceConfig.speakingRate),
+                    narrationGender:req.body.voiceConfig.voiceType,
+                    narrationLanguageCode:req.body.voiceConfig.voiceDetails.languageCode,
+                    narrationVoiceName:req.body.voiceConfig.voiceDetails.voiceName,
                     audioSampleURL:req.body.audioSampleURL,
                     pdfURL:req.body.pdfURL,
                     rightsHolder:req.body.rightsHolder,
                     coverImage:req.body.coverImage,
-                    amount:req.body.amount * 100, 
+                    amount:req.body.amount * 100,
+                    isRegistrationComplete: true // Mark registration as complete
                 }
             });
         }
@@ -101,18 +100,17 @@ export const publisherCompanyUpdate = async (req, res) => {
                     date:req.body.date,
                     ISBNDOIISRC:req.body.ISBNDOIISRC,
                     synopsis:req.body.synopsis,
-                    narrator:req.body.narrator,
-                    narrationStyleSlow:req.body.narrationStyleSlow,
-                    narrationStyleFast:req.body.narrationStyleFast,
-                    narrationStyleIntimate:req.body.narrationStyleIntimate,
-                    narrationStyleCasual:req.body.narrationStyleCasual,
-                    narrationStyleStatic:req.body.narrationStyleStatic,
-                    narrationStyleOratoric:req.body.narrationStyleOratoric,
+                    narrationSampleHeartzRate:JSON.stringify(req.body.voiceConfig.sampleRate),
+                    narrationSpeakingRate:JSON.stringify(req.body.voiceConfig.speakingRate),
+                    narrationGender:req.body.voiceConfig.voiceType,
+                    narrationLanguageCode:req.body.voiceConfig.voiceDetails.languageCode,
+                    narrationVoiceName:req.body.voiceConfig.voiceDetails.voiceName,
                     audioSampleURL:req.body.audioSampleURL,
                     pdfURL:req.body.pdfURL,
                     rightsHolder:req.body.rightsHolder,
                     coverImage:req.body.coverImage,
-                    amount:req.body.amount * 100
+                    amount:req.body.amount * 100,
+                    isRegistrationComplete: true // Mark registration as complete
                 }
             });
         }

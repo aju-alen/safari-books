@@ -1,27 +1,14 @@
 import PdfParse from 'pdf-parse';
-import textToSpeech from '@google-cloud/text-to-speech';
 import AWS from 'aws-sdk';
-import { writeFile } from 'fs/promises';
 import { prisma } from '../utils/database.js'
-
-
-
+import { getPdfFromAws } from '../utils/getPdfFromAws.js'
+import { googleTtsConvert } from '../utils/google-tts-convert.js'
+import { uploadAudioBufferToS3 } from '../utils/uploadAudioBuffer.js'
+import { splitTextIntoChunks } from '../utils/splitTextToChunk.js'
 
 
 import dotenv from "dotenv";
 dotenv.config();
-
-
-
-const s3 = new AWS.S3({
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-    region: process.env.AWS_REGION,
-  });
-  
-  // S3 details
-  const bucketName = "safari-books-mobile";
-  const fileKey = "clwymbela0001coko5h4b0mar/rfsexrn09v6f14qt83vkn9d4/verificationfiles/9781780227320-1120545.pdf";
 
 export const getAllPendingVerifications = async (req, res) => {
 
@@ -210,8 +197,8 @@ export const verifyPublisher = async (req, res) => {
 //         const client = new textToSpeech.TextToSpeechClient({
 //             projectId: 'safari-books',
 //             credentials: {
-//                 client_email: "clientemail on json",
-//                 private_key: "private key on json",
+//                 client_email: process.env.GOOGLE_TTS_EMAIL,
+//                 private_key: process.env.GOOGLE_TTS_PRIVATE_KEY,
 //             }
 //         });
         
@@ -227,7 +214,7 @@ export const verifyPublisher = async (req, res) => {
 //                 audioConfig: { audioEncoding: 'MP3' },
 //             };
             
-//             const [response] = await client.synthesizeSpeech(request);
+//             const [response] =  await client.synthesizeSpeech(request);
 //             audioBuffers.push(response.audioContent);
             
 //             // Add small delay between requests to avoid rate limiting
@@ -263,54 +250,219 @@ export const verifyPublisher = async (req, res) => {
 //     }
 // }
 
-// // Helper function to split text into chunks
-// function splitTextIntoChunks(text, maxLength) {
-//     const chunks = [];
-//     let currentChunk = '';
+// Helper function to split text into chunks
+
+
+export const sendSampleAudio = async (req, res) => {
+    const {id} = req.params;
+    const {isCompany} = req.query;
+
+    const {narrationSampleHeartzRate, narrationSpeakingRate, narrationGender, narrationLanguageCode, narrationVoiceName} = req.body;
+    if(req.middlewareRole !== 'ADMIN'){
+        return res.status(403).json({message: "You are not authorized to access this resource"});
+    }
     
-//     // Split by sentences first, then by words if needed
-//     const sentences = text.split(/[.!?]+/);
-    
-//     for (const sentence of sentences) {
-//         if (sentence.trim().length === 0) continue;
+    try {
+        // Get publisher data
+        let publisher;
+        if(isCompany === 'true') {
+            publisher = await prisma.company.findUnique({
+                where: { id: id }
+            });
+        } else {
+            publisher = await prisma.author.findUnique({
+                where: { id: id }
+            });
+        }
         
-//         // If adding this sentence would exceed the limit
-//         if (currentChunk.length + sentence.length > maxLength) {
-//             if (currentChunk.length > 0) {
-//                 chunks.push(currentChunk.trim());
-//                 currentChunk = sentence;
-//             } else {
-//                 // Sentence is too long, split by words
-//                 const words = sentence.split(' ');
-//                 let wordChunk = '';
-                
-//                 for (const word of words) {
-//                     if (wordChunk.length + word.length + 1 > maxLength) {
-//                         if (wordChunk.length > 0) {
-//                             chunks.push(wordChunk.trim());
-//                             wordChunk = word;
-//                         } else {
-//                             // Single word is too long, truncate
-//                             chunks.push(word.substring(0, maxLength));
-//                             wordChunk = word.substring(maxLength);
-//                         }
-//                     } else {
-//                         wordChunk += (wordChunk.length > 0 ? ' ' : '') + word;
-//                     }
-//                 }
-                
-//                 if (wordChunk.length > 0) {
-//                     currentChunk = wordChunk;
-//                 }
-//             }
-//         } else {
-//             currentChunk += (currentChunk.length > 0 ? '. ' : '') + sentence;
-//         }
-//     }
+        if (!publisher) {
+            return res.status(404).json({message: "Publisher not found"});
+        }
+        
+        if (!publisher.pdfURL) {
+            return res.status(400).json({message: "No PDF URL found for this publisher"});
+        }
+        
+        // Get PDF from S3
+        const pdfKey = publisher.pdfURL.split('/').slice(3).join('/'); 
+
+        const userId = pdfKey.split('/').slice(0,3).join('/');
+        
+        const data = await getPdfFromAws(pdfKey);
+        
+        const pdfData = await PdfParse(data);
+        
+        const cleanedText = pdfData.text
+            .replace(/\s+/g, ' ')
+            .replace(/\n\s+/g, '\n')
+            .replace(/\s+\n/g, '\n')
+            .trim();
+        
+        console.log("Cleaned PDF Text length:", cleanedText.length);
+        
+        // Split text into chunks of 4000 characters (safe limit)
+        const textChunks = splitTextIntoChunks(cleanedText, 1000);
+        console.log(`Split into ${textChunks} chunks`);
+        
+        
+        // Process first chunk only for sample
+        const firstChunk = textChunks[0];
+        console.log(`Processing sample chunk (${firstChunk.length} characters)`);
+        
+        const [response] = await googleTtsConvert(firstChunk, narrationSampleHeartzRate, narrationSpeakingRate, narrationGender, narrationLanguageCode, narrationVoiceName);
+
+        console.log(response, 'this is response');
+        
+        // Upload sample audio buffer to S3 using the S3 controller function
+        const sampleFileName = `sample_output_${id}.mp3`;
+        
+        try {
+            const {Location} = await uploadAudioBufferToS3(
+                response.audioContent, 
+                userId, 
+                sampleFileName
+            );
+            console.log(Location, 'this is uploadResult waiting for the db to be updated');
+
+            if(isCompany === 'true'){
+                await prisma.company.update({
+                    where: { id: id },
+                    data: { audioSampleURL: Location }
+                });
+            }
+            else{
+                await prisma.author.update({
+                    where: { id: id },
+                    data: { audioSampleURL: Location }
+                });
+            }
+            
+            return res.status(200).json({
+                message: "Sample audio generated and uploaded successfully",
+            });
+        } catch (uploadError) {
+            console.error('Error uploading to S3:', uploadError);
+            return res.status(500).json({
+                message: "Error uploading audio to S3",
+                error: uploadError.message
+            });
+        }
+        
+    } catch (error) {
+        console.error('Error in sendSampleAudio:', error);
+        return res.status(500).json({message: "Internal server error", error: error.message});
+    }
+}
+
+export const generateFullAudio = async (req, res) => {
+    const {id} = req.params;
+    const {isCompany} = req.query;
+
+    const {narrationSampleHeartzRate, narrationSpeakingRate, narrationGender, narrationLanguageCode, narrationVoiceName} = req.body;
+    if(req.middlewareRole !== 'ADMIN'){
+        return res.status(403).json({message: "You are not authorized to access this resource"});
+    }
     
-//     if (currentChunk.length > 0) {
-//         chunks.push(currentChunk.trim());
-//     }
-    
-//     return chunks;
-// }
+    try {
+        // Get publisher data
+        let publisher;
+        if(isCompany === 'true') {
+            publisher = await prisma.company.findUnique({
+                where: { id: id }
+            });
+        } else {
+            publisher = await prisma.author.findUnique({
+                where: { id: id }
+            });
+        }
+        
+        if (!publisher) {
+            return res.status(404).json({message: "Publisher not found"});
+        }
+        
+        if (!publisher.pdfURL) {
+            return res.status(400).json({message: "No PDF URL found for this publisher"});
+        }
+        
+        // Get PDF from S3
+        const pdfKey = publisher.pdfURL.split('/').slice(3).join('/'); 
+
+        const userId = pdfKey.split('/').slice(0,3).join('/');
+        
+        const data = await getPdfFromAws(pdfKey);
+        
+        const pdfData = await PdfParse(data);
+        
+        const cleanedText = pdfData.text
+            .replace(/\s+/g, ' ')
+            .replace(/\n\s+/g, '\n')
+            .replace(/\s+\n/g, '\n')
+            .trim();
+        
+        console.log("Cleaned PDF Text length:", cleanedText.length);
+
+        const textChunks = splitTextIntoChunks(cleanedText, 4000);
+        console.log(`Split into ${textChunks.length} chunks`);
+        
+        
+        // Process each chunk and combine audio
+        const audioBuffers = [];
+        
+        for (let i = 0; i < textChunks.length; i++) {
+            console.log(`Processing chunk ${i + 1}/${textChunks.length}`);
+            
+            
+            const [response] =  await googleTtsConvert(textChunks[i], narrationSampleHeartzRate, narrationSpeakingRate, narrationGender, narrationLanguageCode, narrationVoiceName);
+            audioBuffers.push(response.audioContent);
+            
+            // Add small delay between requests to avoid rate limiting
+            if (i < textChunks.length - 1) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+        }
+        console.log(audioBuffers, 'this is audioBuffers');
+
+        const singleAudioBuffer = audioBuffers[0];
+
+        const SingleAudio = Buffer.concat([singleAudioBuffer]);
+
+        const fullAudioFileName = `full_output_${id}.mp3`;
+
+        try {
+            const {Location} = await uploadAudioBufferToS3(
+                SingleAudio, 
+                userId, 
+                fullAudioFileName
+            );
+            console.log(Location, 'this is uploadResult waiting for the db to be updated');
+
+            if(isCompany === 'true'){
+                await prisma.company.update({
+                    where: { id: id },
+                    data: { completeAudioUrl: Location }
+                });
+            }
+            else{
+                await prisma.author.update({
+                    where: { id: id },
+                    data: { completeAudioUrl: Location }
+                });
+            }
+            
+            return res.status(200).json({
+                message: "Full audio generated and uploaded successfully",
+            });
+        } catch (uploadError) {
+            console.error('Error uploading to S3:', uploadError);
+            return res.status(500).json({
+                message: "Error uploading audio to S3",
+                error: uploadError.message
+            });
+        }
+        
+        
+    } catch (error) {
+        console.error('Error in generateFullAudio:', error);
+        return res.status(500).json({message: "Internal server error", error: error.message});
+    }
+}
