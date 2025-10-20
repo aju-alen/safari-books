@@ -536,50 +536,50 @@ export const registerPushToken = async (req, res) => {
 }
 
 // Admin registration
-export const registerAdmin = async (req, res) => {
-    const { name, email, password } = req.body;
+// export const registerAdmin = async (req, res) => {
+//     const { name, email, password } = req.body;
     
-    try {
-        if (!name || !email || !password) {
-            return res.status(400).json({ message: "Please fill all the fields" });
-        }
+//     try {
+//         if (!name || !email || !password) {
+//             return res.status(400).json({ message: "Please fill all the fields" });
+//         }
 
-        const adminExists = await prisma.admin.findUnique({
-            where: {
-                email
-            }
-        });
+//         const adminExists = await prisma.admin.findUnique({
+//             where: {
+//                 email
+//             }
+//         });
 
-        if (adminExists) {
-            return res.status(400).json({ message: "Admin already exists" });
-        }
+//         if (adminExists) {
+//             return res.status(400).json({ message: "Admin already exists" });
+//         }
 
-        const lowercaseEmail = email.toLowerCase();
-        const hashedPassword = await bcrypt.hash(password, 10);
+//         const lowercaseEmail = email.toLowerCase();
+//         const hashedPassword = await bcrypt.hash(password, 10);
 
-        const admin = await prisma.admin.create({
-            data: {
-                email: lowercaseEmail,
-                password: hashedPassword,
-                name,
-                role: "ADMIN"
-            }
-        });
+//         const admin = await prisma.admin.create({
+//             data: {
+//                 email: lowercaseEmail,
+//                 password: hashedPassword,
+//                 name,
+//                 role: "ADMIN"
+//             }
+//         });
 
-        await prisma.$disconnect();
+//         await prisma.$disconnect();
 
-        if (!admin) {
-            return res.status(400).json({ message: "Admin registration failed. Please try again" });
-        }
+//         if (!admin) {
+//             return res.status(400).json({ message: "Admin registration failed. Please try again" });
+//         }
 
-        console.log("Admin registered successfully", req.body.email, name);
+//         console.log("Admin registered successfully", req.body.email, name);
         
-        res.status(201).json({ 
-            message: "Admin registered successfully", 
-            id: admin.id 
-        });
-    } catch (error) {
-        console.log(error);
-        res.status(500).json({ message: "An error has occurred, please contact support" });
-    }
-};
+//         res.status(201).json({ 
+//             message: "Admin registered successfully", 
+//             id: admin.id 
+//         });
+//     } catch (error) {
+//         console.log(error);
+//         res.status(500).json({ message: "An error has occurred, please contact support" });
+//     }
+// };
