@@ -73,6 +73,50 @@ const PublisherDetails = () => {
 
   const handleRejectPublisher = (id) => {}
 
+  const handleSendSampleAudio = async (id) => {
+    try {
+      setIsSubmitting(true);
+      console.log(publisherData, 'publisherData');
+      
+      const response = await axiosWithAuth.post(`${ipURL}/api/admin/send-sample-audio/${id}?isCompany=${isCompanyBoolean}`,{
+        narrationSampleHeartzRate: publisherData.publisher.narrationSampleHeartzRate,
+        narrationSpeakingRate: publisherData.publisher.narrationSpeakingRate,
+        narrationGender: publisherData.publisher.narrationGender,
+        narrationLanguageCode: publisherData.publisher.narrationLanguageCode,
+        narrationVoiceName: publisherData.publisher.narrationVoiceName,
+      });
+      
+      Alert.alert('Success', 'Sample audio has been generated successfully!');
+    } catch (error) {
+      console.error('Error generating sample audio:', error);
+      Alert.alert('Error', 'Failed to generate sample audio. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleGenerateFullAudio = async (id) => {
+    try {
+      setIsSubmitting(true);
+      console.log(publisherData, 'publisherData');
+      
+      const response = await axiosWithAuth.post(`${ipURL}/api/admin/generate-full-audio/${id}?isCompany=${isCompanyBoolean}`,{
+        narrationSampleHeartzRate: publisherData.publisher.narrationSampleHeartzRate,
+        narrationSpeakingRate: publisherData.publisher.narrationSpeakingRate,
+        narrationGender: publisherData.publisher.narrationGender,
+        narrationLanguageCode: publisherData.publisher.narrationLanguageCode,
+        narrationVoiceName: publisherData.publisher.narrationVoiceName,
+      });
+      
+      Alert.alert('Success', 'Full audio has been generated successfully!');
+    } catch (error) {
+      console.error('Error generating full audio:', error);
+      Alert.alert('Error', 'Failed to generate full audio. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const resetModalFields = () => {
     setDurationHours('');
     setDurationMinutes('');
@@ -118,9 +162,9 @@ const PublisherDetails = () => {
   };
 
   const handleSubmitVerification = async () => {
-    if (!validateInputs()) {
-      return;
-    }
+    // if (!validateInputs()) {
+    //   return;
+    // }
     
     setIsSubmitting(true);
     
@@ -129,10 +173,12 @@ const PublisherDetails = () => {
         type: isCompanyBoolean ? 'company' : 'author',
         durationHours: parseInt(durationHours) || 0,
         durationMinutes: parseInt(durationMinutes) || 0,
-        completeAudioSample: completeAudioSample.trim(),
+        completeAudioSample: publisherData.publisher.completeAudioUrl,
         narratorName: narratorName.trim(),
         colorCode: colorCode.trim(),
+        pdfURL: publisherData.publisher.pdfURL,
       };
+      console.log(verificationData, 'this is verificationData');
       
       // Make API call to verify the publisher with additional data
       await axiosWithAuth.post(`${ipURL}/api/admin/verify-publisher/${id}`, verificationData);
@@ -756,14 +802,33 @@ const PublisherDetails = () => {
           
           {!publisherData.isVerified && (
             <View style={styles.actionButtonsContainer}>
-              <TouchableOpacity style={[styles.rejectButton, { backgroundColor: theme.secondary2 }]} onPress={handleRejectPublisher}>
-                <MaterialIcons name="close" size={20} color={theme.white} />
-                <Text style={[styles.buttonText, { color: theme.white }]}>Reject</Text>
+              <View style={styles.firstRowButtons}>
+                <TouchableOpacity style={[styles.rejectButton, { backgroundColor: theme.secondary2 }]} onPress={handleRejectPublisher}>
+                  <MaterialIcons name="close" size={20} color={theme.white} />
+                  <Text style={[styles.buttonText, { color: theme.white }]}>Reject</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.sampleAudioButton, { backgroundColor: theme.tertiary }]} 
+                  onPress={() => handleSendSampleAudio(id)}
+                  disabled={isSubmitting}
+                >
+                  <MaterialIcons name="audiotrack" size={20} color={theme.white} />
+                  <Text style={[styles.buttonText, { color: theme.white }]}>Sample Audio</Text>
+                </TouchableOpacity>
+              </View>
+              <TouchableOpacity 
+                style={[styles.fullAudioButton, { backgroundColor: theme.primary }]} 
+                onPress={() => handleGenerateFullAudio(id)}
+                disabled={isSubmitting}
+              >
+                <MaterialIcons name="library-music" size={20} color={theme.white} />
+                <Text style={[styles.buttonText, { color: theme.white }]}>Generate Full Audio</Text>
               </TouchableOpacity>
               <TouchableOpacity style={[styles.verifyButton, { backgroundColor: theme.primary }]} onPress={() => handleVerifyPublisher(id)}>
                 <MaterialIcons name="verified" size={20} color={theme.white} />
-                <Text style={[styles.buttonText, { color: theme.white }]}>Verify Publisher</Text>
+                <Text style={[styles.buttonText, { color: theme.white }]}>Verify Publisherrrr</Text>
               </TouchableOpacity>
+             
             </View>
           )}
         </ScrollView>
@@ -1007,10 +1072,14 @@ const styles = StyleSheet.create({
     color: '#E2E8F0',
   },
   actionButtonsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     padding: 20,
     gap: 12,
+  },
+  firstRowButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 8,
+    marginBottom: 12,
   },
   verifyButton: {
     flex: 1,
@@ -1033,6 +1102,28 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 12,
     gap: 8,
+  },
+  sampleAudioButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    // backgroundColor removed - now using theme
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    gap: 8,
+  },
+  fullAudioButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    // backgroundColor removed - now using theme
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    gap: 8,
+    marginTop: 8,
   },
   buttonText: {
     // color removed - now using theme

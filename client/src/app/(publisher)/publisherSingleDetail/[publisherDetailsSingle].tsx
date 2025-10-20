@@ -17,6 +17,8 @@ const PublisherDetailsSingle = () => {
   const [singleData, setSingleData] = useState(null);
   const [sound, setSound] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [completeSound, setCompleteSound] = useState(null);
+  const [isPlayingComplete, setIsPlayingComplete] = useState(false);
 
   useEffect(() => {
     const getSingleDataAuthor = async () => {
@@ -46,6 +48,14 @@ const PublisherDetailsSingle = () => {
       : undefined;
   }, [sound]);
 
+  useEffect(() => {
+    return completeSound
+      ? () => {
+          completeSound.unloadAsync();
+        }
+      : undefined;
+  }, [completeSound]);
+
   const playPauseSound = async () => {
     if (sound) {
       if (isPlaying) {
@@ -64,6 +74,28 @@ const PublisherDetailsSingle = () => {
         setIsPlaying(true);
       } catch (error) {
         console.error('Error loading audio:', error);
+      }
+    }
+  };
+
+  const playPauseCompleteAudio = async () => {
+    if (completeSound) {
+      if (isPlayingComplete) {
+        await completeSound.pauseAsync();
+      } else {
+        await completeSound.playAsync();
+      }
+      setIsPlayingComplete(!isPlayingComplete);
+    } else if (singleData?.completeAudioUrl) {
+      try {
+        const { sound: newSound } = await Audio.Sound.createAsync(
+          { uri: singleData.completeAudioUrl },
+          { shouldPlay: true }
+        );
+        setCompleteSound(newSound);
+        setIsPlayingComplete(true);
+      } catch (error) {
+        console.error('Error loading complete audio:', error);
       }
     }
   };
@@ -248,6 +280,27 @@ const PublisherDetailsSingle = () => {
             </TouchableOpacity>
           ) : (
             <Text style={[styles.cardContent, { color: theme.textMuted }]}>No audio sample available</Text>
+          )}
+        </View>
+
+        <View style={styles.detailCard}>
+          <Text style={[styles.cardTitle, { color: theme.primary }]}>Complete Audio:</Text>
+          {singleData?.completeAudioUrl ? (
+            <TouchableOpacity 
+              style={styles.audioButton} 
+              onPress={playPauseCompleteAudio}
+            >
+              <MaterialIcons 
+                name={isPlayingComplete ? "pause" : "play-arrow"} 
+                size={24} 
+                color={theme.white} 
+              />
+              <Text style={[styles.audioButtonText, { color: theme.white }]}>
+                {isPlayingComplete ? 'Pause Complete Audio' : 'Play Complete Audio'}
+              </Text>
+            </TouchableOpacity>
+          ) : (
+            <Text style={[styles.cardContent, { color: theme.textMuted }]}>No complete audio available</Text>
           )}
         </View>
 

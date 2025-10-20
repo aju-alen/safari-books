@@ -81,6 +81,9 @@ console.log(clickCount, 'this is click count');
             else if (resp.data.role === 'PUBLISHER' && sbOnboarding === 'false') {
                 router.replace('/(publisher)/publisherhome');
             }
+            else if (resp.data.role === 'ADMIN') {
+                router.replace('/(admin)/home');
+            }
 
             setLoading(false);
         }

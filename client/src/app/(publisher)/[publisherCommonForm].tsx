@@ -39,12 +39,11 @@ const publisherCommonForm = () => {
     const [ISBNDOIISRC, setISBNDOIISRC] = useState('')
     const [synopsis, setSynopsis] = useState('')
     const [narrator, setNarrator] = useState('')
-    const [narrationStyleSlow, setNarrationStyleSlow] = useState(false)
-    const [narrationStyleFast, setNarrationStyleFast] = useState(false)
-    const [narrationStyleIntimate, setNarrationStyleIntimate] = useState(false)
-    const [narrationStyleCasual, setNarrationStyleCasual] = useState(false)
-    const [narrationStyleStatic, setNarrationStyleStatic] = useState(false)
-    const [narrationStyleOratoric, setNarrationStyleOratoric] = useState(false)
+    // Voice configuration states
+    const [selectedLanguage, setSelectedLanguage] = useState('English (US)')
+    const [selectedVoiceType, setSelectedVoiceType] = useState('FEMALE')
+    const [selectedSpeakingRate, setSelectedSpeakingRate] = useState('Normal')
+    const [selectedSampleRate, setSelectedSampleRate] = useState('22050')
     const [image, setImage] = useState(null);
     const [imageURL, setImageURL] = useState('');
     const [audioSample, setAudioSample] = useState<AudioSample | null>(null)
@@ -56,6 +55,93 @@ const publisherCommonForm = () => {
 
     const [isChecked, setChecked] = useState(false);
     const [errors, setErrors] = useState<{[key: string]: string}>({});
+
+    // Voice options data
+    const voiceOptions = {
+        "English (Arabic)": [
+            {
+                "id": "ar-XA-female",
+                "languageCode": "ar-XA",
+                "voiceName": "ar-XA-Chirp3-HD-Achernar",
+                "gender": "FEMALE"
+            },
+            {
+                "id": "ar-XA-male",
+                "languageCode": "ar-XA",
+                "voiceName": "ar-XA-Chirp3-HD-Achird",
+                "gender": "MALE"
+            }
+        ],
+        "English (Australia)": [
+            {
+                "id": "en-AU-female",
+                "languageCode": "en-AU",
+                "voiceName": "en-AU-Chirp3-HD-Achernar",
+                "gender": "FEMALE"
+            },
+            {
+                "id": "en-AU-male",
+                "languageCode": "en-AU",
+                "voiceName": "en-AU-Chirp3-HD-Achird",
+                "gender": "MALE"
+            }
+        ],
+        "English (India)": [
+            {
+                "id": "en-IN-female",
+                "languageCode": "en-IN",
+                "voiceName": "en-IN-Chirp3-HD-Achernar",
+                "gender": "FEMALE"
+            },
+            {
+                "id": "en-IN-male",
+                "languageCode": "en-IN",
+                "voiceName": "en-IN-Chirp3-HD-Achird",
+                "gender": "MALE"
+            }
+        ],
+        "English (UK)": [
+            {
+                "id": "en-GB-female",
+                "languageCode": "en-GB",
+                "voiceName": "en-GB-Chirp3-HD-Achernar",
+                "gender": "FEMALE"
+            },
+            {
+                "id": "en-GB-male",
+                "languageCode": "en-GB",
+                "voiceName": "en-GB-Chirp3-HD-Achird",
+                "gender": "MALE"
+            }
+        ],
+        "English (US)": [
+            {
+                "id": "en-US-female",
+                "languageCode": "en-US",
+                "voiceName": "en-US-Chirp3-HD-Achernar",
+                "gender": "FEMALE"
+            },
+            {
+                "id": "en-US-male",
+                "languageCode": "en-US",
+                "voiceName": "en-US-Chirp3-HD-Achird",
+                "gender": "MALE"
+            }
+        ]
+    };
+
+    // Speaking rate options
+    const speakingRateOptions = [
+        { label: 'Slow', value: 'Slow', rate: 0.7 },
+        { label: 'Normal', value: 'Normal', rate: 1.0 },
+        { label: 'Fast', value: 'Fast', rate: 1.9 }
+    ];
+
+    // Sample rate options
+    const sampleRateOptions = [
+        { label: '22.05 kHz', value: '22050' },
+        { label: '44.1 kHz', value: '44100' }
+    ];
 
     const [mode, setMode] = useState('date');
     const [show, setShow] = useState(false);
@@ -303,13 +389,10 @@ console.log(publisherCommonForm,'companyId in document submit');
             newErrors.synopsis = 'Synopsis is required'
         }
         
-        if (!amount.trim()) {
-            newErrors.amount = 'Price is required'
-        }
+        // if (!amount.trim()) {
+        //     newErrors.amount = 'Price is required'
+        // }
         
-        if (!audioSample) {
-            newErrors.audioSample = 'Audio sample is required'
-        }
         
         if (!doc1) {
             newErrors.doc1 = 'PDF document is required'
@@ -335,9 +418,8 @@ console.log(publisherCommonForm,'companyId in document submit');
         
         try{
             setLoading(true);
-            const audioData = await postAudio()
             const docData = await postDocuments()
-            console.log(audioData, 'audioData', docData, 'docData');
+            console.log(docData, 'docData');
     
             const data ={
                 id:publisherCommonForm,
@@ -348,13 +430,13 @@ console.log(publisherCommonForm,'companyId in document submit');
                 ISBNDOIISRC: ISBNDOIISRC,
                 synopsis: synopsis,
                 narrator: narrator,
-                narrationStyleSlow: narrationStyleSlow,
-                narrationStyleFast: narrationStyleFast,
-                narrationStyleIntimate: narrationStyleIntimate,
-                narrationStyleCasual: narrationStyleCasual,
-                narrationStyleStatic: narrationStyleStatic,
-                narrationStyleOratoric: narrationStyleOratoric,
-                audioSampleURL: audioData.data,
+                voiceConfig: {
+                    language: selectedLanguage,
+                    voiceType: selectedVoiceType,
+                    speakingRate: speakingRateOptions.find(opt => opt.value === selectedSpeakingRate)?.rate || 1.0,
+                    sampleRate: parseInt(selectedSampleRate),
+                    voiceDetails: voiceOptions[selectedLanguage]?.find(voice => voice.gender === selectedVoiceType)
+                },
                 pdfURL: docData.data[0],
                 rightsHolder: rightsHolder,
                 coverImage: imageURL,
@@ -460,64 +542,115 @@ console.log(publisherCommonForm,'companyId in document submit');
           shadowRadius: 2,
           elevation: 2,
       },
-      pickerContainer: {
-          backgroundColor: theme.white,
-          borderRadius: moderateScale(12),
-          borderWidth: 1.5,
-          borderColor: theme.gray2,
-          shadowColor: theme.text,
-          shadowOffset: {
-              width: 0,
-              height: 1,
-          },
-          shadowOpacity: 0.1,
-          shadowRadius: 2,
-          elevation: 2,
-      },
-      picker: {
-          color: theme.text,
-      },
       pickerItem: {
           backgroundColor: theme.white,
           color: theme.text,
       },
-      narrationSection: {
+      voiceConfigSection: {
           marginBottom: verticalScale(16),
+          gap: verticalScale(16),
       },
-      narrationGrid: {
-          flexDirection: 'row',
-          flexWrap: 'wrap',
-          justifyContent: 'space-between',
-          gap: verticalScale(12),
+      configRow: {
+          gap: verticalScale(8),
       },
-      narrationCard: {
-          width: (width - horizontalScale(48) - horizontalScale(12)) / 2,
+      configLabel: {
+          fontSize: moderateScale(16),
+          fontWeight: '600',
+          color: theme.text,
+      },
+      pickerContainer: {
           backgroundColor: theme.white,
           borderRadius: moderateScale(12),
-          padding: moderateScale(16),
+          borderWidth: 1,
+          borderColor: theme.gray2,
+          overflow: 'hidden',
+      },
+      picker: {
+          height: verticalScale(200),
+          color: theme.text,
+      },
+      voiceTypeContainer: {
+          flexDirection: 'row',
+          gap: horizontalScale(12),
+      },
+      voiceTypeButton: {
+          flex: 1,
+          flexDirection: 'row',
           alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: theme.white,
+          borderRadius: moderateScale(12),
+          padding: moderateScale(12),
           borderWidth: 2,
           borderColor: theme.gray2,
-          shadowColor: theme.text,
-          shadowOffset: {
-              width: 0,
-              height: 2,
-          },
-          shadowOpacity: 0.1,
-          shadowRadius: 4,
-          elevation: 3,
+          gap: horizontalScale(8),
       },
-      narrationCardSelected: {
+      voiceTypeButtonSelected: {
           borderColor: theme.primary,
           backgroundColor: `${theme.primary}10`,
       },
-      narrationCardText: {
+      voiceTypeText: {
           color: theme.text,
           fontSize: moderateScale(14),
           fontWeight: '600',
-          marginTop: verticalScale(8),
       },
-      narrationCardTextSelected: {
+      voiceTypeTextSelected: {
+          color: theme.primary,
+      },
+      speakingRateContainer: {
+          flexDirection: 'row',
+          gap: horizontalScale(8),
+      },
+      speakingRateButton: {
+          flex: 1,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: theme.white,
+          borderRadius: moderateScale(12),
+          padding: moderateScale(12),
+          borderWidth: 2,
+          borderColor: theme.gray2,
+          gap: horizontalScale(6),
+      },
+      speakingRateButtonSelected: {
+          borderColor: theme.primary,
+          backgroundColor: `${theme.primary}10`,
+      },
+      speakingRateText: {
+          color: theme.text,
+          fontSize: moderateScale(13),
+          fontWeight: '600',
+      },
+      speakingRateTextSelected: {
+          color: theme.primary,
+      },
+      sampleRateContainer: {
+          flexDirection: 'row',
+          gap: horizontalScale(12),
+      },
+      sampleRateButton: {
+          flex: 1,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: theme.white,
+          borderRadius: moderateScale(12),
+          padding: moderateScale(12),
+          borderWidth: 2,
+          borderColor: theme.gray2,
+          gap: horizontalScale(8),
+      },
+      sampleRateButtonSelected: {
+          borderColor: theme.primary,
+          backgroundColor: `${theme.primary}10`,
+      },
+      sampleRateText: {
+          color: theme.text,
+          fontSize: moderateScale(14),
+          fontWeight: '600',
+      },
+      sampleRateTextSelected: {
           color: theme.primary,
       },
       uploadSection: {
@@ -740,8 +873,9 @@ console.log(publisherCommonForm,'companyId in document submit');
                           />
                           {errors.synopsis && <Text style={styles.errorText}>{errors.synopsis}</Text>}
                       </View>
-                      
-                      <View style={styles.inputContainer}>
+                      {/* TODO: Add price input hidden as its decided by admins */}
+
+                      {/* <View style={styles.inputContainer}>
                           <Text style={styles.label}>Enter Your Price</Text>
                           <TextInput
                               placeholder="Enter Your Price"
@@ -752,100 +886,112 @@ console.log(publisherCommonForm,'companyId in document submit');
                               style={[styles.input, errors.amount && styles.inputError]}
                           />
                           {errors.amount && <Text style={styles.errorText}>{errors.amount}</Text>}
-                      </View>
+                      </View> */}
 
-                      <View style={styles.narrationSection}>
-                          <Text style={styles.label}>Narration Style</Text>
-                          <View style={styles.narrationGrid}>
-                              <TouchableOpacity 
-                                  style={[styles.narrationCard, narrationStyleSlow && styles.narrationCardSelected]}
-                                  onPress={() => setNarrationStyleSlow(!narrationStyleSlow)}
-                              >
-                                  <Ionicons 
-                                      name={narrationStyleSlow ? "checkmark-circle" : "ellipse-outline"} 
-                                      size={moderateScale(24)} 
-                                      color={narrationStyleSlow ? theme.primary : theme.gray2} 
-                                  />
-                                  <Text style={[styles.narrationCardText, narrationStyleSlow && styles.narrationCardTextSelected]}>
-                                      Slow
-                                  </Text>
-                              </TouchableOpacity>
+                      <View style={styles.voiceConfigSection}>
+                          <Text style={styles.label}>Voice Configuration</Text>
+                          
+                          {/* Language Selection */}
+                          <View style={styles.configRow}>
+                              <Text style={styles.configLabel}>Language</Text>
+                              <View style={styles.pickerContainer}>
+                                  <Picker
+                                      mode='dropdown'
+                                      dropdownIconColor={theme.text}
+                                      selectedValue={selectedLanguage}
+                                      onValueChange={(itemValue) => setSelectedLanguage(itemValue)}
+                                      style={styles.picker}
+                                  >
+                                      {Object.keys(voiceOptions).map((language) => (
+                                          <Picker.Item key={language} label={language} value={language} />
+                                      ))}
+                                  </Picker>
+                              </View>
+                          </View>
 
-                              <TouchableOpacity 
-                                  style={[styles.narrationCard, narrationStyleFast && styles.narrationCardSelected]}
-                                  onPress={() => setNarrationStyleFast(!narrationStyleFast)}
-                              >
-                                  <Ionicons 
-                                      name={narrationStyleFast ? "checkmark-circle" : "ellipse-outline"} 
-                                      size={moderateScale(24)} 
-                                      color={narrationStyleFast ? theme.primary : theme.gray2} 
-                                  />
-                                  <Text style={[styles.narrationCardText, narrationStyleFast && styles.narrationCardTextSelected]}>
-                                      Fast
-                                  </Text>
-                              </TouchableOpacity>
+                          {/* Voice Type Selection */}
+                          <View style={styles.configRow}>
+                              <Text style={styles.configLabel}>Voice Type</Text>
+                              <View style={styles.voiceTypeContainer}>
+                                  <TouchableOpacity 
+                                      style={[styles.voiceTypeButton, selectedVoiceType === 'FEMALE' && styles.voiceTypeButtonSelected]}
+                                      onPress={() => setSelectedVoiceType('FEMALE')}
+                                  >
+                                      <Ionicons 
+                                          name={selectedVoiceType === 'FEMALE' ? "checkmark-circle" : "ellipse-outline"} 
+                                          size={moderateScale(20)} 
+                                          color={selectedVoiceType === 'FEMALE' ? theme.primary : theme.gray2} 
+                                      />
+                                      <Text style={[styles.voiceTypeText, selectedVoiceType === 'FEMALE' && styles.voiceTypeTextSelected]}>
+                                          Female
+                                      </Text>
+                                  </TouchableOpacity>
+                                  <TouchableOpacity 
+                                      style={[styles.voiceTypeButton, selectedVoiceType === 'MALE' && styles.voiceTypeButtonSelected]}
+                                      onPress={() => setSelectedVoiceType('MALE')}
+                                  >
+                                      <Ionicons 
+                                          name={selectedVoiceType === 'MALE' ? "checkmark-circle" : "ellipse-outline"} 
+                                          size={moderateScale(20)} 
+                                          color={selectedVoiceType === 'MALE' ? theme.primary : theme.gray2} 
+                                      />
+                                      <Text style={[styles.voiceTypeText, selectedVoiceType === 'MALE' && styles.voiceTypeTextSelected]}>
+                                          Male
+                                      </Text>
+                                  </TouchableOpacity>
+                              </View>
+                          </View>
 
-                              <TouchableOpacity 
-                                  style={[styles.narrationCard, narrationStyleIntimate && styles.narrationCardSelected]}
-                                  onPress={() => setNarrationStyleIntimate(!narrationStyleIntimate)}
-                              >
-                                  <Ionicons 
-                                      name={narrationStyleIntimate ? "checkmark-circle" : "ellipse-outline"} 
-                                      size={moderateScale(24)} 
-                                      color={narrationStyleIntimate ? theme.primary : theme.gray2} 
-                                  />
-                                  <Text style={[styles.narrationCardText, narrationStyleIntimate && styles.narrationCardTextSelected]}>
-                                      Intimate
-                                  </Text>
-                              </TouchableOpacity>
+                          {/* Speaking Rate Selection */}
+                          <View style={styles.configRow}>
+                              <Text style={styles.configLabel}>Speaking Rate</Text>
+                              <View style={styles.speakingRateContainer}>
+                                  {speakingRateOptions.map((option) => (
+                                      <TouchableOpacity 
+                                          key={option.value}
+                                          style={[styles.speakingRateButton, selectedSpeakingRate === option.value && styles.speakingRateButtonSelected]}
+                                          onPress={() => setSelectedSpeakingRate(option.value)}
+                                      >
+                                          <Ionicons 
+                                              name={selectedSpeakingRate === option.value ? "checkmark-circle" : "ellipse-outline"} 
+                                              size={moderateScale(20)} 
+                                              color={selectedSpeakingRate === option.value ? theme.primary : theme.gray2} 
+                                          />
+                                          <Text style={[styles.speakingRateText, selectedSpeakingRate === option.value && styles.speakingRateTextSelected]}>
+                                              {option.label}
+                                          </Text>
+                                      </TouchableOpacity>
+                                  ))}
+                              </View>
+                          </View>
 
-                              <TouchableOpacity 
-                                  style={[styles.narrationCard, narrationStyleCasual && styles.narrationCardSelected]}
-                                  onPress={() => setNarrationStyleCasual(!narrationStyleCasual)}
-                              >
-                                  <Ionicons 
-                                      name={narrationStyleCasual ? "checkmark-circle" : "ellipse-outline"} 
-                                      size={moderateScale(24)} 
-                                      color={narrationStyleCasual ? theme.primary : theme.gray2} 
-                                  />
-                                  <Text style={[styles.narrationCardText, narrationStyleCasual && styles.narrationCardTextSelected]}>
-                                      Casual
-                                  </Text>
-                              </TouchableOpacity>
-
-                              <TouchableOpacity 
-                                  style={[styles.narrationCard, narrationStyleOratoric && styles.narrationCardSelected]}
-                                  onPress={() => setNarrationStyleOratoric(!narrationStyleOratoric)}
-                              >
-                                  <Ionicons 
-                                      name={narrationStyleOratoric ? "checkmark-circle" : "ellipse-outline"} 
-                                      size={moderateScale(24)} 
-                                      color={narrationStyleOratoric ? theme.primary : theme.gray2} 
-                                  />
-                                  <Text style={[styles.narrationCardText, narrationStyleOratoric && styles.narrationCardTextSelected]}>
-                                      Oratoric
-                                  </Text>
-                              </TouchableOpacity>
-
-                              <TouchableOpacity 
-                                  style={[styles.narrationCard, narrationStyleStatic && styles.narrationCardSelected]}
-                                  onPress={() => setNarrationStyleStatic(!narrationStyleStatic)}
-                              >
-                                  <Ionicons 
-                                      name={narrationStyleStatic ? "checkmark-circle" : "ellipse-outline"} 
-                                      size={moderateScale(24)} 
-                                      color={narrationStyleStatic ? theme.primary : theme.gray2} 
-                                  />
-                                  <Text style={[styles.narrationCardText, narrationStyleStatic && styles.narrationCardTextSelected]}>
-                                      Static
-                                  </Text>
-                              </TouchableOpacity>
+                          {/* Sample Rate Selection */}
+                          <View style={styles.configRow}>
+                              <Text style={styles.configLabel}>Sample Rate</Text>
+                              <View style={styles.sampleRateContainer}>
+                                  {sampleRateOptions.map((option) => (
+                                      <TouchableOpacity 
+                                          key={option.value}
+                                          style={[styles.sampleRateButton, selectedSampleRate === option.value && styles.sampleRateButtonSelected]}
+                                          onPress={() => setSelectedSampleRate(option.value)}
+                                      >
+                                          <Ionicons 
+                                              name={selectedSampleRate === option.value ? "checkmark-circle" : "ellipse-outline"} 
+                                              size={moderateScale(20)} 
+                                              color={selectedSampleRate === option.value ? theme.primary : theme.gray2} 
+                                          />
+                                          <Text style={[styles.sampleRateText, selectedSampleRate === option.value && styles.sampleRateTextSelected]}>
+                                              {option.label}
+                                          </Text>
+                                      </TouchableOpacity>
+                                  ))}
+                              </View>
                           </View>
                       </View>
 
                       <View style={styles.uploadSection}>
                           <Text style={styles.label}>Upload Files</Text>
-                          <TouchableOpacity 
+                          {/* <TouchableOpacity 
                               style={[styles.uploadButton, errors.audioSample && styles.uploadButtonError]} 
                               onPress={pickAudio}
                           >
@@ -857,7 +1003,7 @@ console.log(publisherCommonForm,'companyId in document submit');
                               <Text style={[styles.uploadButtonText, errors.audioSample && styles.uploadButtonTextError]}>
                                   {audioSample?.name || 'Upload Audio Sample'}
                               </Text>
-                          </TouchableOpacity>
+                          </TouchableOpacity> */}
                           {errors.audioSample && <Text style={styles.errorText}>{errors.audioSample}</Text>}
 
                           <TouchableOpacity 
