@@ -1,0 +1,114 @@
+config:
+  target: "https://safari-books.onrender.com"
+  phases:
+    # Warm-up phase - gradual ramp up
+    - duration: 60
+      arrivalRate: 2
+      name: "warm-up"
+    
+    # Normal load - simulate typical usage
+    - duration: 300
+      arrivalRate: 5
+      name: "baseline"
+    
+    # Peak load - simulate busy periods
+    - duration: 180
+      arrivalRate: 15
+      name: "peak-load"
+    
+    # Stress test - push beyond normal capacity
+    - duration: 120
+      arrivalRate: 25
+      name: "stress-test"
+    
+    # Cool down - return to normal
+    - duration: 60
+      arrivalRate: 3
+      name: "cool-down"
+
+  defaults:
+    headers:
+      Content-Type: "application/json"
+      User-Agent: "LoadTest/1.0"
+      Accept: "application/json"
+
+  # Connection settings for more realistic behavior
+  http:
+    timeout: 30
+    pool: 50
+
+  # Metrics and reporting
+  plugins:
+    expect: {}
+    metrics-by-endpoint: {}
+
+scenarios:
+  # Scenario 1: Browse books (most common user behavior)
+  - name: browseBooksFlow
+    weight: 60
+    flow:
+      - think: 1  # User thinking time
+      - get:
+          url: "/api/listeners/featured-books"
+          expect:
+            - statusCode: 200
+            - hasProperty: "length"
+      - think: 2
+      - get:
+          url: "/api/listeners/books-data"
+          expect:
+            - statusCode: 200
+      - think: 3  # User reviewing results
+
+  # Scenario 2: Quick featured books check
+  - name: quickFeaturedCheck
+    weight: 25
+    flow:
+      - think: 0.5
+      - get:
+          url: "/api/listeners/featured-books"
+          expect:
+            - statusCode: 200
+      - think: 1
+
+  # Scenario 3: Deep book data exploration
+  - name: deepBookExploration  
+    weight: 15
+    flow:
+      - think: 1
+      - get:
+          url: "/api/listeners/books-data"
+          expect:
+            - statusCode: 200
+      - think: 5  # User reading/analyzing data
+      - get:
+          url: "/api/listeners/featured-books"
+          expect:
+            - statusCode: 200
+      - think: 3
+      - get:
+          url: "/api/listeners/books-data"
+          expect:
+            - statusCode: 200
+      - think: 2
+
+  # Scenario 4: API health check simulation
+  - name: healthCheck
+    weight: 5
+    flow:
+      - get:
+          url: "/api/listeners/featured-books"
+          expect:
+            - statusCode: 200
+          capture:
+            - json: "$"
+              as: "health_response"
+
+# Performance thresholds
+ensure:
+  # 95% of requests should complete within 2 seconds
+  p95: 2000
+  # 99% of requests should complete within 5 seconds  
+  p99: 5000
+  # Less than 1% error rate
+  maxErrorRate: 1
