@@ -1,6 +1,6 @@
 import express from "express";
 const router = express.Router()
-import {publisherCompany,publisherCompanyUpdate,publisherAuthor,getAllAuthorData,getAllCompanyData,getSingleAuthorData,getSingleCompanyData,publishBook,createPostmanBook,publisherAnalytics} from '../controllers/publisher-controller.js';
+import {publisherCompany,publisherCompanyUpdate,publisherAuthor,getAllAuthorData,getAllCompanyData,getSingleAuthorData,getSingleCompanyData,publishBook,createPostmanBook,publisherAnalytics,generateVoiceSample} from '../controllers/publisher-controller.js';
 import { verifyToken } from "../middlewares/jwtVerify.js";
 
 router.post('/create-company', publisherCompany);
@@ -14,6 +14,7 @@ router.get('/publisher-analytics',verifyToken,publisherAnalytics)
 
 router.get('/get-all-company-data/:userId',getAllCompanyData)
 router.get('/get-all-company-data-single/:userId',getSingleCompanyData)
+router.post('/voice-sample',verifyToken, generateVoiceSample)
 
 
 

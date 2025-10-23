@@ -10,6 +10,7 @@ import * as SecureStore from 'expo-secure-store'
 import React, { useEffect, useState } from 'react'
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, ActivityIndicator, Alert, Dimensions } from 'react-native'
 import { Audio } from 'react-native-compressor'
+import { Audio as ExpoAudio } from 'expo-av'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import * as ImagePicker from 'expo-image-picker'
 import * as ImageManipulator from 'expo-image-manipulator'
@@ -55,6 +56,7 @@ const publisherCommonForm = () => {
 
     const [isChecked, setChecked] = useState(false);
     const [errors, setErrors] = useState<{[key: string]: string}>({});
+    const [isPlayingSample, setIsPlayingSample] = useState(false);
 
     // Voice options data
     const voiceOptions = {
@@ -410,6 +412,67 @@ console.log(publisherCommonForm,'companyId in document submit');
         return Object.keys(newErrors).length === 0
     }
 
+    const handlePlaySample = async () => {
+        try {
+            setIsPlayingSample(true);
+            
+            // Get the voice configuration
+            const voiceConfig = {
+                language: selectedLanguage,
+                voiceType: selectedVoiceType,
+                speakingRate: speakingRateOptions.find(opt => opt.value === selectedSpeakingRate)?.rate || 1.0,
+                sampleRate: parseInt(selectedSampleRate),
+                voiceDetails: voiceOptions[selectedLanguage]?.find(voice => voice.gender === selectedVoiceType),
+                publisherId: publisherCommonForm,
+            };
+
+            // Send request to backend for voice sample
+            const response = await axiosWithAuth.post(`${ipURL}/api/publisher/voice-sample`, {
+                voiceConfig: voiceConfig
+            });
+
+            if (response.data && response.data.audioData) {
+                try {
+                    // Convert base64 to audio URI
+                    const audioData = response.data.audioData;
+                    const audioUri = audioData;
+                    
+                    // Configure and play audio using expo-av
+                    await ExpoAudio.setAudioModeAsync({
+                        allowsRecordingIOS: false,
+                        staysActiveInBackground: false,
+                        playsInSilentModeIOS: true,
+                        shouldDuckAndroid: true,
+                        playThroughEarpieceAndroid: false,
+                    });
+                    
+                    const { sound } = await ExpoAudio.Sound.createAsync(
+                        { uri: audioUri },
+                        { shouldPlay: true }
+                    );
+                    
+                    Alert.alert('Sample Playing', 'Voice sample is now playing!');
+                    
+                    // Clean up after playback
+                    sound.setOnPlaybackStatusUpdate((status) => {
+                        if (status.isLoaded && status.didJustFinish) {
+                            sound.unloadAsync();
+                        }
+                    });
+                    
+                } catch (playbackError) {
+                    console.error('Error playing audio:', playbackError);
+                    Alert.alert('Playback Error', 'Could not play the audio sample.');
+                }
+            }
+        } catch (error) {
+            console.error('Error generating voice sample:', error);
+            Alert.alert('Error', 'Failed to generate voice sample. Please try again.');
+        } finally {
+            setIsPlayingSample(false);
+        }
+    };
+
     const handleSubmit = async () => {
         // Validate form before proceeding
         if (!validateForm()) {
@@ -652,6 +715,21 @@ console.log(publisherCommonForm,'companyId in document submit');
       },
       sampleRateTextSelected: {
           color: theme.primary,
+      },
+      playSampleButton: {
+          backgroundColor: theme.primary,
+          borderRadius: moderateScale(12),
+          padding: moderateScale(16),
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: horizontalScale(8),
+          marginTop: verticalScale(8),
+      },
+      playSampleButtonText: {
+          color: theme.background,
+          fontSize: moderateScale(16),
+          fontWeight: '600',
       },
       uploadSection: {
           gap: verticalScale(16),
@@ -986,6 +1064,24 @@ console.log(publisherCommonForm,'companyId in document submit');
                                       </TouchableOpacity>
                                   ))}
                               </View>
+                          </View>
+
+                          {/* Play Sample Button */}
+                          <View style={styles.configRow}>
+                              <TouchableOpacity 
+                                  style={styles.playSampleButton}
+                                  onPress={handlePlaySample}
+                                  disabled={isPlayingSample}
+                              >
+                                  {isPlayingSample ? (
+                                      <ActivityIndicator size="small" color={theme.background} />
+                                  ) : (
+                                      <Ionicons name="play" size={moderateScale(20)} color={theme.background} />
+                                  )}
+                                  <Text style={styles.playSampleButtonText}>
+                                      {isPlayingSample ? 'Generating...' : 'Play Sample'}
+                                  </Text>
+                              </TouchableOpacity>
                           </View>
                       </View>
 

@@ -3,8 +3,10 @@ import nodemailer from 'nodemailer';
 import dotenv from "dotenv";
 dotenv.config();
 
-import { prisma } from '../utils/database.js'
 
+import { prisma } from '../utils/database.js'
+import { googleTtsConvert } from '../utils/google-tts-convert.js'
+import { uploadAudioBufferToS3 } from '../utils/uploadAudioBuffer.js'
 export const publisherCompany = async (req, res) => {
     console.log(req.body);
     try {
@@ -364,6 +366,59 @@ try {
 } catch (error) {
         console.log(error);
         res.status(500).json({ message: "Internal server error", error });
+    }
+
 }
 
+export const generateVoiceSample = async (req, res) => {
+    try {
+        const { voiceConfig } = req.body;
+        const userId = req.userId;
+        
+        // Sample text for voice generation
+        const sampleText = "Hello, this is a sample of the voice configuration you have selected. This will help you preview how your audiobook will sound.";
+        
+        // Extract voice configuration
+        const {
+            speakingRate,
+            sampleRate,
+            voiceType,
+            voiceDetails,
+            publisherId
+        } = voiceConfig;
+        
+        // Generate the voice sample using Google TTS
+
+        const [audioResponse] = await googleTtsConvert(sampleText, sampleRate, speakingRate, voiceType, voiceDetails.languageCode, voiceDetails.voiceName);
+        
+        // Convert the audio buffer to base64 for sending to frontend
+        const sampleFileName = `sample_tts.mp3`;
+        const s3Key = `${userId}/${publisherId}/verificationfiles/`;
+ 
+        try {
+            const {Location} = await uploadAudioBufferToS3(
+                audioResponse.audioContent, 
+                s3Key, 
+                sampleFileName
+            );
+            console.log(Location, 'this is uploadResult waiting for the db to be updated');
+
+        
+            
+            return res.status(200).json({
+                message: "Voice sample generated and uploaded successfully",
+                audioData: Location
+            });
+        } catch (uploadError) {
+            console.error('Error uploading to S3:', uploadError);
+            return res.status(500).json({
+                message: "Error uploading audio to S3",
+                error: uploadError.message
+            });
+        }
+        
+    } catch (error) {
+        console.error('Error in sendSampleAudio:', error);
+        return res.status(500).json({message: "Internal server error", error: error.message});
+    }
 }
