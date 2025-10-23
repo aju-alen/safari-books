@@ -26,12 +26,12 @@ export const startNotificationCron = () => {
     }
   });
 
-  // Cleanup incomplete registrations after 1 day - runs every 6 hours
-  cron.schedule('0 */6 * * *', async () => {
+  // Cleanup incomplete registrations after 1 day - runs daily at 12am
+  cron.schedule('0 0 * * *', async () => {
     console.log('Incomplete registration cleanup cron job ran');
     
     try {
-      const cleanupResult = await cleanupOldIncompleteRegistrations(1); // 1 day threshold
+      const cleanupResult = await cleanupOldIncompleteRegistrations(); 
       console.log(`Cleaned up ${cleanupResult.deletedCompanies} companies and ${cleanupResult.deletedAuthors} authors`);
     } catch (error) {
       console.error('Error in cleanup cron job:', error);

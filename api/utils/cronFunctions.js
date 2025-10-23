@@ -28,17 +28,11 @@ export const getUsersWithUnfinishedBooks = async () => {
 
 
 // Clean up very old incomplete registrations (older than 7 days)
-export const cleanupOldIncompleteRegistrations = async (daysThreshold = 7) => {
-  const thresholdDate = new Date();
-  thresholdDate.setDate(thresholdDate.getDate() - daysThreshold);
-  
+export const cleanupOldIncompleteRegistrations = async () => {
   // Delete old incomplete companies
   const deletedCompanies = await prisma.company.deleteMany({
     where: {
       isRegistrationComplete: false,
-      registrationStartedAt: {
-        lte: thresholdDate
-      }
     }
   });
   
@@ -46,9 +40,6 @@ export const cleanupOldIncompleteRegistrations = async (daysThreshold = 7) => {
   const deletedAuthors = await prisma.author.deleteMany({
     where: {
       isRegistrationComplete: false,
-      registrationStartedAt: {
-        lte: thresholdDate
-      }
     }
   });
   
