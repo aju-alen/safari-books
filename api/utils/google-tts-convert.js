@@ -7,7 +7,7 @@ export const googleTtsConvert = async (text, narrationSampleHeartzRate, narratio
     projectId: 'safari-books',
     credentials: {
         client_email: process.env.GOOGLE_TTS_EMAIL,
-        private_key: process.env.GOOGLE_TTS_PRIVATE_KEY,
+        private_key: process.env.GOOGLE_TTS_PRIVATE_KEY.replace(/\\n/g, '\n');
     }
 });
 
