@@ -1,5 +1,5 @@
 import express from "express";
-import {  register,verifyEmail,login,getUserById,loginAdmin,deleteAccount,updateUserProfile,registerPushToken} from "../controllers/auth-controller.js";
+import {  register,verifyEmail,login,getUserById,loginAdmin,deleteAccount,updateUserProfile,registerPushToken,webAdminLogin} from "../controllers/auth-controller.js";
 import { verifyToken } from "../middlewares/jwtVerify.js";
 const router = express.Router()
 
@@ -12,5 +12,5 @@ router.get('/get-user/:id',getUserById);
 router.put('/update-profile', verifyToken, updateUserProfile);
 router.delete('/delete-account', verifyToken, deleteAccount);
 router.post('/register-push-token', verifyToken, registerPushToken);
-
+router.post('/web-admin-login', webAdminLogin);
 export default router;

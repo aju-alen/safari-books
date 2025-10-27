@@ -583,3 +583,28 @@ export const registerPushToken = async (req, res) => {
 //         res.status(500).json({ message: "An error has occurred, please contact support" });
 //     }
 // };
+
+export const webAdminLogin = async (req, res) => {
+    try {
+        console.log(req.body, 'req.body');
+        const { email,password } = req.body;
+        const admin = await prisma.admin.findUnique({
+            where: {
+                email
+            }
+        });
+        if (!admin) {
+            return res.status(400).json({ message: "No account exists. Please register" });
+        }
+        let isCorrect = bcrypt.compareSync(password, admin.password)
+        if (!isCorrect) {
+            return res.status(400).json({ message: "Invalid email or password" });
+        }
+        const token = jwt.sign({ userId: admin.id, role:admin.role, email:admin.email, name:admin.name }, process.env.SECRET_KEY);
+        res.status(200).json({ message: "Login successful", token, role:admin.role, id:admin.id, name:admin.name, email:admin.email });
+    }
+    catch (err) {
+        console.log(err);
+        res.status(500).json({ message: "An error has occurred, please contact support" });
+    }
+}

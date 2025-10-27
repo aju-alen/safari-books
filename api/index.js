@@ -16,6 +16,7 @@ app.use(cors({
         "http://localhost:8081",
         "http://localhost:19000",
         "http://10.65.1.122:19006",
+        "http://localhost:5173",
     ],
 })); 
 app.use(bodyParser.urlencoded({ extended: true }));
