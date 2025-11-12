@@ -52,46 +52,148 @@ const handleAdminLogin = () => {
 console.log(clickCount, 'this is click count');
 
     const handleLogin = async () => {
-        const user = {
-            email,
-            password,
+        // Prevent multiple simultaneous login attempts
+        if (loading) {
+            return;
         }
+
+        // Input validation
+        const trimmedEmail = email.trim();
+        const trimmedPassword = password.trim();
+
+        if (!trimmedEmail || !trimmedPassword) {
+            Alert.alert('Validation Error', 'Please enter both email and password.');
+            return;
+        }
+
+        // Email format validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(trimmedEmail)) {
+            Alert.alert('Invalid Email', 'Please enter a valid email address.');
+            return;
+        }
+
+       
+
+        const user = {
+            email: trimmedEmail,
+            password: trimmedPassword,
+        };
+
         try {
             setLoading(true);
-            console.log(user, 'user');
-            const resp = await axios.post(`${ipURL}/api/auth/login`, user)
-            console.log(resp.data, 'Logged in succesfully');
+            console.log('Attempting login for:', trimmedEmail);
             
-            await SecureStore.setItemAsync("authToken",JSON.stringify({token:resp.data.token}));
-            await SecureStore.setItemAsync("userDetails",JSON.stringify({role:resp.data.role,userId:resp.data.id,email:resp.data.email,name:resp.data.name}));
+            // Make API request with timeout
+            const resp = await axios.post(`${ipURL}/api/auth/login`, user, {
+                timeout: 10000, // 10 second timeout
+            });
 
+            // Validate response data
+            if (!resp.data || !resp.data.token) {
+                throw new Error('Invalid response from server. Please try again.');
+            }
+
+            if (!resp.data.role || !resp.data.id || !resp.data.email) {
+                throw new Error('Incomplete user data received. Please try again.');
+            }
+
+            console.log('Login successful for:', resp.data.email);
+
+            // Store authentication token with error handling
+            try {
+                await SecureStore.setItemAsync(
+                    "authToken",
+                    JSON.stringify({ token: resp.data.token })
+                );
+            } catch (storeError) {
+                console.error('Error storing auth token:', storeError);
+                throw new Error('Failed to save authentication token. Please try again.');
+            }
+
+            // Store user details with error handling
+            try {
+                await SecureStore.setItemAsync(
+                    "userDetails",
+                    JSON.stringify({
+                        role: resp.data.role,
+                        userId: resp.data.id,
+                        email: resp.data.email,
+                        name: resp.data.name || ''
+                    })
+                );
+            } catch (storeError) {
+                console.error('Error storing user details:', storeError);
+                // Try to clean up auth token if user details storage fails
+                try {
+                    await SecureStore.deleteItemAsync("authToken");
+                } catch (cleanupError) {
+                    console.error('Error cleaning up auth token:', cleanupError);
+                }
+                throw new Error('Failed to save user details. Please try again.');
+            }
+
+            // Get onboarding status
             const sbOnboarding = await SecureStore.getItemAsync("sb-onboarding");
-            console.log(sbOnboarding, 'sbOnboarding');
+            console.log('Onboarding status:', sbOnboarding);
 
-            if (resp.data.role === 'LISTENER' && sbOnboarding === null) {
-                router.replace('/(onboarding)/listeneronboarding');
-            }
-            else if (resp.data.role === 'LISTENER' && sbOnboarding === 'false') {
-                router.replace('/(tabs)/home');
-            }
-
-            else if (resp.data.role === 'PUBLISHER' && sbOnboarding === null) {
-                router.replace('/(onboarding)/publisheronboarding');
-            }
-            else if (resp.data.role === 'PUBLISHER' && sbOnboarding === 'false') {
-                router.replace('/(publisher)/publisherhome');
-            }
-            else if (resp.data.role === 'ADMIN') {
-                router.replace('/(admin)/home');
+            // Navigate based on role and onboarding status
+            try {
+                if (resp.data.role === 'LISTENER') {
+                    if (sbOnboarding === null) {
+                        router.replace('/(onboarding)/listeneronboarding');
+                    } else if (sbOnboarding === 'false') {
+                        router.replace('/(tabs)/home');
+                    } else {
+                        // If onboarding is 'true' or any other value, go to home
+                        router.replace('/(tabs)/home');
+                    }
+                } else if (resp.data.role === 'PUBLISHER') {
+                    if (sbOnboarding === null) {
+                        router.replace('/(onboarding)/publisheronboarding');
+                    } else if (sbOnboarding === 'false') {
+                        router.replace('/(publisher)/publisherhome');
+                    } else {
+                        // If onboarding is 'true' or any other value, go to publisher home
+                        router.replace('/(publisher)/publisherhome');
+                    }
+                } else if (resp.data.role === 'ADMIN') {
+                    router.replace('/(admin)/home');
+                } else {
+                    // Unknown role - log and redirect to home as fallback
+                    console.warn('Unknown user role:', resp.data.role);
+                    router.replace('/(tabs)/home');
+                }
+            } catch (navigationError) {
+                console.error('Navigation error:', navigationError);
+                // Don't throw here - user is already logged in, just navigation failed
+                Alert.alert('Navigation Error', 'Login successful but navigation failed. Please restart the app.');
             }
 
             setLoading(false);
-        }
-        catch (err) {
-            console.log('this is error');
+        } catch (err) {
             setLoading(false);
-            console.log(err);
-            Alert.alert(err.response.data.message)
+            console.error('Login error:', err);
+
+            let errorMessage = 'An unexpected error occurred. Please try again.';
+
+            if (err.response) {
+                // Server responded with error status
+                errorMessage = err.response.data?.message || 
+                              err.response.data?.error || 
+                              `Server error: ${err.response.status}`;
+            } else if (err.request) {
+                // Request was made but no response received
+                errorMessage = 'Network error. Please check your internet connection and try again.';
+            } else if (err.message) {
+                // Error message from our validation or other code
+                errorMessage = err.message;
+            } else if (err.code === 'ECONNABORTED') {
+                // Timeout error
+                errorMessage = 'Request timed out. Please check your connection and try again.';
+            }
+
+            Alert.alert('Login Failed', errorMessage);
         }
     }
 
