@@ -10,10 +10,12 @@ const s3 = new AWS.S3({
 
 export const getPdfFromAws = async (pdfKey) => {
     const bucketName = process.env.S3_BUCKET_NAME;
+    console.log(bucketName, 'this is bucketName');
+    console.log(pdfKey, 'this is pdfKey');
     const data = await s3.getObject({
         Bucket: bucketName,
         Key: pdfKey,
     }).promise();
-
+    console.log(data, 'this is data');
     return data.Body;
 }

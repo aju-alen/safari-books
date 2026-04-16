@@ -154,6 +154,7 @@ narrationSpeakingRate String?
 narrationGender String?
 narrationLanguageCode String?
 narrationVoiceName String?
+narrationSegments String? @db.LongText
 audioSampleURL String?
 completeAudioUrl String?
 pdfURL String?
@@ -196,6 +197,7 @@ narrationSpeakingRate String?
 narrationGender String?
 narrationLanguageCode String?
 narrationVoiceName String?
+narrationSegments String? @db.LongText
 audioSampleURL String?
 completeAudioUrl String?
 pdfURL String?
