@@ -29,6 +29,8 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
 const Home = lazy(() => import('./pages/Home'));
 const DeleteAccountGuide = lazy(() => import('./pages/DeleteAccountGuide'));
+const SuperAdminLogin = lazy(() => import('./pages/SuperAdminLogin'));
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 
 
 const App = () => {
@@ -168,6 +170,14 @@ const App = () => {
         {
           path: "/contact-us",
           element: <ContactForm />,
+        },
+        {
+          path: "/super-admin-login",
+          element: <SuperAdminLogin />,
+        },
+        {
+          path: "/admin-dashboard",
+          element: <AdminDashboard />,
         },
         {
           path: "/404",

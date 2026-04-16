@@ -1,5 +1,5 @@
 
-import nodemailer from 'nodemailer';
+// import nodemailer from 'nodemailer';
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -117,7 +117,7 @@ export const publisherCompanyUpdate = async (req, res) => {
             });
         }
 
-        sendConfirmationEmailToPublisher(req.email, req.name);
+        // sendConfirmationEmailToPublisher(req.email, req.name);
         // sendConfirmationEmailToAdmin(process.env.NAMECHEAP_EMAIL, req.name);
        
         res.status(204).json({ message: "Company updated successfully"});

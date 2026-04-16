@@ -7,11 +7,11 @@ import Checkbox from 'expo-checkbox'
 import * as DocumentPicker from 'expo-document-picker'
 import { router, useLocalSearchParams } from 'expo-router'
 import * as SecureStore from 'expo-secure-store'
-import React, { useEffect, useState } from 'react'
-import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, ActivityIndicator, Alert, Dimensions } from 'react-native'
+import React, { useEffect, useRef, useState } from 'react'
+import { ActivityIndicator, Alert, Dimensions, Keyboard, KeyboardAvoidingView, NativeScrollEvent, NativeSyntheticEvent, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import { Audio } from 'react-native-compressor'
 import { Audio as ExpoAudio } from 'expo-av'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import * as ImagePicker from 'expo-image-picker'
 import * as ImageManipulator from 'expo-image-manipulator'
 import {BookCategoryLabels} from '../../utils/categoriesdata'
@@ -33,6 +33,7 @@ const publisherCommonForm = () => {
     console.log(publisherCommonForm, 'params');
     const [token, setToken] = useState(null);
     const {theme} = useTheme()
+    const insets = useSafeAreaInsets();
     const [title, setTitle] = useState('')
     const [language, setLanguage] = useState('')
     const [categories, setCategories] = useState({});
@@ -148,6 +149,52 @@ const publisherCommonForm = () => {
     const [mode, setMode] = useState('date');
     const [show, setShow] = useState(false);
     const [loading, setLoading] = useState(false);
+
+    const scrollRef = useRef<ScrollView>(null);
+    const scrollYRef = useRef(0);
+    const keyboardHeightRef = useRef(0);
+    const synopsisInputRef = useRef<TextInput>(null);
+
+    useEffect(() => {
+        const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+        const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+        const showSub = Keyboard.addListener(showEvent, (e) => {
+            keyboardHeightRef.current = e.endCoordinates.height;
+        });
+        const hideSub = Keyboard.addListener(hideEvent, () => {
+            keyboardHeightRef.current = 0;
+        });
+        return () => {
+            showSub.remove();
+            hideSub.remove();
+        };
+    }, []);
+
+    const scrollSynopsisAboveKeyboard = () => {
+        const tryScroll = () => {
+            synopsisInputRef.current?.measureInWindow((x, y, width, height) => {
+                const winH = Dimensions.get('window').height;
+                const kb = keyboardHeightRef.current;
+                const pad = verticalScale(16);
+                const visibleBottom = winH - kb - insets.bottom - pad;
+                const fieldBottom = y + height;
+                if (fieldBottom > visibleBottom) {
+                    const delta = fieldBottom - visibleBottom;
+                    scrollRef.current?.scrollTo({
+                        y: Math.max(0, scrollYRef.current + delta),
+                        animated: true,
+                    });
+                }
+            });
+        };
+        requestAnimationFrame(tryScroll);
+        setTimeout(tryScroll, 120);
+        setTimeout(tryScroll, 320);
+    };
+
+    const onScrollViewScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+        scrollYRef.current = e.nativeEvent.contentOffset.y;
+    };
 
     const onChange = (event, selectedDate) => {
         const currentDate = selectedDate;
@@ -857,7 +904,20 @@ console.log(publisherCommonForm,'companyId in document submit');
 
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-          <ScrollView showsVerticalScrollIndicator={false}>
+          <KeyboardAvoidingView
+              style={{ flex: 1 }}
+              behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+              keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
+          >
+          <ScrollView
+              ref={scrollRef}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+              style={{ flex: 1 }}
+              scrollEventThrottle={16}
+              onScroll={onScrollViewScroll}
+              contentContainerStyle={{ paddingBottom: verticalScale(120) }}
+          >
               <View style={styles.content}>
                   <View style={styles.headerContainer}>
                       <Text style={styles.headerText}>
@@ -941,12 +1001,14 @@ console.log(publisherCommonForm,'companyId in document submit');
                       <View style={styles.inputContainer}>
                           <Text style={styles.label}>Synopsis</Text>
                           <TextInput
+                              ref={synopsisInputRef}
                               placeholder="Enter Synopsis"
                               placeholderTextColor={theme.textMuted}
                               multiline={true}
                               numberOfLines={4}
                               value={synopsis}
                               onChangeText={setSynopsis}
+                              onFocus={scrollSynopsisAboveKeyboard}
                               style={[styles.textArea, errors.synopsis && styles.inputError]}
                           />
                           {errors.synopsis && <Text style={styles.errorText}>{errors.synopsis}</Text>}
@@ -1177,8 +1239,9 @@ console.log(publisherCommonForm,'companyId in document submit');
                   </View>
               </View>
           </ScrollView>
+          </KeyboardAvoidingView>
       </SafeAreaView>
-  )
+    )
 }
 
 const FormInput = ({ label, error, ...props }) => {

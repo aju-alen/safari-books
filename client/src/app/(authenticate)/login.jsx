@@ -3,7 +3,8 @@ import axios from 'axios';
 import { router } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import React, { useState } from 'react';
-import { Alert, Pressable, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View, ActivityIndicator } from 'react-native';
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, FONT, welcomeCOLOR } from '../../constants/tokens.ts';
 import { useTheme } from '@/providers/ThemeProvider';
 import { defaultStyles } from '../../styles/index.ts';
@@ -13,6 +14,7 @@ import { horizontalScale, moderateScale, verticalScale } from '../../utils/respo
 
 const LoginPage = () => {
     const {theme} = useTheme()
+    const insets = useSafeAreaInsets();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isPasswordShown, setIsPasswordShown] = useState(true);
@@ -200,12 +202,27 @@ console.log(clickCount, 'this is click count');
     return (
        
         <SafeAreaView style={[defaultStyles.container, { backgroundColor: theme.background }]}>
-          
-                <View style={{ flex: 1, 
+            <KeyboardAvoidingView
+                style={{ flex: 1 }}
+                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
+            >
+                <ScrollView
+                    keyboardShouldPersistTaps="handled"
+                    showsVerticalScrollIndicator={false}
+                    style={{ flex: 1 }}
+                    contentContainerStyle={{
+                        flexGrow: 1,
+                        justifyContent: 'center',
+                        paddingVertical: verticalScale(12),
+                    }}
+                >
+                <View style={{
                     marginHorizontal: horizontalScale(22),
-                    display:"flex",
-                    flexDirection:"column",
-                     justifyContent:"center"  }}>
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                }}>
                   
                         <View style={{ marginVertical: verticalScale(22) }}>
                             <Text style={{
@@ -375,6 +392,8 @@ console.log(clickCount, 'this is click count');
                                 marginLeft: horizontalScale(6)
                             }}>Admin Panel</Text> */}
                 </Pressable>
+                </ScrollView>
+            </KeyboardAvoidingView>
         </SafeAreaView>
     )
 };

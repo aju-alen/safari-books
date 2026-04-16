@@ -8,13 +8,14 @@ import axios from 'axios'
 import * as DocumentPicker from 'expo-document-picker'
 import { router, useLocalSearchParams } from 'expo-router'
 import React, { useState } from 'react'
-import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, ActivityIndicator, Alert } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTheme } from '@/providers/ThemeProvider'
 import { Ionicons, Feather } from '@expo/vector-icons'
 
 const PublishAuthorForm = () => {
     const { theme } = useTheme();
+    const insets = useSafeAreaInsets();
     const id = createId();
     const { publisheauthorForm } = useLocalSearchParams()
     const [fullname, setFullname] = useState('')
@@ -156,12 +157,14 @@ const PublishAuthorForm = () => {
         },
         content: {
             flex: 1,
-            padding: moderateScale(20),
+            paddingHorizontal: moderateScale(20),
+            paddingTop: moderateScale(10),
+            paddingBottom: moderateScale(20),
         },
         header: {
             alignItems: 'center',
-            marginBottom: verticalScale(32),
-            paddingTop: verticalScale(20),
+            marginBottom: verticalScale(24),
+            paddingTop: verticalScale(6),
         },
         title: {
             fontSize: moderateScale(24),
@@ -287,7 +290,16 @@ const PublishAuthorForm = () => {
 
     return (
         <SafeAreaView style={[defaultStyles.container, styles.container, { backgroundColor: theme.background }]}>
-            <ScrollView showsVerticalScrollIndicator={false}>
+            <KeyboardAvoidingView
+                style={{ flex: 1 }}
+                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
+            >
+            <ScrollView
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+                style={{ flex: 1 }}
+            >
                 <View style={styles.content}>
                     {/* Header Section */}
                     <View style={styles.header}>
@@ -425,6 +437,7 @@ const PublishAuthorForm = () => {
                     </View>
                 </View>
             </ScrollView>
+            </KeyboardAvoidingView>
         </SafeAreaView>
     );
 }

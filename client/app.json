@@ -39,7 +39,7 @@
       "buildNumber": "17"
     },
     "android": {
-      "versionCode": 10,
+      "versionCode": 11,
       "adaptiveIcon": {
         "foregroundImage": "./assets/sbLogo.png",
         "backgroundColor": "#000000"
