@@ -45,7 +45,7 @@ const publisherCommonForm = () => {
     const [selectedLanguage, setSelectedLanguage] = useState('English (US)')
     const [selectedVoiceType, setSelectedVoiceType] = useState('FEMALE')
     const [selectedSpeakingRate, setSelectedSpeakingRate] = useState('Normal')
-    const [selectedSampleRate, setSelectedSampleRate] = useState('22050')
+    const [selectedAudioFormat, setSelectedAudioFormat] = useState('mp3')
     const [image, setImage] = useState(null);
     const [imageURL, setImageURL] = useState('');
     const [audioSample, setAudioSample] = useState<AudioSample | null>(null)
@@ -133,17 +133,18 @@ const publisherCommonForm = () => {
         ]
     };
 
-    // Speaking rate options
+    // Speaking pace — OpenAI TTS (gpt-4o-mini-tts) steers speed mainly via `instructions`; these values are hints in that prompt.
     const speakingRateOptions = [
-        { label: 'Slow', value: 'Slow', rate: 0.7 },
-        { label: 'Normal', value: 'Normal', rate: 1.0 },
-        { label: 'Fast', value: 'Fast', rate: 1.9 }
+        { label: 'Slower', value: 'Slower', rate: 0.88 },
+        { label: 'Normal', value: 'Normal', rate: 1 },
+        { label: 'Faster', value: 'Faster', rate: 1.1 }
     ];
 
-    // Sample rate options
-    const sampleRateOptions = [
-        { label: '22.05 kHz', value: '22050' },
-        { label: '44.1 kHz', value: '44100' }
+    // https://developers.openai.com/api/docs/guides/text-to-speech#supported-output-formats
+    const audioFormatOptions = [
+        { label: 'MP3', value: 'mp3', hint: 'Default, general use' },
+        { label: 'Opus', value: 'opus', hint: 'Streaming, low latency' },
+        { label: 'WAV', value: 'wav', hint: 'Uncompressed' }
     ];
 
     const [mode, setMode] = useState('date');
@@ -297,19 +298,25 @@ const publisherCommonForm = () => {
 
     const pickDocument = async () => {
         let result = await DocumentPicker.getDocumentAsync({
-            type: "application/pdf",
+            type: ["application/pdf", "application/epub+zip"],
             copyToCacheDirectory: true
         });
 
         
-            let { name, size, uri } = result["assets"][0];
-            let nameParts = name.split('.');
-            let fileType = nameParts[nameParts.length - 1];
+            let { name, size, uri, mimeType } = result["assets"][0];
+            const lower = (name || '').toLowerCase();
+            const isEpub = lower.endsWith('.epub') || mimeType === 'application/epub+zip';
+            const isPdf = lower.endsWith('.pdf') || mimeType === 'application/pdf';
+            const resolvedType = isEpub
+                ? 'application/epub+zip'
+                : isPdf
+                    ? 'application/pdf'
+                    : (mimeType || 'application/pdf');
             var fileToUpload = {
                 name: name,
                 size: size,
                 uri: uri,
-                type: "application/" + fileType
+                type: resolvedType
             };
             setDoc1(fileToUpload);
     };
@@ -444,7 +451,7 @@ console.log(publisherCommonForm,'companyId in document submit');
         
         
         if (!doc1) {
-            newErrors.doc1 = 'PDF document is required'
+            newErrors.doc1 = 'A PDF or EPUB book file is required'
         }
         
         if (!image) {
@@ -468,7 +475,7 @@ console.log(publisherCommonForm,'companyId in document submit');
                 language: selectedLanguage,
                 voiceType: selectedVoiceType,
                 speakingRate: speakingRateOptions.find(opt => opt.value === selectedSpeakingRate)?.rate || 1.0,
-                sampleRate: parseInt(selectedSampleRate),
+                sampleRate: selectedAudioFormat,
                 voiceDetails: voiceOptions[selectedLanguage]?.find(voice => voice.gender === selectedVoiceType),
                 publisherId: publisherCommonForm,
             };
@@ -544,7 +551,7 @@ console.log(publisherCommonForm,'companyId in document submit');
                     language: selectedLanguage,
                     voiceType: selectedVoiceType,
                     speakingRate: speakingRateOptions.find(opt => opt.value === selectedSpeakingRate)?.rate || 1.0,
-                    sampleRate: parseInt(selectedSampleRate),
+                    sampleRate: selectedAudioFormat,
                     voiceDetails: voiceOptions[selectedLanguage]?.find(voice => voice.gender === selectedVoiceType)
                 },
                 pdfURL: docData.data[0],
@@ -1049,9 +1056,9 @@ console.log(publisherCommonForm,'companyId in document submit');
                               </View>
                           </View>
 
-                          {/* Voice Type Selection */}
+                          {/* Gender presentation — backend maps locale + this to an OpenAI built-in voice */}
                           <View style={styles.configRow}>
-                              <Text style={styles.configLabel}>Voice Type</Text>
+                              <Text style={styles.configLabel}>Voice character</Text>
                               <View style={styles.voiceTypeContainer}>
                                   <TouchableOpacity 
                                       style={[styles.voiceTypeButton, selectedVoiceType === 'FEMALE' && styles.voiceTypeButtonSelected]}
@@ -1082,9 +1089,9 @@ console.log(publisherCommonForm,'companyId in document submit');
                               </View>
                           </View>
 
-                          {/* Speaking Rate Selection */}
+                          {/* Pace is steered via OpenAI TTS `instructions` on the server */}
                           <View style={styles.configRow}>
-                              <Text style={styles.configLabel}>Speaking Rate</Text>
+                              <Text style={styles.configLabel}>Speaking pace</Text>
                               <View style={styles.speakingRateContainer}>
                                   {speakingRateOptions.map((option) => (
                                       <TouchableOpacity 
@@ -1105,22 +1112,22 @@ console.log(publisherCommonForm,'companyId in document submit');
                               </View>
                           </View>
 
-                          {/* Sample Rate Selection */}
+                          {/* OpenAI speech API output format */}
                           <View style={styles.configRow}>
-                              <Text style={styles.configLabel}>Sample Rate</Text>
+                              <Text style={styles.configLabel}>Audio format</Text>
                               <View style={styles.sampleRateContainer}>
-                                  {sampleRateOptions.map((option) => (
+                                  {audioFormatOptions.map((option) => (
                                       <TouchableOpacity 
                                           key={option.value}
-                                          style={[styles.sampleRateButton, selectedSampleRate === option.value && styles.sampleRateButtonSelected]}
-                                          onPress={() => setSelectedSampleRate(option.value)}
+                                          style={[styles.sampleRateButton, selectedAudioFormat === option.value && styles.sampleRateButtonSelected]}
+                                          onPress={() => setSelectedAudioFormat(option.value)}
                                       >
                                           <Ionicons 
-                                              name={selectedSampleRate === option.value ? "checkmark-circle" : "ellipse-outline"} 
+                                              name={selectedAudioFormat === option.value ? "checkmark-circle" : "ellipse-outline"} 
                                               size={moderateScale(20)} 
-                                              color={selectedSampleRate === option.value ? theme.primary : theme.gray2} 
+                                              color={selectedAudioFormat === option.value ? theme.primary : theme.gray2} 
                                           />
-                                          <Text style={[styles.sampleRateText, selectedSampleRate === option.value && styles.sampleRateTextSelected]}>
+                                          <Text style={[styles.sampleRateText, selectedAudioFormat === option.value && styles.sampleRateTextSelected]}>
                                               {option.label}
                                           </Text>
                                       </TouchableOpacity>
@@ -1174,7 +1181,7 @@ console.log(publisherCommonForm,'companyId in document submit');
                                   color={errors.doc1 ? '#FF6B6B' : theme.text} 
                               />
                               <Text style={[styles.uploadButtonText, errors.doc1 && styles.uploadButtonTextError]}>
-                                  {doc1?.name || 'Upload PDF Document'}
+                                  {doc1?.name || 'Upload PDF or EPUB'}
                               </Text>
                           </TouchableOpacity>
                           {errors.doc1 && <Text style={styles.errorText}>{errors.doc1}</Text>}

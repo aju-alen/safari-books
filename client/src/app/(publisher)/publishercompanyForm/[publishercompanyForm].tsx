@@ -151,7 +151,6 @@ const PublisherCompanyForm = () => {
     header: {
       alignItems: 'center',
       marginBottom: verticalScale(32),
-      paddingTop: verticalScale(20),
     },
     title: {
       fontSize: moderateScale(24),
@@ -281,7 +280,6 @@ const PublisherCompanyForm = () => {
         <View style={styles.content}>
           {/* Header Section */}
           <View style={styles.header}>
-            <Text style={styles.title}>Company Registration</Text>
             <Text style={styles.subtitle}>Complete your company profile to start publishing</Text>
           </View>
           

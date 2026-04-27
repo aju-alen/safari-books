@@ -33,17 +33,6 @@ const PublisherHome = () => {
       },
     ])
 
-  const handleLogout = async () => {
-    try {
-      await SecureStore.deleteItemAsync('userDetails')
-      await SecureStore.deleteItemAsync('authToken')
-      
-      router.replace('/(authenticate)/login')
-    } catch (error) {
-      console.error('Logout error:', error)
-    }
-  }
-
   useEffect(() => {
     const getAsyncData = async () => {
       try {
@@ -285,20 +274,6 @@ const PublisherHome = () => {
               <Text style={styles.statNumber}>{bookStats?.ListenersStats}</Text>
               <Text style={styles.statLabel}>Total Listens</Text>
             </View>
-            {/* <View style={[styles.statBox, styles.statBoxAccent]}>
-              <View style={styles.statIconContainer}>
-                <FontAwesome5 name="dollar-sign" size={20} color={theme.white} />
-              </View>
-              <Text style={styles.statNumber}>$0</Text>
-              <Text style={styles.statLabel}>Revenue</Text>
-            </View>
-            <View style={[styles.statBox, styles.statBoxDark]}>
-              <View style={styles.statIconContainer}>
-                <FontAwesome5 name="users" size={20} color={theme.white} />
-              </View>
-              <Text style={styles.statNumber}>0</Text>
-              <Text style={styles.statLabel}>Followers</Text>
-            </View> */}
           </View>
 
           <View style={styles.actionButtons}>

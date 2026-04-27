@@ -20,14 +20,14 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { axiosWithAuth } from '@/utils/customAxios';
+import { postAdminNarrationStream } from '@/utils/adminNarrationStream';
 import { useTheme } from '@/providers/ThemeProvider';
 
 const PublisherDetails = () => {
   const { theme } = useTheme();
   const { id, isCompany } = useLocalSearchParams();
   const isCompanyBoolean = isCompany === 'true';
-  console.log(id, isCompanyBoolean, 'this is id and isCompany');
-  
+
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [publisherData, setPublisherData] = useState(null);
@@ -41,18 +41,23 @@ const PublisherDetails = () => {
   const [narratorName, setNarratorName] = useState('');
   const [colorCode, setColorCode] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [audioJobVisible, setAudioJobVisible] = useState(false);
+  const [audioJobTitle, setAudioJobTitle] = useState('');
+  const [audioJobDetail, setAudioJobDetail] = useState('');
   
-  const fetchPublisherDetails = async () => {
+  const fetchPublisherDetails = async (opts?: { silent?: boolean }) => {
+    const silent = Boolean(opts?.silent);
     try {
-      setLoading(true);
-      // Make API call to get the specific publisher details
+      if (!silent) setLoading(true);
       const response = await axiosWithAuth.get(`${ipURL}/api/admin/get-single/${isCompanyBoolean}/${id}`);
       setPublisherData(response.data);
-      setLoading(false);
+      if (!silent) setLoading(false);
     } catch (err) {
       console.error('Error fetching publisher details:', err);
-      setError('Failed to load publisher details');
-      setLoading(false);
+      if (!silent) {
+        setError('Failed to load publisher details');
+        setLoading(false);
+      }
     }
   };
   
@@ -74,45 +79,63 @@ const PublisherDetails = () => {
   const handleRejectPublisher = (id) => {}
 
   const handleSendSampleAudio = async (id) => {
+    if (!publisherData?.publisher) return;
+    setIsSubmitting(true);
+    setAudioJobVisible(true);
+    setAudioJobTitle('Starting sample audio…');
+    setAudioJobDetail('This can take several minutes while the book is parsed and processed with AI.');
+    const body = {
+      narrationSampleHeartzRate: publisherData.publisher.narrationSampleHeartzRate,
+      narrationSpeakingRate: publisherData.publisher.narrationSpeakingRate,
+      narrationGender: publisherData.publisher.narrationGender,
+      narrationLanguageCode: publisherData.publisher.narrationLanguageCode,
+      narrationVoiceName: publisherData.publisher.narrationVoiceName,
+    };
+    const url = `${ipURL}/api/admin/send-sample-audio/${id}?isCompany=${isCompanyBoolean}`;
     try {
-      setIsSubmitting(true);
-      console.log(publisherData, 'publisherData');
-      
-      const response = await axiosWithAuth.post(`${ipURL}/api/admin/send-sample-audio/${id}?isCompany=${isCompanyBoolean}`,{
-        narrationSampleHeartzRate: publisherData.publisher.narrationSampleHeartzRate,
-        narrationSpeakingRate: publisherData.publisher.narrationSpeakingRate,
-        narrationGender: publisherData.publisher.narrationGender,
-        narrationLanguageCode: publisherData.publisher.narrationLanguageCode,
-        narrationVoiceName: publisherData.publisher.narrationVoiceName,
+      await postAdminNarrationStream(url, body, (title, detail) => {
+        setAudioJobTitle(title);
+        setAudioJobDetail(detail);
       });
-      
-      Alert.alert('Success', 'Sample audio has been generated successfully!');
+      Alert.alert('Success', 'Sample audio has been generated successfully.');
+      await fetchPublisherDetails({ silent: true });
     } catch (error) {
       console.error('Error generating sample audio:', error);
-      Alert.alert('Error', 'Failed to generate sample audio. Please try again.');
+      const msg = error instanceof Error ? error.message : 'Failed to generate sample audio.';
+      Alert.alert('Error', msg);
     } finally {
+      setAudioJobVisible(false);
       setIsSubmitting(false);
     }
   };
 
   const handleGenerateFullAudio = async (id) => {
+    if (!publisherData?.publisher) return;
+    setIsSubmitting(true);
+    setAudioJobVisible(true);
+    setAudioJobTitle('Starting full audiobook…');
+    setAudioJobDetail('This often takes a long time: text extraction, AI segmentation, then many TTS requests.');
+    const body = {
+      narrationSampleHeartzRate: publisherData.publisher.narrationSampleHeartzRate,
+      narrationSpeakingRate: publisherData.publisher.narrationSpeakingRate,
+      narrationGender: publisherData.publisher.narrationGender,
+      narrationLanguageCode: publisherData.publisher.narrationLanguageCode,
+      narrationVoiceName: publisherData.publisher.narrationVoiceName,
+    };
+    const url = `${ipURL}/api/admin/generate-full-audio/${id}?isCompany=${isCompanyBoolean}`;
     try {
-      setIsSubmitting(true);
-      console.log(publisherData, 'publisherData');
-      
-      const response = await axiosWithAuth.post(`${ipURL}/api/admin/generate-full-audio/${id}?isCompany=${isCompanyBoolean}`,{
-        narrationSampleHeartzRate: publisherData.publisher.narrationSampleHeartzRate,
-        narrationSpeakingRate: publisherData.publisher.narrationSpeakingRate,
-        narrationGender: publisherData.publisher.narrationGender,
-        narrationLanguageCode: publisherData.publisher.narrationLanguageCode,
-        narrationVoiceName: publisherData.publisher.narrationVoiceName,
+      await postAdminNarrationStream(url, body, (title, detail) => {
+        setAudioJobTitle(title);
+        setAudioJobDetail(detail);
       });
-      
-      Alert.alert('Success', 'Full audio has been generated successfully!');
+      Alert.alert('Success', 'Full audio has been generated successfully.');
+      await fetchPublisherDetails({ silent: true });
     } catch (error) {
       console.error('Error generating full audio:', error);
-      Alert.alert('Error', 'Failed to generate full audio. Please try again.');
+      const msg = error instanceof Error ? error.message : 'Failed to generate full audio.';
+      Alert.alert('Error', msg);
     } finally {
+      setAudioJobVisible(false);
       setIsSubmitting(false);
     }
   };
@@ -178,8 +201,6 @@ const PublisherDetails = () => {
         colorCode: colorCode.trim(),
         pdfURL: publisherData.publisher.pdfURL,
       };
-      console.log(verificationData, 'this is verificationData');
-      
       // Make API call to verify the publisher with additional data
       await axiosWithAuth.post(`${ipURL}/api/admin/verify-publisher/${id}`, verificationData);
       
@@ -402,8 +423,7 @@ const PublisherDetails = () => {
 
   const renderAuthorDetails = () => {
     const author = publisherData.publisher;
-    console.log(author, 'this is authoryyyyy -----------');
-    
+
     return (
       <View style={styles.detailsContainer}>
         <View style={styles.section}>
@@ -826,7 +846,7 @@ const PublisherDetails = () => {
               </TouchableOpacity>
               <TouchableOpacity style={[styles.verifyButton, { backgroundColor: theme.primary }]} onPress={() => handleVerifyPublisher(id)}>
                 <MaterialIcons name="verified" size={20} color={theme.white} />
-                <Text style={[styles.buttonText, { color: theme.white }]}>Verify Publisherrrr</Text>
+                <Text style={[styles.buttonText, { color: theme.white }]}>Verify Publisher</Text>
               </TouchableOpacity>
              
             </View>
@@ -836,6 +856,18 @@ const PublisherDetails = () => {
 
       {/* Verification Modal */}
       {renderVerificationModal()}
+
+      <Modal visible={audioJobVisible} transparent animationType="fade">
+        <View style={styles.audioProgressOverlay}>
+          <View style={[styles.audioProgressCard, { backgroundColor: theme.white }]}>
+            <ActivityIndicator size="large" color={theme.primary} />
+            <Text style={[styles.audioProgressTitle, { color: theme.text }]}>{audioJobTitle}</Text>
+            {audioJobDetail ? (
+              <Text style={[styles.audioProgressDetail, { color: theme.textMuted }]}>{audioJobDetail}</Text>
+            ) : null}
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -1284,6 +1316,36 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+  audioProgressOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  audioProgressCard: {
+    width: '100%',
+    maxWidth: 340,
+    borderRadius: 16,
+    padding: 24,
+    alignItems: 'center',
+    gap: 14,
+    elevation: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+  },
+  audioProgressTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  audioProgressDetail: {
+    fontSize: 14,
+    lineHeight: 20,
+    textAlign: 'center',
   },
 });
 

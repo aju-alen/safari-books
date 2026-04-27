@@ -18,7 +18,7 @@ const RevenueCatContext = createContext<RevenueCatProps | null>(null);
 // Provide RevenueCat functions to our app
 export const RevenueCatProvider = ({ children }: any) => {
   const [isReady, setIsReady] = useState(false);
-  const [isPro, setIsPro] = useState(false);
+  const [isPro, setIsPro] = useState(true);
 
   useEffect(() => {
     const init = async () => {

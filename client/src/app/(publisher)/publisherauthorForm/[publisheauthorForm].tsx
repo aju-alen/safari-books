@@ -158,13 +158,11 @@ const PublishAuthorForm = () => {
         content: {
             flex: 1,
             paddingHorizontal: moderateScale(20),
-            paddingTop: moderateScale(10),
             paddingBottom: moderateScale(20),
         },
         header: {
             alignItems: 'center',
             marginBottom: verticalScale(24),
-            paddingTop: verticalScale(6),
         },
         title: {
             fontSize: moderateScale(24),
@@ -303,7 +301,6 @@ const PublishAuthorForm = () => {
                 <View style={styles.content}>
                     {/* Header Section */}
                     <View style={styles.header}>
-                        <Text style={styles.title}>Author Registration</Text>
                         <Text style={styles.subtitle}>Complete your author profile to start publishing</Text>
                     </View>
                     

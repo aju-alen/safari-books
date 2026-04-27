@@ -37,11 +37,8 @@ export const axiosWithAuth = axios.create({
 
 // Add a request interceptor to attach the Authorization header
 axiosWithAuth.interceptors.request.use(async (config) => {
-    console.log(JSON.parse( await SecureStore.getItemAsync("authToken")), 'this is auth token -----------');
-    
-  // Add Authorization header if token is available in localStorage
-  const token = JSON.parse( await SecureStore.getItemAsync("authToken"))?.token;
-  console.log(token, 'this is token -----------');
+  const tokenRaw = await SecureStore.getItemAsync('authToken');
+  const token = tokenRaw ? JSON.parse(tokenRaw)?.token : null;
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }

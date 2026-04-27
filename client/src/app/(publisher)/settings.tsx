@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, Linking } 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as SecureStore from 'expo-secure-store';
 import { useRouter } from 'expo-router';
-import { MaterialIcons, Ionicons, FontAwesome5, Feather } from '@expo/vector-icons';
+import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/providers/ThemeProvider';
 import { clearPushTokenCache } from '@/utils/registerForPushNotificationsAsync';
 
@@ -12,26 +12,6 @@ const SettingsPage = () => {
   const { theme } = useTheme();
 
 const publisherOptions = [
-  // {
-  //     icon: <Ionicons name="person-circle-outline" size={24} color={theme.primary} />,
-  //   label: 'Edit Profile',
-  //   route: '/(publisher)/edit-profile',
-  // },
-  // {
-  //     icon: <MaterialIcons name="library-books" size={24} color={theme.primary} />,
-  //   label: 'Manage Books',
-  //   route: '/(publisher)/manage-books',
-  // },
-  // {
-  //     icon: <FontAwesome5 name="chart-line" size={22} color={theme.primary} />,
-  //   label: 'Analytics',
-  //   route: '/(publisher)/analytics',
-  // },
-  // {
-  //     icon: <Feather name="credit-card" size={22} color={theme.primary} />,
-  //   label: 'Payment Settings',
-  //   route: '/(publisher)/payments',
-  // },
   {
       icon: <Ionicons name="help-circle-outline" size={24} color={theme.primary} />,
     label: 'Support',
@@ -74,7 +54,6 @@ const publisherOptions = [
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-      <Text style={[styles.header, { color: theme.text }]}>Settings</Text>
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
         <View style={styles.optionsSection}>
           {publisherOptions.map((option, idx) => (

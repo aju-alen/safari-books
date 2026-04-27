@@ -209,24 +209,19 @@ export const bookmarkBook = async (req,res)=> {
 export const listenerAnalytics = async (req,res)=>{
     try {
 
-        const finishedBooks = await prisma.library.count({
+        let finishedBooks = await prisma.library.count({
             where: {
                 userId: req.userId,
                 status: "FINISHED"
             }
         });
 
-        const inProgressBooks = await prisma.library.count({
+        let inProgressBooks = await prisma.library.count({
             where: {
                 userId: req.userId,
                 status: "IN_PROGRESS"
             }
         });
-
-        if(finishedBooks === 0 && inProgressBooks === 0){
-          finishedBooks = 0;
-          inProgressBooks = 0;
-        }
         
         res.status(200).json({ message: "Publisher insights fetched successfully", finishedBooks, inProgressBooks });
     } catch (error) {

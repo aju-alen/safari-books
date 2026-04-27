@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE `Author` MODIFY `pdfURL` LONGTEXT NULL;

@@ -77,9 +77,12 @@ const ProfilePage = () => {
     router.replace('/(authenticate)/login');
   }
 
+  console.log(listenerAnalytics, 'listener analytics');
+  
+
   const stats: Stat[] = [
-    { icon: 'reader-outline', label: 'Books in Progress', value: userRole === 'LISTENER' ? listenerAnalytics?.inProgressBooks : 'N/A' },
-    { icon: 'book-outline', label: 'Books Completed', value: userRole === 'LISTENER' ? listenerAnalytics?.finishedBooks : 'N/A' },
+    { icon: 'reader-outline', label: 'Books in Progress', value: userRole === 'LISTENER' || userRole === 'PUBLISHER' ? listenerAnalytics?.inProgressBooks : 'N/A' },
+    { icon: 'book-outline', label: 'Books Completed', value: userRole === 'LISTENER' || userRole === 'PUBLISHER' ? listenerAnalytics?.finishedBooks : 'N/A' },
     { icon: 'time-outline', label: 'Current Streak', value: '1 day' },
   ];
 
@@ -90,19 +93,6 @@ const ProfilePage = () => {
       route: '/(tabs)/library',
       color: theme.secondary
     },
-    // { 
-    //   icon: 'heart-outline', 
-    //   label: 'Favorites', 
-    //   route: '',
-    //   color: theme.tertiary
-    // },
-  
-    // { 
-    //   icon: 'notifications-outline', 
-    //   label: 'Notifications', 
-    //   route: '/(tabs)/notifications',
-    //   color: theme.primary
-    // },
     { 
       icon: 'help-circle-outline', 
       label: 'Help & Support', 

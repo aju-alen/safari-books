@@ -387,12 +387,10 @@ export const generateVoiceSample = async (req, res) => {
             publisherId
         } = voiceConfig;
         
-        // Generate the voice sample using Google TTS
-
         const [audioResponse] = await googleTtsConvert(sampleText, sampleRate, speakingRate, voiceType, voiceDetails.languageCode, voiceDetails.voiceName);
-        
-        // Convert the audio buffer to base64 for sending to frontend
-        const sampleFileName = `sample_tts.mp3`;
+
+        const ext = audioResponse.responseFormat || 'mp3';
+        const sampleFileName = `sample_tts.${ext}`;
         const s3Key = `${userId}/${publisherId}/verificationfiles/`;
  
         try {

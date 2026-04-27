@@ -1,27 +1,113 @@
-import textToSpeech from '@google-cloud/text-to-speech';
+import fetch from 'node-fetch';
 import dotenv from "dotenv";
 dotenv.config();
 
-const sanitizeSsml = (rawSsml = '') => {
-  const cleaned = rawSsml
-    .replace(/```xml|```ssml|```/gi, '')
-    .replace(/<\?xml[^>]*\?>/gi, '')
-    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '')
+const OPENAI_TTS_URL = 'https://api.openai.com/v1/audio/speech';
+const OPENAI_TTS_MODEL = process.env.OPENAI_TTS_MODEL || 'gpt-4o-mini-tts';
+/** OpenAI speech `input` max length (characters). */
+const OPENAI_TTS_INPUT_MAX = 4096;
+/**
+ * Split target for multi-request TTS when plain text exceeds this (env override, capped at API max).
+ * Default 3800 leaves margin under 4096.
+ */
+const openAiTtsInputChunkSize = () => {
+  const raw = parseInt(process.env.OPENAI_TTS_INPUT_CHUNK_CHARS || '3800', 10);
+  if (Number.isNaN(raw) || raw < 256) return 3800;
+  return Math.min(raw, OPENAI_TTS_INPUT_MAX);
+};
+
+/**
+ * Split plain TTS input into slices ≤ maxLen, preferring sentence boundaries.
+ */
+const splitPlainTextForTts = (plain, maxLen) => {
+  const text = String(plain || '').trim();
+  if (!text) return [];
+  if (text.length <= maxLen) return [text];
+
+  const chunks = [];
+  const sentences = text.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [text];
+  let buf = '';
+
+  const flushBuf = () => {
+    const t = buf.trim();
+    if (t) chunks.push(t);
+    buf = '';
+  };
+
+  const pushHardSlices = (long) => {
+    let rest = long.trim();
+    while (rest.length > maxLen) {
+      let cut = maxLen;
+      const space = rest.lastIndexOf(' ', maxLen);
+      if (space > maxLen * 0.55) cut = space;
+      chunks.push(rest.slice(0, cut).trim());
+      rest = rest.slice(cut).trim();
+    }
+    if (rest) buf = buf ? `${buf} ${rest}` : rest;
+  };
+
+  for (const sentence of sentences) {
+    const s = sentence.trim();
+    if (!s) continue;
+
+    if (s.length > maxLen) {
+      flushBuf();
+      pushHardSlices(s);
+      continue;
+    }
+
+    const next = buf ? `${buf} ${s}` : s;
+    if (next.length <= maxLen) {
+      buf = next;
+    } else {
+      flushBuf();
+      buf = s;
+    }
+  }
+  flushBuf();
+  return chunks.filter(Boolean);
+};
+const OPENAI_ALLOWED_VOICES = new Set([
+  'alloy', 'ash', 'ballad', 'coral', 'echo', 'fable', 'onyx', 'nova', 'sage', 'shimmer',
+  'verse', 'marin', 'cedar'
+]);
+const OPENAI_RESPONSE_FORMATS = new Set(['mp3', 'opus', 'aac', 'flac', 'wav', 'pcm']);
+const LEGACY_SAMPLE_RATE_KEYS = new Set(['22050', '44100']);
+const OUTPUT_FORMAT_HINTS = {
+  mp3: 'MP3 (default, general purpose)',
+  opus: 'Opus (streaming, low latency)',
+  aac: 'AAC (mobile / compressed)',
+  flac: 'FLAC (lossless archive)',
+  wav: 'WAV (uncompressed, low decode overhead)',
+  pcm: 'PCM (raw 24kHz 16-bit LE samples, no header)'
+};
+const LEGACY_HZ_HINTS = {
+  '22050': '22.05kHz-class playback (output still encoded per format)',
+  '44100': '44.1kHz-class playback (output still encoded per format)'
+};
+
+const sanitizeText = (raw = '') =>
+  String(raw || '')
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, ' ')
+    .replace(/\s+/g, ' ')
     .trim();
 
-  const wrapped = cleaned.startsWith('<speak>') ? cleaned : `<speak>${cleaned}</speak>`;
-
-  // Escape bare ampersands so malformed XML does not fail validation.
-  return wrapped.replace(/&(?!amp;|lt;|gt;|quot;|apos;|#\d+;)/g, '&amp;');
-};
-
-const buildTtsInput = (text = '') => {
-  const normalized = typeof text === 'string' ? text.trim() : '';
-  if (normalized.startsWith('<speak>') || normalized.includes('</speak>')) {
-    return { ssml: sanitizeSsml(normalized) };
-  }
-  return { text: normalized };
-};
+const ssmlToPlainText = (ssml = '') =>
+  sanitizeText(
+    String(ssml || '')
+      .replace(/```xml|```ssml|```/gi, '')
+      .replace(/<\?xml[^>]*\?>/gi, '')
+      .replace(/<break[^>]*>/gi, ', ')
+      .replace(/<\/?prosody[^>]*>/gi, '')
+      .replace(/<\/?emphasis[^>]*>/gi, '')
+      .replace(/<\/?speak>/gi, '')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&apos;/g, "'")
+      .replace(/<[^>]+>/g, '')
+  );
 
 const clamp = (value, min, max, fallback) => {
   const parsed = Number(value);
@@ -29,124 +115,129 @@ const clamp = (value, min, max, fallback) => {
   return Math.max(min, Math.min(max, parsed));
 };
 
-const PREFERRED_VOICES_BY_LANGUAGE = {
-  'en-US': {
-    FEMALE: ['en-US-Studio-O', 'en-US-Neural2-F', 'en-US-Neural2-C'],
-    MALE: ['en-US-Studio-M', 'en-US-Neural2-D', 'en-US-Neural2-I']
-  },
-  'en-GB': {
-    FEMALE: ['en-GB-Neural2-A', 'en-GB-News-G'],
-    MALE: ['en-GB-Neural2-B', 'en-GB-News-J']
+const parseStoredScalar = (raw) => {
+  if (raw == null || raw === '') return undefined;
+  if (typeof raw === 'number' && !Number.isNaN(raw)) return raw;
+  const s = String(raw).trim();
+  try {
+    return JSON.parse(s);
+  } catch {
+    return s;
   }
+};
+
+const resolveResponseFormat = (rawSampleOrFormat) => {
+  const v = parseStoredScalar(rawSampleOrFormat);
+  const key = String(v == null ? '' : v).trim().toLowerCase();
+  if (OPENAI_RESPONSE_FORMATS.has(key)) return key;
+  if (LEGACY_SAMPLE_RATE_KEYS.has(key)) return 'mp3';
+  return 'mp3';
+};
+
+const outputQualityHint = (rawSampleOrFormat, responseFormat) => {
+  const v = parseStoredScalar(rawSampleOrFormat);
+  const key = String(v == null ? '' : v).trim().toLowerCase();
+  if (OPENAI_RESPONSE_FORMATS.has(key)) return OUTPUT_FORMAT_HINTS[key] || responseFormat;
+  if (LEGACY_SAMPLE_RATE_KEYS.has(key)) return LEGACY_HZ_HINTS[key] || OUTPUT_FORMAT_HINTS[responseFormat];
+  return OUTPUT_FORMAT_HINTS[responseFormat];
 };
 
 const normalizeGender = (gender) => {
-  const normalized = String(gender || '').toUpperCase();
-  if (normalized.includes('FEMALE')) return 'FEMALE';
-  if (normalized.includes('MALE')) return 'MALE';
-  return 'NEUTRAL';
+  const value = String(gender || '').toUpperCase();
+  if (value.includes('FEMALE')) return 'female';
+  if (value.includes('MALE')) return 'male';
+  return 'neutral';
 };
 
-const buildVoiceAttempts = ({ languageCode, ssmlGender, requestedVoiceName }) => {
-  const attempts = [];
-  const normalizedGender = normalizeGender(ssmlGender);
+const voiceFromHints = ({ requestedVoiceName, gender, languageCode }) => {
+  const normalized = String(requestedVoiceName || '').trim().toLowerCase();
+  if (OPENAI_ALLOWED_VOICES.has(normalized)) return normalized;
 
-  if (requestedVoiceName) {
-    attempts.push({ languageCode, ssmlGender, name: requestedVoiceName });
+  const g = normalizeGender(gender);
+  const locale = String(languageCode || '').toLowerCase();
+
+  if (g === 'female') {
+    if (locale.startsWith('en-gb')) return 'sage';
+    if (locale.startsWith('en-au')) return 'shimmer';
+    if (locale.startsWith('en-in')) return 'nova';
+    return 'coral';
   }
 
-  const preferred = PREFERRED_VOICES_BY_LANGUAGE[languageCode]?.[normalizedGender] || [];
-  for (const voiceName of preferred) {
-    if (voiceName !== requestedVoiceName) {
-      attempts.push({ languageCode, ssmlGender, name: voiceName });
-    }
+  if (g === 'male') {
+    if (locale.startsWith('en-gb')) return 'onyx';
+    if (locale.startsWith('en-au')) return 'echo';
+    if (locale.startsWith('en-in')) return 'fable';
+    return 'ash';
   }
 
-  // Last fallback lets Google auto-pick a compatible voice for the locale.
-  attempts.push({ languageCode, ssmlGender });
+  return process.env.OPENAI_TTS_VOICE || 'alloy';
+};
 
-  return attempts;
+const fetchTtsAudioBuffer = async (apiKey, voice, inputSlice, openAiInstructions, responseFormat) => {
+  if (inputSlice.length > OPENAI_TTS_INPUT_MAX) {
+    throw new Error(`OpenAI TTS input slice exceeds ${OPENAI_TTS_INPUT_MAX} characters (${inputSlice.length})`);
+  }
+  const response = await fetch(OPENAI_TTS_URL, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      model: OPENAI_TTS_MODEL,
+      voice,
+      input: inputSlice,
+      response_format: responseFormat,
+      instructions: openAiInstructions
+    })
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    throw new Error(`OpenAI TTS failed (${response.status}): ${errorBody}`);
+  }
+
+  const arrayBuffer = await response.arrayBuffer();
+  return Buffer.from(arrayBuffer);
 };
 
 export const googleTtsConvert = async (text, narrationSampleHeartzRate, narrationSpeakingRate, narrationGender, narrationLanguageCode, narrationVoiceName) => {
-  const client = new textToSpeech.TextToSpeechClient({
-    projectId: 'safari-books',
-    credentials: {
-        client_email: process.env.GOOGLE_TTS_EMAIL,
-        private_key: process.env.GOOGLE_TTS_PRIVATE_KEY.replace(/\\n/g, '\n')
-    }
-  });
-
-  const ttsInput = buildTtsInput(text);
-  const requestedVoice = {
-    languageCode: narrationLanguageCode,
-    ssmlGender: narrationGender,
-    name: narrationVoiceName
-  };
-  const voiceAttempts = buildVoiceAttempts({
-    languageCode: narrationLanguageCode,
-    ssmlGender: narrationGender,
-    requestedVoiceName: narrationVoiceName
-  });
-  const speakingRate = clamp(narrationSpeakingRate, 0.85, 1.1, 0.96);
-  const pitch = clamp(process.env.GOOGLE_TTS_PITCH, -2, 2, 0.3);
-  const audioConfig = {
-    audioEncoding: 'MP3',
-    speakingRate,
-    pitch,
-    volumeGainDb: 0.6,
-    sampleRateHertz: narrationSampleHeartzRate,
-    effectsProfileId: ['headphone-class-device']
-  };
-
-  const buildFallbackAudioConfig = () => ({
-    audioEncoding: 'MP3',
-    speakingRate,
-    volumeGainDb: 0.6,
-    effectsProfileId: ['headphone-class-device']
-  });
-
-  let lastError = null;
-  for (const voice of voiceAttempts) {
-    try {
-      return await client.synthesizeSpeech({
-        input: ttsInput,
-        voice,
-        audioConfig
-      });
-    } catch (error) {
-      lastError = error;
-
-      if (error?.code !== 3) {
-        throw error;
-      }
-
-      console.error('Google TTS INVALID_ARGUMENT diagnostics:', {
-        hasSsmlInput: Boolean(ttsInput.ssml),
-        ssmlPreview: ttsInput.ssml ? ttsInput.ssml.slice(0, 300) : null,
-        textPreview: ttsInput.text ? ttsInput.text.slice(0, 300) : null,
-        requestedLanguageCode: requestedVoice.languageCode,
-        requestedVoiceName: requestedVoice.name,
-        attemptedVoiceName: voice.name || '(auto)',
-        ssmlGender: voice.ssmlGender,
-        speakingRate: audioConfig.speakingRate,
-        pitch: audioConfig.pitch,
-        sampleRateHertz: audioConfig.sampleRateHertz,
-        errorDetails: error?.details || null
-      });
-
-      try {
-        // Retry same voice with safer audio config because some voices reject pitch/sample rate.
-        return await client.synthesizeSpeech({
-          input: ttsInput,
-          voice,
-          audioConfig: buildFallbackAudioConfig()
-        });
-      } catch (fallbackError) {
-        lastError = fallbackError;
-      }
-    }
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error('OPENAI_API_KEY is not configured');
   }
 
-  throw lastError;
+  const plainText = String(text || '').includes('<speak>')
+    ? ssmlToPlainText(text)
+    : sanitizeText(text);
+
+  if (!plainText) {
+    throw new Error('OpenAI TTS input text is empty after sanitization');
+  }
+
+  const voice = voiceFromHints({
+    requestedVoiceName: narrationVoiceName,
+    gender: narrationGender,
+    languageCode: narrationLanguageCode
+  });
+  const rateRaw = parseStoredScalar(narrationSpeakingRate);
+  const speakingRate = clamp(rateRaw, 0.8, 1.2, 1);
+  const speed = clamp(speakingRate, 0.8, 1.2, 1);
+  const targetLocale = narrationLanguageCode || 'en-US';
+  const genderLabel = normalizeGender(narrationGender);
+  const responseFormat = resolveResponseFormat(narrationSampleHeartzRate);
+  const outputHint = outputQualityHint(narrationSampleHeartzRate, responseFormat);
+  const openAiInstructions = `Narrate naturally like a human audiobook reader. Speak in ${targetLocale} accent and pronunciation. Voice presentation should sound ${genderLabel}. Keep pacing calm and expressive, with subtle pauses at punctuation. Aim for speaking pace around ${speed} relative to a neutral conversational baseline (slower than 1 is calmer; faster than 1 is brisker). Optimize for ${outputHint}.`;
+
+  const chunkSize = openAiTtsInputChunkSize();
+  const slices = splitPlainTextForTts(plainText, chunkSize);
+  const buffers = [];
+  for (let i = 0; i < slices.length; i++) {
+    const buf = await fetchTtsAudioBuffer(apiKey, voice, slices[i], openAiInstructions, responseFormat);
+    buffers.push(buf);
+  }
+  const audioContent = Buffer.concat(buffers);
+
+  // Return Google-compatible shape so existing controller logic remains unchanged.
+  return [{ audioContent, responseFormat }];
 }

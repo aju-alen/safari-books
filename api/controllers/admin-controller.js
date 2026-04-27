@@ -1,7 +1,7 @@
-import PdfParse from 'pdf-parse';
 import AWS from 'aws-sdk';
 import { prisma } from '../utils/database.js'
 import { getPdfFromAws } from '../utils/getPdfFromAws.js'
+import { extractPlainTextForNarration } from '../utils/bookDocumentText.js'
 import { googleTtsConvert } from '../utils/google-tts-convert.js'
 import { uploadAudioBufferToS3 } from '../utils/uploadAudioBuffer.js'
 import { buildSmartNarrationChunksWithChatGpt } from '../utils/chatgpt-smart-chunks.js'
@@ -10,9 +10,42 @@ import { buildSmartNarrationChunksWithChatGpt } from '../utils/chatgpt-smart-chu
 import dotenv from "dotenv";
 dotenv.config();
 
-const MIN_SEGMENT_WORDS = 150;
-const TARGET_SEGMENT_WORDS = 220;
-const MAX_SEGMENT_WORDS = 300;
+const wantsNdjsonStream = (req) => {
+    const q = String(req.query?.stream ?? '').toLowerCase();
+    return q === '1' || q === 'true' || q === 'yes';
+};
+
+const beginNdjsonStream = (res) => {
+    res.status(200);
+    res.setHeader('Content-Type', 'application/x-ndjson; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-cache, no-transform');
+    res.setHeader('X-Accel-Buffering', 'no');
+    if (typeof res.flushHeaders === 'function') {
+        res.flushHeaders();
+    }
+};
+
+const writeNdjsonLine = (res, obj) => {
+    res.write(`${JSON.stringify(obj)}\n`);
+};
+
+/** Server-side status logs for the full-audio job (grep: `[generateFullAudio]`). */
+const logGenerateFullAudio = (publisherId, isCompanyQuery, stage, detail = {}) => {
+    const line = {
+        tag: 'generateFullAudio',
+        publisherId,
+        isCompany: isCompanyQuery === 'true',
+        stage,
+        t: new Date().toISOString(),
+        ...detail
+    };
+    console.log('[generateFullAudio]', JSON.stringify(line));
+};
+
+// Fewer, longer segments → fewer TTS calls. Plain text per TTS request must stay ≤4096 chars (see google-tts-convert).
+const MIN_SEGMENT_WORDS = 320;
+const TARGET_SEGMENT_WORDS = 480;
+const MAX_SEGMENT_WORDS = 620;
 
 const escapeSsml = (text = '') => text
     .replace(/&/g, '&amp;')
@@ -190,31 +223,78 @@ const getNarrationSegmentsWithCache = async ({
     publisher,
     isCompany,
     id,
-    rawPdfText
+    rawPdfText,
+    onProgress
 }) => {
+    const t0 = Date.now();
+    console.log('[sendSampleAudio][segments] start', {
+        publisherId: id,
+        isCompany,
+        rawTextChars: typeof rawPdfText === 'string' ? rawPdfText.length : 0,
+        hasStoredSegments: Boolean(publisher?.narrationSegments)
+    });
+
     const cachedSegments = parseStoredNarrationSegments(publisher?.narrationSegments);
+    console.log('[sendSampleAudio][segments] parsed_cached_segments', {
+        count: cachedSegments.length
+    });
     if (cachedSegments.length > 0) {
+        onProgress?.({
+            phase: 'segments_cached',
+            message: `Using saved narration plan (${cachedSegments.length} segments).`,
+            segmentCount: cachedSegments.length
+        });
+        console.log('[sendSampleAudio][segments] using_cache', {
+            count: cachedSegments.length,
+            elapsedMs: Date.now() - t0
+        });
         return cachedSegments;
     }
 
-    const generatedSegments = await buildSmartNarrationChunksWithChatGpt(rawPdfText, buildNarrationSegments);
+    onProgress?.({
+        phase: 'generating_segments',
+        message: 'Building SSML narration segments with ChatGPT (often several minutes)…'
+    });
+
+    const generatedSegments = await buildSmartNarrationChunksWithChatGpt(
+        rawPdfText,
+        buildNarrationSegments,
+        onProgress
+    );
+    console.log('[sendSampleAudio][segments] generated_result', {
+        count: Array.isArray(generatedSegments) ? generatedSegments.length : -1,
+        elapsedMs: Date.now() - t0
+    });
     if (!generatedSegments.length) {
+        console.log('[sendSampleAudio][segments] empty_segments_return');
         return [];
     }
 
+    onProgress?.({
+        phase: 'segments_generated',
+        message: `Generated ${generatedSegments.length} segments. Saving narration plan…`,
+        segmentCount: generatedSegments.length
+    });
+
     const serialized = JSON.stringify(generatedSegments);
     if (isCompany === 'true') {
+        console.log('[sendSampleAudio][segments] saving_to_company');
         await prisma.company.update({
             where: { id },
             data: { narrationSegments: serialized }
         });
     } else {
+        console.log('[sendSampleAudio][segments] saving_to_author');
         await prisma.author.update({
             where: { id },
             data: { narrationSegments: serialized }
         });
     }
 
+    console.log('[sendSampleAudio][segments] done', {
+        count: generatedSegments.length,
+        elapsedMs: Date.now() - t0
+    });
     return generatedSegments;
 };
 
@@ -466,208 +546,310 @@ export const sendSampleAudio = async (req, res) => {
     const {isCompany} = req.query;
 
     const {narrationSampleHeartzRate, narrationSpeakingRate, narrationGender, narrationLanguageCode, narrationVoiceName} = req.body;
-    if(req.middlewareRole !== 'ADMIN'){
-        return res.status(403).json({message: "You are not authorized to access this resource"});
+    if (req.middlewareRole !== 'ADMIN') {
+        return res.status(403).json({ message: 'You are not authorized to access this resource' });
     }
-    
-    try {
-        // Get publisher data
-        let publisher;
-        if(isCompany === 'true') {
-            publisher = await prisma.company.findUnique({
-                where: { id: id }
-            });
-        } else {
-            publisher = await prisma.author.findUnique({
-                where: { id: id }
-            });
-        }
-        
-        if (!publisher) {
-            return res.status(404).json({message: "Publisher not found"});
-        }
-        
-        if (!publisher.pdfURL) {
-            return res.status(400).json({message: "No PDF URL found for this publisher"});
-        }
-        console.log(publisher.pdfURL, 'this is pdfURL');
-        // Get PDF from S3
-        const pdfKey = publisher.pdfURL.split('/').slice(3).join('/'); 
 
-        const userId = pdfKey.split('/').slice(0,3).join('/');
-        console.log(pdfKey, 'this is pdfKey');
+    const stream = wantsNdjsonStream(req);
+    const pushProgress = (payload) => {
+        if (stream) writeNdjsonLine(res, { type: 'progress', ...payload });
+    };
+
+    try {
+        let publisher;
+        if (isCompany === 'true') {
+            publisher = await prisma.company.findUnique({ where: { id } });
+        } else {
+            publisher = await prisma.author.findUnique({ where: { id } });
+        }
+
+        if (!publisher) {
+            return res.status(404).json({ message: 'Publisher not found' });
+        }
+
+        if (!publisher.pdfURL) {
+            return res.status(400).json({ message: 'No book document URL found for this publisher' });
+        }
+
+        if (stream) beginNdjsonStream(res);
+
+        pushProgress({ phase: 'downloading_document', message: 'Downloading book file from storage…' });
+        const pdfKey = publisher.pdfURL.split('/').slice(3).join('/');
+        const userId = pdfKey.split('/').slice(0, 3).join('/');
         const data = await getPdfFromAws(pdfKey);
-        console.log(data, 'this is data');
-        const pdfData = await PdfParse(data);
-        console.log(pdfData.text, 'this is pdfData.text');
+
+        pushProgress({ phase: 'parsing_document', message: 'Extracting text from PDF or EPUB…' });
+        const rawBookText = await extractPlainTextForNarration(data, publisher.pdfURL);
+
+        console.log('[sendSampleAudio] extracted_raw_text', {
+            chars: typeof rawBookText === 'string' ? rawBookText.length : 0,
+            preview: typeof rawBookText === 'string' ? rawBookText.slice(0, 120) : ''
+        });
+
         const narrationSegments = await getNarrationSegmentsWithCache({
             publisher,
             isCompany,
             id,
-            rawPdfText: pdfData.text
+            rawPdfText: rawBookText,
+            onProgress: pushProgress
         });
 
-        console.log(narrationSegments, 'this is narrationSegments');
+        console.log('[sendSampleAudio] narration_segments_ready', {
+            count: narrationSegments.length,
+            firstSegmentChars: narrationSegments?.[0]?.ssml?.length ?? 0
+        });
+
         if (!narrationSegments.length) {
-            return res.status(400).json({message: "Unable to generate narration chunks from PDF"});
+            if (stream) {
+                writeNdjsonLine(res, { type: 'error', message: 'Unable to generate narration chunks from the uploaded document' });
+                return res.end();
+            }
+            return res.status(400).json({ message: 'Unable to generate narration chunks from the uploaded document' });
         }
 
+        pushProgress({ phase: 'synthesizing_audio', message: 'Converting first segment to speech (OpenAI TTS)…' });
         const firstSegment = narrationSegments[0].ssml;
-        console.log(`Processing sample chunk (${firstSegment.length} characters)`);
+        const [response] = await googleTtsConvert(
+            firstSegment,
+            narrationSampleHeartzRate,
+            narrationSpeakingRate,
+            narrationGender,
+            narrationLanguageCode,
+            narrationVoiceName
+        );
 
-        // Build a 
-        
-        const [response] = await googleTtsConvert(firstSegment, narrationSampleHeartzRate, narrationSpeakingRate, narrationGender, narrationLanguageCode, narrationVoiceName);
+        const ext = response.responseFormat || 'mp3';
+        const sampleFileName = `sample_output_${id}.${ext}`;
 
-        console.log(response, 'this is response');
-        
-        // Upload sample audio buffer to S3 using the S3 controller function
-        const sampleFileName = `sample_output_${id}.mp3`;
-        
-        try {
-            const {Location} = await uploadAudioBufferToS3(
-                response.audioContent, 
-                userId, 
-                sampleFileName
-            );
-            console.log(Location, 'this is uploadResult waiting for the db to be updated');
+        pushProgress({ phase: 'uploading', message: 'Uploading sample audio…' });
+        const { Location } = await uploadAudioBufferToS3(response.audioContent, userId, sampleFileName);
 
-            if(isCompany === 'true'){
-                await prisma.company.update({
-                    where: { id: id },
-                    data: { audioSampleURL: Location }
-                });
-            }
-            else{
-                await prisma.author.update({
-                    where: { id: id },
-                    data: { audioSampleURL: Location }
-                });
-            }
-            
-            return res.status(200).json({
-                message: "Sample audio generated and uploaded successfully",
+        if (isCompany === 'true') {
+            await prisma.company.update({
+                where: { id },
+                data: { audioSampleURL: Location }
             });
-        } catch (uploadError) {
-            console.error('Error uploading to S3:', uploadError);
-            return res.status(500).json({
-                message: "Error uploading audio to S3",
-                error: uploadError.message
+        } else {
+            await prisma.author.update({
+                where: { id },
+                data: { audioSampleURL: Location }
             });
         }
-        
+
+        if (stream) {
+            writeNdjsonLine(res, {
+                type: 'complete',
+                message: 'Sample audio generated and uploaded successfully',
+                audioSampleURL: Location
+            });
+            return res.end();
+        }
+
+        return res.status(200).json({
+            message: 'Sample audio generated and uploaded successfully',
+            audioSampleURL: Location
+        });
     } catch (error) {
         console.error('Error in sendSampleAudio:', error);
-        return res.status(500).json({message: "Internal server error", error: error.message});
+        if (stream && res.headersSent) {
+            writeNdjsonLine(res, { type: 'error', message: error.message || 'Internal server error' });
+            return res.end();
+        }
+        return res.status(500).json({ message: 'Internal server error', error: error.message });
     }
-}
+};
 
 export const generateFullAudio = async (req, res) => {
-    const {id} = req.params;
-    const {isCompany} = req.query;
+    const { id } = req.params;
+    const { isCompany } = req.query;
 
-    const {narrationSampleHeartzRate, narrationSpeakingRate, narrationGender, narrationLanguageCode, narrationVoiceName} = req.body;
-    if(req.middlewareRole !== 'ADMIN'){
-        return res.status(403).json({message: "You are not authorized to access this resource"});
+    const { narrationSpeakingRate, narrationGender, narrationLanguageCode, narrationVoiceName } = req.body;
+    if (req.middlewareRole !== 'ADMIN') {
+        return res.status(403).json({ message: 'You are not authorized to access this resource' });
     }
-    
-    try {
-        // Get publisher data
-        let publisher;
-        if(isCompany === 'true') {
-            publisher = await prisma.company.findUnique({
-                where: { id: id }
-            });
-        } else {
-            publisher = await prisma.author.findUnique({
-                where: { id: id }
-            });
-        }
-        
-        if (!publisher) {
-            return res.status(404).json({message: "Publisher not found"});
-        }
-        
-        if (!publisher.pdfURL) {
-            return res.status(400).json({message: "No PDF URL found for this publisher"});
-        }
-        
-        // Get PDF from S3
-        const pdfKey = publisher.pdfURL.split('/').slice(3).join('/'); 
 
-        const userId = pdfKey.split('/').slice(0,3).join('/');
-        
+    const stream = wantsNdjsonStream(req);
+    const pushProgress = (payload) => {
+        logGenerateFullAudio(id, isCompany, payload.phase || 'progress', {
+            message: payload.message,
+            current: payload.current,
+            total: payload.total,
+            segmentCount: payload.segmentCount
+        });
+        if (stream) writeNdjsonLine(res, { type: 'progress', ...payload });
+    };
+
+    const jobStartedAt = Date.now();
+
+    try {
+        logGenerateFullAudio(id, isCompany, 'job_started', {
+            stream,
+            narrationLanguageCode,
+            narrationGender
+        });
+
+        let publisher;
+        if (isCompany === 'true') {
+            publisher = await prisma.company.findUnique({ where: { id } });
+        } else {
+            publisher = await prisma.author.findUnique({ where: { id } });
+        }
+
+        if (!publisher) {
+            logGenerateFullAudio(id, isCompany, 'publisher_not_found', {});
+            return res.status(404).json({ message: 'Publisher not found' });
+        }
+
+        if (!publisher.pdfURL) {
+            logGenerateFullAudio(id, isCompany, 'missing_document_url', {});
+            return res.status(400).json({ message: 'No book document URL found for this publisher' });
+        }
+
+        logGenerateFullAudio(id, isCompany, 'publisher_loaded', {
+            hasCachedNarrationSegments: Boolean(publisher.narrationSegments),
+            documentUrlHost: (() => {
+                try {
+                    return new URL(publisher.pdfURL).host;
+                } catch {
+                    return 'unknown';
+                }
+            })()
+        });
+
+        if (stream) beginNdjsonStream(res);
+
+        pushProgress({ phase: 'downloading_document', message: 'Downloading book file from storage…' });
+        const pdfKey = publisher.pdfURL.split('/').slice(3).join('/');
+        const userId = pdfKey.split('/').slice(0, 3).join('/');
         const data = await getPdfFromAws(pdfKey);
-        
-        const pdfData = await PdfParse(data);
-        
+        logGenerateFullAudio(id, isCompany, 'document_downloaded', {
+            s3KeyTail: pdfKey.split('/').slice(-2).join('/'),
+            byteLength: Buffer.isBuffer(data) ? data.length : (data?.byteLength ?? 'unknown')
+        });
+
+        pushProgress({ phase: 'parsing_document', message: 'Extracting text from PDF or EPUB…' });
+        const rawBookText = await extractPlainTextForNarration(data, publisher.pdfURL);
+        logGenerateFullAudio(id, isCompany, 'text_extracted', {
+            textCharLength: typeof rawBookText === 'string' ? rawBookText.length : 0
+        });
+
         const narrationSegments = await getNarrationSegmentsWithCache({
             publisher,
             isCompany,
             id,
-            rawPdfText: pdfData.text
+            rawPdfText: rawBookText,
+            onProgress: pushProgress
         });
         if (!narrationSegments.length) {
-            return res.status(400).json({message: "Unable to generate narration chunks from PDF"});
+            logGenerateFullAudio(id, isCompany, 'no_narration_segments', { msSinceStart: Date.now() - jobStartedAt });
+            if (stream) {
+                writeNdjsonLine(res, { type: 'error', message: 'Unable to generate narration chunks from the uploaded document' });
+                return res.end();
+            }
+            return res.status(400).json({ message: 'Unable to generate narration chunks from the uploaded document' });
         }
-        console.log(`Prepared ${narrationSegments.length} SSML narration segments`);
-        
-        
-        // Process each chunk and combine audio
+
+        logGenerateFullAudio(id, isCompany, 'narration_segments_ready', {
+            segmentCount: narrationSegments.length,
+            msSinceStart: Date.now() - jobStartedAt
+        });
+
+        pushProgress({
+            phase: 'tts_batch_start',
+            message: `Converting ${narrationSegments.length} segments to speech (this can take a long time)…`,
+            segmentCount: narrationSegments.length
+        });
+
         const audioBuffers = [];
-        
+        const ttsStartedAt = Date.now();
         for (let i = 0; i < narrationSegments.length; i++) {
-            console.log(`Processing chunk ${i + 1}/${narrationSegments.length}`);
-            
-            
-            const [response] =  await googleTtsConvert(narrationSegments[i].ssml, narrationSampleHeartzRate, narrationSpeakingRate, narrationGender, narrationLanguageCode, narrationVoiceName);
-            audioBuffers.push(response.audioContent);
-            
-            // Add small delay between requests to avoid rate limiting
-            if (i < narrationSegments.length - 1) {
-                await new Promise(resolve => setTimeout(resolve, 100));
-            }
-        }
-        console.log(audioBuffers, 'this is audioBuffers');
-        const SingleAudio = Buffer.concat(audioBuffers);
-
-        const fullAudioFileName = `full_output_${id}.mp3`;
-
-        try {
-            const {Location} = await uploadAudioBufferToS3(
-                SingleAudio, 
-                userId, 
-                fullAudioFileName
+            pushProgress({
+                phase: 'synthesizing_segment',
+                message: `Text-to-speech: segment ${i + 1} of ${narrationSegments.length}…`,
+                current: i + 1,
+                total: narrationSegments.length
+            });
+            const segStart = Date.now();
+            const [response] = await googleTtsConvert(
+                narrationSegments[i].ssml,
+                'mp3',
+                narrationSpeakingRate,
+                narrationGender,
+                narrationLanguageCode,
+                narrationVoiceName
             );
-            console.log(Location, 'this is uploadResult waiting for the db to be updated');
-
-            if(isCompany === 'true'){
-                await prisma.company.update({
-                    where: { id: id },
-                    data: { completeAudioUrl: Location }
-                });
-            }
-            else{
-                await prisma.author.update({
-                    where: { id: id },
-                    data: { completeAudioUrl: Location }
-                });
-            }
-            
-            return res.status(200).json({
-                message: "Full audio generated and uploaded successfully",
+            const segMs = Date.now() - segStart;
+            audioBuffers.push(response.audioContent);
+            const bufLen = response.audioContent?.length ?? 0;
+            logGenerateFullAudio(id, isCompany, 'tts_segment_done', {
+                segmentIndex: i + 1,
+                segmentTotal: narrationSegments.length,
+                ssmlChars: narrationSegments[i].ssml?.length ?? 0,
+                audioBytes: bufLen,
+                segmentMs: segMs
             });
-        } catch (uploadError) {
-            console.error('Error uploading to S3:', uploadError);
-            return res.status(500).json({
-                message: "Error uploading audio to S3",
-                error: uploadError.message
+            if (i < narrationSegments.length - 1) {
+                await new Promise((resolve) => setTimeout(resolve, 100));
+            }
+        }
+        logGenerateFullAudio(id, isCompany, 'tts_batch_complete', {
+            segmentTotal: narrationSegments.length,
+            ttsTotalMs: Date.now() - ttsStartedAt
+        });
+
+        const singleAudio = Buffer.concat(audioBuffers);
+        const fullAudioFileName = `full_output_${id}.mp3`;
+        logGenerateFullAudio(id, isCompany, 'audio_concatenated', {
+            combinedBytes: singleAudio.length
+        });
+
+        pushProgress({ phase: 'uploading', message: 'Uploading combined audiobook file…' });
+        const { Location } = await uploadAudioBufferToS3(singleAudio, userId, fullAudioFileName);
+        logGenerateFullAudio(id, isCompany, 'upload_complete', {
+            s3ObjectKey: `${userId}/${fullAudioFileName}`
+        });
+
+        if (isCompany === 'true') {
+            await prisma.company.update({
+                where: { id },
+                data: { completeAudioUrl: Location }
+            });
+        } else {
+            await prisma.author.update({
+                where: { id },
+                data: { completeAudioUrl: Location }
             });
         }
-        
-        
+        logGenerateFullAudio(id, isCompany, 'database_updated', { completeAudioUrl: Location });
+
+        logGenerateFullAudio(id, isCompany, 'job_complete', {
+            msTotal: Date.now() - jobStartedAt,
+            completeAudioUrl: Location
+        });
+
+        if (stream) {
+            writeNdjsonLine(res, {
+                type: 'complete',
+                message: 'Full audio generated and uploaded successfully',
+                completeAudioUrl: Location
+            });
+            return res.end();
+        }
+
+        return res.status(200).json({
+            message: 'Full audio generated and uploaded successfully',
+            completeAudioUrl: Location
+        });
     } catch (error) {
+        logGenerateFullAudio(id, isCompany, 'job_failed', {
+            errorMessage: error.message,
+            msSinceStart: Date.now() - jobStartedAt
+        });
         console.error('Error in generateFullAudio:', error);
-        return res.status(500).json({message: "Internal server error", error: error.message});
+        if (stream && res.headersSent) {
+            writeNdjsonLine(res, { type: 'error', message: error.message || 'Internal server error' });
+            return res.end();
+        }
+        return res.status(500).json({ message: 'Internal server error', error: error.message });
     }
-}
+};

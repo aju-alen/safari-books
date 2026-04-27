@@ -9,11 +9,7 @@ const PublisherLayout = () =>{
         <View style={defaultStyles.container}>
         <Stack>
             <Stack.Screen name='[publisherDetailsData]' options={{ 
-                headerShown: true,
-                title: 'Your Books',
-                headerStyle: { backgroundColor: theme.background },
-                headerTintColor: theme.text,
-                headerTitleStyle: { fontWeight: 'bold' },
+                headerShown: false,
                  }} />
         </Stack>
         </View>

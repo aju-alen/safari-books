@@ -234,7 +234,6 @@ const PublisherDetailsSingle = () => {
     <SafeAreaView style={[defaultStyles.container, styles.container, { backgroundColor: theme.background }]}>
       <ScrollView contentContainerStyle={styles.contentContainer}>
         <View style={styles.header}>
-          {/* <Text style={styles.headerTitle}>Book Details</Text> */}
         </View>
 
         <View style={styles.detailCard}>

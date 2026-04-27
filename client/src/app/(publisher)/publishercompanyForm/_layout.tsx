@@ -8,12 +8,7 @@ const PublisherLayout = () =>{
     return(
         <View style={[defaultStyles.container, { backgroundColor: theme.background }]}>
         <Stack>
-            <Stack.Screen name='[publishercompanyForm]' options={{ headerShown: true,
-                title: 'Publish as a Company',
-                headerStyle: { backgroundColor: theme.background },
-                headerTintColor: theme.text,
-                headerTitleStyle: { fontWeight: 'bold'}
-             }} />
+            <Stack.Screen name='[publishercompanyForm]' options={{ headerShown: false }} />
         </Stack>
         </View>
     )
