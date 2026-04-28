@@ -5,6 +5,7 @@ import { extractPlainTextForNarration } from '../utils/bookDocumentText.js'
 import { googleTtsConvert } from '../utils/google-tts-convert.js'
 import { uploadAudioBufferToS3 } from '../utils/uploadAudioBuffer.js'
 import { buildSmartNarrationChunksWithChatGpt } from '../utils/chatgpt-smart-chunks.js'
+import { getAudioDurationMs } from '../utils/audioDurationFromBuffer.js'
 
 
 import dotenv from "dotenv";
@@ -40,6 +41,40 @@ const logGenerateFullAudio = (publisherId, isCompanyQuery, stage, detail = {}) =
         ...detail
     };
     console.log('[generateFullAudio]', JSON.stringify(line));
+};
+
+/** Plain spoken text from SSML (tags stripped). Used for duration estimates and full section copy. */
+const ssmlToPlainText = (ssml = '') =>
+    String(ssml || '')
+        .replace(/```xml|```ssml|```/gi, '')
+        .replace(/<\?xml[^>]*\?>/gi, '')
+        .replace(/<break[^>]*>/gi, ', ')
+        .replace(/<\/?prosody[^>]*>/gi, '')
+        .replace(/<\/?emphasis[^>]*>/gi, '')
+        .replace(/<\/?speak>/gi, '')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&apos;/g, "'")
+        .replace(/<[^>]+>/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+/** Short excerpt for logs or legacy previews only — not written to Book.timeStamp as `p`. */
+const ssmlToPreviewText = (ssml = '', maxLen = 160) => {
+    const plain = ssmlToPlainText(ssml);
+    return plain.length > maxLen ? `${plain.slice(0, maxLen).trim()}…` : plain;
+};
+
+const estimateSegmentDurationMs = (ssml = '', narrationSpeakingRate) => {
+    const plain = ssmlToPlainText(ssml);
+    const words = plain.split(/\s+/).filter(Boolean).length;
+    const parsedRate = Number(String(narrationSpeakingRate ?? '').replace(/"/g, ''));
+    const rate = Number.isFinite(parsedRate) ? Math.min(Math.max(parsedRate, 0.8), 1.4) : 1;
+    const wordsPerMinute = 165 * rate;
+    const ms = Math.round((words / wordsPerMinute) * 60_000);
+    return Math.max(1000, ms || 1000);
 };
 
 // Fewer, longer segments → fewer TTS calls. Plain text per TTS request must stay ≤4096 chars (see google-tts-convert).
@@ -219,6 +254,26 @@ const parseStoredNarrationSegments = (storedValue) => {
     }
 };
 
+const parseNarrationTimelineFromSegments = (storedValue) => {
+    const parsed = parseStoredNarrationSegments(storedValue);
+    return parsed
+        .filter((segment) =>
+            Number.isFinite(segment?.s) &&
+            Number.isFinite(segment?.e) &&
+            segment.e > segment.s
+        )
+        .map((segment, idx) => ({
+            i: Number.isFinite(segment?.i) ? segment.i : idx + 1,
+            s: segment.s,
+            e: segment.e,
+            d: Number.isFinite(segment?.d) ? segment.d : Math.max(0, segment.e - segment.s),
+            ch: segment.chapterHeading || '',
+            sl: segment.segmentLabel || `[SEGMENT ${idx + 1}]`,
+            p: typeof segment?.p === 'string' ? segment.p : '',
+            source: typeof segment?.source === 'string' ? segment.source : 'unknown'
+        }));
+};
+
 const getNarrationSegmentsWithCache = async ({
     publisher,
     isCompany,
@@ -387,6 +442,7 @@ export const verifyPublisher = async (req, res) => {
                 },
             })
             console.log(publisher,'updated company publisher data');
+            const cachedTimeline = parseNarrationTimelineFromSegments(publisher.narrationSegments);
             
 
             const addBook = await prisma.book.create({
@@ -410,7 +466,8 @@ export const verifyPublisher = async (req, res) => {
                     companyId: publisher.id,
                     isPublished: true,
                     amount: publisher.amount,
-                    publishedAt: new Date()
+                    publishedAt: new Date(),
+                    timeStamp: cachedTimeline
 
                 }
             })
@@ -427,6 +484,7 @@ export const verifyPublisher = async (req, res) => {
             })
 
             console.log(publisher,'updated publisher data');
+            const cachedTimeline = parseNarrationTimelineFromSegments(publisher.narrationSegments);
 
             const addBook = await prisma.book.create({
                 data:{
@@ -449,7 +507,8 @@ export const verifyPublisher = async (req, res) => {
                     authorId: publisher.id,
                     isPublished: true,
                     amount: publisher.amount,
-                    publishedAt: new Date()
+                    publishedAt: new Date(),
+                    timeStamp: cachedTimeline
                 }})
             res.status(200).json({message: "Company verified successfully", publisher});
         }
@@ -761,6 +820,8 @@ export const generateFullAudio = async (req, res) => {
         });
 
         const audioBuffers = [];
+        const generatedTimestamps = [];
+        let timelineCursorMs = 0;
         const ttsStartedAt = Date.now();
         for (let i = 0; i < narrationSegments.length; i++) {
             pushProgress({
@@ -781,12 +842,42 @@ export const generateFullAudio = async (req, res) => {
             const segMs = Date.now() - segStart;
             audioBuffers.push(response.audioContent);
             const bufLen = response.audioContent?.length ?? 0;
+            let measuredDurationMs = 0;
+            let durationSource = 'measured_from_audio';
+            try {
+                measuredDurationMs = await getAudioDurationMs(response.audioContent);
+            } catch (durationError) {
+                measuredDurationMs = estimateSegmentDurationMs(narrationSegments[i].ssml, narrationSpeakingRate);
+                durationSource = 'estimated_from_text';
+                logGenerateFullAudio(id, isCompany, 'segment_duration_fallback', {
+                    segmentIndex: i + 1,
+                    reason: durationError.message,
+                    fallbackDurationMs: measuredDurationMs
+                });
+            }
+            const startMs = timelineCursorMs;
+            const endMs = startMs + measuredDurationMs;
+            timelineCursorMs = endMs;
+            // Book.timeStamp[]: one object per narration *section* (aligned with one TTS segment — not word-level).
+            // Times are cumulative on the concatenated audiobook; `p` is full plain text for that section (UI + sync).
+            generatedTimestamps.push({
+                i: i + 1,
+                s: startMs,
+                e: endMs,
+                d: measuredDurationMs,
+                ch: narrationSegments[i].chapterHeading || '',
+                sl: narrationSegments[i].segmentLabel || `[SEGMENT ${i + 1}]`,
+                p: ssmlToPlainText(narrationSegments[i].ssml),
+                source: durationSource
+            });
             logGenerateFullAudio(id, isCompany, 'tts_segment_done', {
                 segmentIndex: i + 1,
                 segmentTotal: narrationSegments.length,
                 ssmlChars: narrationSegments[i].ssml?.length ?? 0,
                 audioBytes: bufLen,
-                segmentMs: segMs
+                segmentMs: segMs,
+                measuredDurationMs,
+                durationSource
             });
             if (i < narrationSegments.length - 1) {
                 await new Promise((resolve) => setTimeout(resolve, 100));
@@ -821,6 +912,56 @@ export const generateFullAudio = async (req, res) => {
             });
         }
         logGenerateFullAudio(id, isCompany, 'database_updated', { completeAudioUrl: Location });
+
+        const matchingBook = await prisma.book.findFirst({
+            where: isCompany === 'true'
+                ? { companyId: id, isPublished: true }
+                : { authorId: id, isPublished: true },
+            orderBy: { publishedAt: 'desc' }
+        });
+        if (matchingBook) {
+            await prisma.book.update({
+                where: { id: matchingBook.id },
+                data: {
+                    completeAudioUrl: Location,
+                    timeStamp: generatedTimestamps
+                }
+            });
+            logGenerateFullAudio(id, isCompany, 'book_timestamp_saved', {
+                bookId: matchingBook.id,
+                entries: generatedTimestamps.length,
+                totalEstimatedDurationMs: timelineCursorMs
+            });
+        } else {
+            const timedNarrationSegments = narrationSegments.map((segment, idx) => {
+                const timing = generatedTimestamps[idx];
+                if (!timing) return segment;
+                return {
+                    ...segment,
+                    i: timing.i,
+                    s: timing.s,
+                    e: timing.e,
+                    d: timing.d,
+                    p: timing.p,
+                    source: timing.source
+                };
+            });
+            if (isCompany === 'true') {
+                await prisma.company.update({
+                    where: { id },
+                    data: { narrationSegments: JSON.stringify(timedNarrationSegments) }
+                });
+            } else {
+                await prisma.author.update({
+                    where: { id },
+                    data: { narrationSegments: JSON.stringify(timedNarrationSegments) }
+                });
+            }
+            logGenerateFullAudio(id, isCompany, 'book_not_found_for_timestamp', {});
+            logGenerateFullAudio(id, isCompany, 'timestamps_cached_on_publisher', {
+                entries: generatedTimestamps.length
+            });
+        }
 
         logGenerateFullAudio(id, isCompany, 'job_complete', {
             msTotal: Date.now() - jobStartedAt,

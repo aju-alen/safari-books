@@ -13,6 +13,7 @@ import axios from 'axios';
 import { router } from 'expo-router';
 
 import { useTheme } from '@/providers/ThemeProvider';
+import { BOOK_COVER_ASPECT_RATIO } from '@/constants/bookCover';
 import { axiosWithAuth } from '@/utils/customAxios';
 
 const { width } = Dimensions.get('window');
@@ -159,7 +160,14 @@ const HomePage = () => {
   const BookCard = ({ book, isContinue = false, isLarge = false }) => (
     <TouchableOpacity style={[styles.bookCard, isLarge && styles.largeBookCard, { backgroundColor: theme.white, borderColor: theme.gray2, shadowColor: theme.text }]} onPress={() => router.push(`/(tabs)/home/${book.id}`)}>
       <View style={styles.bookCardHeader}>
-        <Image source={{ uri: book.coverImage }} style={[styles.bookCover, isLarge && styles.largeBookCover]} resizeMode='contain' />
+        <View
+          style={[
+            styles.coverFrame,
+            { backgroundColor: theme.gray2, borderColor: theme.maximumTrackTintColor, shadowColor: theme.text },
+          ]}
+        >
+          <Image source={{ uri: book.coverImage }} style={styles.coverImage} resizeMode="cover" />
+        </View>
         {book.isNew && (
           <View style={[styles.newBadge, { backgroundColor: theme.tertiary }]}>
             <Text style={[styles.newBadgeText, { color: theme.white }]}>NEW</Text>
@@ -556,7 +564,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: horizontalScale(20),
   },
   bookCard: {
-    width: horizontalScale(140),
+    width: horizontalScale(154),
     marginRight: horizontalScale(15),
     borderRadius: moderateScale(16),
     padding: moderateScale(12),
@@ -567,19 +575,27 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   largeBookCard: {
-    width: horizontalScale(160),
+    width: horizontalScale(174),
   },
   bookCardHeader: {
     position: 'relative',
   },
-  bookCover: {
+  coverFrame: {
     width: '100%',
-    height: verticalScale(180),
-    borderRadius: moderateScale(12),
+    aspectRatio: BOOK_COVER_ASPECT_RATIO,
+    borderRadius: moderateScale(28),
+    overflow: 'hidden',
+    borderWidth: StyleSheet.hairlineWidth,
     marginBottom: verticalScale(10),
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.14,
+    shadowRadius: 22,
+    elevation: 10,
   },
-  largeBookCover: {
-    height: verticalScale(200),
+  coverImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: moderateScale(28),
   },
   progressContainer: {
     position: 'absolute',

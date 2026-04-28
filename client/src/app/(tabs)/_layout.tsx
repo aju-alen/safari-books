@@ -68,8 +68,7 @@ const TabsLayout = () => {
                 />
             </Tabs>
 
-            {/* Mini Player Positioned on Top of the Tabs */}
-            {/* <MiniPlayer style={styles.miniPlayer} /> */}
+            <MiniPlayer />
         </View>     
          </RevenueCatProvider>
     )
@@ -80,13 +79,6 @@ const styles = StyleSheet.create({
         flex: 1,
         position: 'relative',
     },
-    miniPlayer: {
-        position: 'absolute',
-        bottom: 100, // Adjust based on tab bar height
-        left: 0,
-        right: 0,
-        zIndex: 10, // Ensure it overlays the tabs
-    }
 });
 
 export default TabsLayout;

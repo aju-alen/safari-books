@@ -16,12 +16,28 @@ import RevenueCatUI, { PAYWALL_RESULT } from 'react-native-purchases-ui';
 import * as Sharing from 'expo-sharing';
 import { useTheme } from '@/providers/ThemeProvider';
 import { axiosWithAuth } from '@/utils/customAxios';
-import HomeLoadingSkeleton from '@/components/HomeLoadingSkeleton';
+import SingleBookSkeleton from '@/components/SingleBookSkeleton';
+import { BOOK_COVER_ASPECT_RATIO } from '@/constants/bookCover';
 import * as ExpoSecureStore from 'expo-secure-store';
+
+/** e.g. "6 April 2025" from API date string */
+function formatReleaseDateDisplay(value: unknown): string {
+  if (value == null || value === '') return '—';
+  const d = new Date(value as string | number | Date);
+  if (Number.isNaN(d.getTime())) return '—';
+  return d.toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+}
 
 const SingleBookPage = () => {
   const { theme } = useTheme();
-  const { singleBook } = useLocalSearchParams();
+  const { singleBook, openPlayer } = useLocalSearchParams<{
+    singleBook: string;
+    openPlayer?: string;
+  }>();
   const [singleBookData, setSingleBookData] = useState([]);
   const [isModalVisible, setModalVisible] = useState(false);
   const [sound, setSound] = useState(null);
@@ -75,6 +91,15 @@ const SingleBookPage = () => {
     fetchData();
   }, []);
 
+  useEffect(() => {
+    if (openPlayer !== '1' || loading) return;
+    const book = singleBookData[0];
+    if (!book?.completeAudioUrl) return;
+    setCurrentAudioUrl(book.completeAudioUrl);
+    setPlayerVisible(true);
+    router.setParams({ openPlayer: undefined });
+  }, [openPlayer, loading, singleBookData]);
+
   const { playTrack } = useAudio();
 
   const playSample = async () => {
@@ -99,6 +124,7 @@ const SingleBookPage = () => {
       title: singleBookData[0]?.title,
       author: singleBookData[0]?.authorName,
       coverImage: singleBookData[0]?.coverImage,
+      bookId: Array.isArray(singleBook) ? singleBook[0] : singleBook,
     });
   };
 
@@ -171,50 +197,71 @@ const SingleBookPage = () => {
   }
 
   const styles = StyleSheet.create({
-    gradientContainer: {
+    pageContent: {
         minHeight: '100%',
-        paddingBottom: verticalScale(40)
+        paddingBottom: verticalScale(48),
+        paddingHorizontal: horizontalScale(20),
+        maxWidth: 520,
+        width: '100%',
+        alignSelf: 'center',
       },
       imageContainer: {
         alignItems: 'center',
-        paddingHorizontal: horizontalScale(20),
-        marginTop: verticalScale(20),
-        marginBottom: verticalScale(20),
+        marginTop: verticalScale(8),
+        marginBottom: verticalScale(8),
+      },
+      coverFrame: {
+        width: horizontalScale(260),
+        aspectRatio: BOOK_COVER_ASPECT_RATIO,
+        borderRadius: moderateScale(44),
+        overflow: 'hidden',
+        backgroundColor: theme.gray2,
+        borderWidth: StyleSheet.hairlineWidth,
+        borderColor: theme.maximumTrackTintColor,
+        shadowColor: theme.text,
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.14,
+        shadowRadius: 22,
+        elevation: 10,
       },
       coverImage: {
-        width: horizontalScale(300),
-        height: verticalScale(450),
-        borderRadius: moderateScale(16),
-        shadowColor: theme.text,
-        shadowOffset: { width: 0, height: 8 },
-        shadowRadius: 16,
-        elevation: 8,
+        width: '100%',
+        height: '100%',
+        borderRadius: moderateScale(44),
       },
       titleContainer: {
         alignItems: 'center',
-        marginTop: verticalScale(16),
-        paddingHorizontal: horizontalScale(10),
+        marginTop: verticalScale(22),
+        paddingHorizontal: horizontalScale(4),
       },
       title: {
-        fontSize: moderateScale(28),
+        fontSize: moderateScale(26),
         fontWeight: '700',
         color: theme.text,
         textAlign: 'center',
-        lineHeight: moderateScale(34),
+        lineHeight: moderateScale(32),
+        letterSpacing: 0.2,
       },
       description: {
-        fontSize: moderateScale(16),
+        fontSize: moderateScale(15),
         color: theme.textMuted,
         textAlign: 'center',
-        marginTop: verticalScale(12),
+        marginTop: verticalScale(10),
         lineHeight: moderateScale(22),
+        paddingHorizontal: horizontalScale(4),
       },
       infoContainer: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        marginTop: verticalScale(16),
-        gap: horizontalScale(24)
+        marginTop: verticalScale(20),
+        paddingVertical: verticalScale(12),
+        paddingHorizontal: horizontalScale(16),
+        gap: horizontalScale(12),
+        backgroundColor: theme.gray2,
+        borderRadius: moderateScale(14),
+        borderWidth: StyleSheet.hairlineWidth,
+        borderColor: theme.maximumTrackTintColor,
       },
       durationContainer: {
         flexDirection: 'row',
@@ -241,59 +288,81 @@ const SingleBookPage = () => {
       creditsContainer: {
         flexDirection: 'row',
         justifyContent: 'center',
-        alignItems: 'center',
-        marginTop: verticalScale(24),
+        alignItems: 'stretch',
+        marginTop: verticalScale(20),
         width: '100%',
-        gap: horizontalScale(24)
+        gap: horizontalScale(0),
+        padding: moderateScale(16),
+        backgroundColor: theme.tabs,
+        borderRadius: moderateScale(16),
+        borderWidth: StyleSheet.hairlineWidth,
+        borderColor: theme.maximumTrackTintColor,
       },
       creditItem: {
-        alignItems: 'center'
+        flex: 1,
+        alignItems: 'center',
       },
       creditLabel: {
         color: theme.textMuted,
-        fontSize: moderateScale(12),
-        marginBottom: verticalScale(4)
+        fontSize: moderateScale(11),
+        fontWeight: '700',
+        letterSpacing: 1.2,
+        marginBottom: verticalScale(6),
       },
       creditName: {
         color: theme.text,
         fontSize: moderateScale(14),
-        fontWeight: '600'
+        fontWeight: '600',
+        textAlign: 'center',
       },
       divider: {
-        width: 1,
-        height: '100%',
-        backgroundColor: theme.textMuted,
-        opacity: 0.3
+        width: StyleSheet.hairlineWidth,
+        alignSelf: 'stretch',
+        backgroundColor: theme.maximumTrackTintColor,
+        marginHorizontal: horizontalScale(8),
       },
       primaryButton: {
-        backgroundColor: theme.primary,
-        paddingVertical: verticalScale(16),
-        paddingHorizontal: horizontalScale(32),
-        borderRadius: moderateScale(30),
+        backgroundColor: 'transparent',
+        borderWidth: 2,
+        borderColor: theme.primary,
+        paddingVertical: verticalScale(15),
+        paddingHorizontal: horizontalScale(28),
+        borderRadius: moderateScale(28),
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
-        gap: horizontalScale(8),
+        gap: horizontalScale(10),
       },
       buttonText: {
-        color: theme.white,
+        color: theme.primary,
         fontSize: moderateScale(16),
-        fontWeight: '600'
+        fontWeight: '700',
       },
       section: {
         width: '100%',
-        marginTop: verticalScale(32)
+        marginTop: verticalScale(28),
+      },
+      sectionCard: {
+        padding: moderateScale(18),
+        borderRadius: moderateScale(16),
+        backgroundColor: theme.gray2,
+        borderWidth: StyleSheet.hairlineWidth,
+        borderColor: theme.maximumTrackTintColor,
       },
       sectionTitle: {
         color: theme.text,
-        fontSize: moderateScale(20),
+        fontSize: moderateScale(18),
         fontWeight: '700',
-        marginBottom: verticalScale(12)
+        marginBottom: verticalScale(12),
+        letterSpacing: 0.2,
+      },
+      sectionTitleInline: {
+        marginBottom: verticalScale(4),
       },
       sectionText: {
         color: theme.textMuted,
-        fontSize: moderateScale(14),
-        lineHeight: moderateScale(22)
+        fontSize: moderateScale(15),
+        lineHeight: moderateScale(24),
       },
       detailsGrid: {
         gap: verticalScale(16)
@@ -336,10 +405,10 @@ const SingleBookPage = () => {
     header: {
       flexDirection: 'row',
       justifyContent: 'space-between',
+      alignItems: 'center',
       width: '100%',
-      paddingHorizontal: horizontalScale(20),
-      marginTop: verticalScale(10),
-      marginBottom: verticalScale(20),
+      marginTop: verticalScale(4),
+      marginBottom: verticalScale(12),
     },
     headerRightButtons: {
       flexDirection: 'row',
@@ -347,14 +416,18 @@ const SingleBookPage = () => {
       gap: horizontalScale(12),
     },
     backButton: {
-      padding: moderateScale(8),
-      borderRadius: moderateScale(20),
-      backgroundColor: 'rgba(0,0,0,0.3)',
+      padding: moderateScale(10),
+      borderRadius: moderateScale(22),
+      backgroundColor: theme.gray2,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: theme.maximumTrackTintColor,
     },
     bookmarkButton: {
-      padding: moderateScale(8),
-      borderRadius: moderateScale(20),
-      backgroundColor: 'rgba(0,0,0,0.3)',
+      padding: moderateScale(10),
+      borderRadius: moderateScale(22),
+      backgroundColor: theme.gray2,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: theme.maximumTrackTintColor,
     },
     buttonContainer: {
       width: '100%',
@@ -365,8 +438,13 @@ const SingleBookPage = () => {
       backgroundColor: theme.primary,
       paddingVertical: verticalScale(16),
       paddingHorizontal: horizontalScale(32),
-      borderRadius: moderateScale(30),
+      borderRadius: moderateScale(28),
       alignItems: 'center',
+      shadowColor: theme.text,
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.15,
+      shadowRadius: 10,
+      elevation: 6,
     },
     buyButtonText: {
       color: theme.white,
@@ -381,8 +459,10 @@ const SingleBookPage = () => {
     },
     iconButton: {
       padding: moderateScale(10),
-      borderRadius: moderateScale(20),
-      backgroundColor: 'rgba(255,255,255,0.1)',
+      borderRadius: moderateScale(22),
+      backgroundColor: theme.gray2,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: theme.maximumTrackTintColor,
     },
     readMoreButton: {
       marginTop: verticalScale(8),
@@ -439,17 +519,25 @@ const SingleBookPage = () => {
       fontWeight: '600',
     },
     recommendationsScroll: {
-      marginTop: verticalScale(12),
+      marginTop: verticalScale(8),
+      marginHorizontal: -4,
     },
     recommendationItem: {
-      width: horizontalScale(120),
-      marginRight: horizontalScale(16),
+      width: horizontalScale(124),
+      marginRight: horizontalScale(14),
+      padding: moderateScale(10),
+      paddingBottom: moderateScale(12),
+      backgroundColor: theme.tabs,
+      borderRadius: moderateScale(14),
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: theme.maximumTrackTintColor,
     },
     recommendationCover: {
-      width: horizontalScale(120),
-      height: verticalScale(180),
-      borderRadius: moderateScale(8),
-      marginBottom: verticalScale(8),
+      width: '100%',
+      aspectRatio: BOOK_COVER_ASPECT_RATIO,
+      borderRadius: moderateScale(10),
+      marginBottom: verticalScale(10),
+      backgroundColor: theme.gray2,
     },
     recommendationTitle: {
       color: theme.text,
@@ -463,7 +551,7 @@ const SingleBookPage = () => {
   });
 
   if (loading) {
-    return <HomeLoadingSkeleton />;
+    return <SingleBookSkeleton />;
   }
 
   return (
@@ -473,34 +561,21 @@ const SingleBookPage = () => {
       showsVerticalScrollIndicator={false}
     >
       <SafeAreaView>
-        <View
-          style={styles.gradientContainer}
-         
-        >
+        <View style={styles.pageContent}>
           <View style={styles.header}>
             <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
               <Ionicons name="arrow-back" size={24} color={theme.text} />
             </TouchableOpacity>
-            {/* <View style={styles.headerRightButtons}>
-              <TouchableOpacity style={styles.iconButton} onPress={handleShare}>
-                <Ionicons name="share-social-outline" size={22} color={theme.text} />
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.bookmarkButton} onPress={toggleBookmark}>
-                <Ionicons 
-                  name={isBookmarked ? "bookmark" : "bookmark-outline"} 
-                  size={24} 
-                  color={isBookmarked ? theme.tertiary : theme.text} 
-                />
-              </TouchableOpacity>
-            </View> */}
           </View>
 
           <View style={styles.imageContainer}>
-            <Image
-              source={{ uri: singleBookData[0]?.coverImage }}
-              style={styles.coverImage}
-              resizeMode='contain'
-            />
+            <View style={styles.coverFrame}>
+              <Image
+                source={{ uri: singleBookData[0]?.coverImage }}
+                style={styles.coverImage}
+                resizeMode="cover"
+              />
+            </View>
 
             <View style={styles.titleContainer}>
               <Text style={styles.title}>{singleBookData[0]?.title}</Text>
@@ -543,7 +618,7 @@ const SingleBookPage = () => {
                   setPlayerVisible(true);
                 }}
               >
-                <Ionicons name="play" size={20} color={theme.white} />
+                <Ionicons name="play" size={22} color={theme.primary} />
                 <Text style={styles.buttonText}>Listen to Sample</Text>
               </TouchableOpacity>
               
@@ -553,20 +628,22 @@ const SingleBookPage = () => {
             </View>
 
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Summary</Text>
-              <Text style={styles.sectionText} numberOfLines={showFullSummary ? undefined : 5}>
-                {singleBookData[0]?.summary}
-              </Text>
-              {singleBookData[0]?.summary?.length > 150 && (
-                <TouchableOpacity 
-                  style={styles.readMoreButton} 
-                  onPress={() => setShowFullSummary(!showFullSummary)}
-                >
-                  <Text style={styles.readMoreText}>
-                    {showFullSummary ? 'Show less' : 'Read more'}
-                  </Text>
-                </TouchableOpacity>
-              )}
+              <View style={styles.sectionCard}>
+                <Text style={[styles.sectionTitle, styles.sectionTitleInline]}>Summary</Text>
+                <Text style={styles.sectionText} numberOfLines={showFullSummary ? undefined : 5}>
+                  {singleBookData[0]?.summary}
+                </Text>
+                {singleBookData[0]?.summary?.length > 150 && (
+                  <TouchableOpacity
+                    style={styles.readMoreButton}
+                    onPress={() => setShowFullSummary(!showFullSummary)}
+                  >
+                    <Text style={styles.readMoreText}>
+                      {showFullSummary ? 'Show less' : 'Read more'}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
             </View>
 
             {/* <View style={styles.section}>
@@ -593,29 +670,33 @@ const SingleBookPage = () => {
             </View> */}
 
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Product Details</Text>
-              <View style={styles.detailsGrid}>
-                <View style={styles.detailItem}>
-                  <Text style={styles.detailLabel}>Release Date</Text>
-                  <Text style={styles.detailValue}>{new Date(singleBookData[0]?.releaseDate).toLocaleDateString()}</Text>
-                </View>
-                <View style={styles.detailItem}>
-                  <Text style={styles.detailLabel}>Language</Text>
-                  <Text style={styles.detailValue}>{singleBookData[0]?.language}</Text>
-                </View>
-                <View style={styles.detailItem}>
-                  <Text style={styles.detailLabel}>Publisher</Text>
-                  <Text style={styles.detailValue}>{singleBookData[0]?.publisher}</Text>
-                </View>
-                <View style={styles.detailItem}>
-                  <Text style={styles.detailLabel}>Categories</Text>
-                  <Text style={styles.detailValue}>{BookCategoryLabels[singleBookData[0]?.categories]}</Text>
+              <View style={styles.sectionCard}>
+                <Text style={[styles.sectionTitle, styles.sectionTitleInline]}>Book Details</Text>
+                <View style={styles.detailsGrid}>
+                  <View style={styles.detailItem}>
+                    <Text style={styles.detailLabel}>Release Date</Text>
+                    <Text style={styles.detailValue}>
+                      {formatReleaseDateDisplay(singleBookData[0]?.releaseDate)}
+                    </Text>
+                  </View>
+                  <View style={styles.detailItem}>
+                    <Text style={styles.detailLabel}>Language</Text>
+                    <Text style={styles.detailValue}>{singleBookData[0]?.language}</Text>
+                  </View>
+                  <View style={styles.detailItem}>
+                    <Text style={styles.detailLabel}>Publisher</Text>
+                    <Text style={styles.detailValue}>{singleBookData[0]?.publisher}</Text>
+                  </View>
+                  <View style={styles.detailItem}>
+                    <Text style={styles.detailLabel}>Categories</Text>
+                    <Text style={styles.detailValue}>{BookCategoryLabels[singleBookData[0]?.categories]}</Text>
+                  </View>
                 </View>
               </View>
             </View>
             
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>You May Also Like</Text>
+              <Text style={[styles.sectionTitle, { marginBottom: verticalScale(14) }]}>You May Also Like</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.recommendationsScroll}>
                 {bookRecommendations.slice(0, 5).map((book, index) => (
                   <View key={index} style={styles.recommendationItem}>
@@ -649,7 +730,11 @@ const SingleBookPage = () => {
         author={singleBookData[0]?.authorName}
         authorAvatar={singleBookData[0]?.authorAvatar || singleBookData[0]?.coverImage}
         bookId={singleBook}
+        timeStamp={singleBookData[0]?.timeStamp || []}
+        language={singleBookData[0]?.language}
+        rating={singleBookData[0]?.rating}
       />
+      
     </ScrollView>
   );
 };

@@ -18,6 +18,11 @@ import {BookCategoryLabels} from '../../utils/categoriesdata'
 import { useTheme } from '@/providers/ThemeProvider'
 import { axiosWithAuth } from '@/utils/customAxios'
 import { Ionicons, Feather } from '@expo/vector-icons'
+import {
+  BOOK_COVER_ASPECT_PAIR,
+  BOOK_COVER_HEIGHT,
+  BOOK_COVER_WIDTH,
+} from '@/constants/bookCover'
 
 interface AudioSample {
   name: string;
@@ -27,6 +32,22 @@ interface AudioSample {
 }
 
 const { width } = Dimensions.get('window');
+
+/**
+ * No second crop — scale to canonical `BOOK_COVER_WIDTH × BOOK_COVER_HEIGHT`.
+ * Crop UI should match `BOOK_COVER_ASPECT_PAIR`; `resize` locks final pixel size/ratio for S3.
+ */
+async function finalizeCoverUri(uri: string): Promise<string> {
+  const manipulated = await ImageManipulator.manipulateAsync(
+    uri,
+    [{ resize: { width: BOOK_COVER_WIDTH, height: BOOK_COVER_HEIGHT } }],
+    {
+      compress: 0.88,
+      format: ImageManipulator.SaveFormat.JPEG,
+    },
+  );
+  return manipulated.uri;
+}
 
 const publisherCommonForm = () => {
     const {publisherCommonForm} = useLocalSearchParams()
@@ -368,30 +389,30 @@ console.log(publisherCommonForm,'companyId in document submit');
         const result = await ImagePicker.launchImageLibraryAsync({
           mediaTypes: ImagePicker.MediaTypeOptions.Images,
           allowsEditing: true,
+          aspect: [...BOOK_COVER_ASPECT_PAIR],
           quality: 1,
         });
     
-        if (!result.canceled) {
-          const manipResult = await ImageManipulator.manipulateAsync(
-            result.assets[0].uri,
-            [{ resize: { width: 800 } }], // Resize the image
-            { compress: 0.0, format: ImageManipulator.SaveFormat.WEBP } // Compress the image
-          );
-          setImage(manipResult.uri);
+        if (!result.canceled && result.assets?.[0]) {
+          const asset = result.assets[0];
+          try {
+            const finalUri = await finalizeCoverUri(asset.uri);
+            setImage(finalUri);
+          } catch (e) {
+            console.error('Cover crop/resize failed:', e);
+            Alert.alert('Image error', 'Could not process the cover image. Try another file.');
+          }
         }
       };
     
       const uploadImageToBe = async () => {
         if (!image) return;
     
-        const uriParts = image.split('.');
-        const fileType = uriParts[uriParts.length - 1];
-    
         const formData = new FormData();
         formData.append('image', {
           uri: image,
-          name: `photo.${fileType}`,
-          type: `image/${fileType}`,
+          name: 'cover.jpg',
+          type: 'image/jpeg',
         } as any);
         formData.append('id', publisherCommonForm as string);
         formData.append('userId', token);
