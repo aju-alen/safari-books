@@ -80,10 +80,17 @@ const ProfilePage = () => {
   console.log(listenerAnalytics, 'listener analytics');
   
 
+  const streakDisplay =
+    userRole === 'LISTENER' || userRole === 'PUBLISHER'
+      ? typeof listenerAnalytics?.listeningStreak === 'number'
+        ? `${listenerAnalytics.listeningStreak} day${listenerAnalytics.listeningStreak === 1 ? '' : 's'}`
+        : '—'
+      : 'N/A';
+
   const stats: Stat[] = [
-    { icon: 'reader-outline', label: 'Books in Progress', value: userRole === 'LISTENER' || userRole === 'PUBLISHER' ? listenerAnalytics?.inProgressBooks : 'N/A' },
-    { icon: 'book-outline', label: 'Books Completed', value: userRole === 'LISTENER' || userRole === 'PUBLISHER' ? listenerAnalytics?.finishedBooks : 'N/A' },
-    { icon: 'time-outline', label: 'Current Streak', value: '1 day' },
+    { icon: 'reader-outline', label: 'Books in Progress', value: userRole === 'LISTENER' || userRole === 'PUBLISHER' ? String(listenerAnalytics?.inProgressBooks ?? '—') : 'N/A' },
+    { icon: 'book-outline', label: 'Books Completed', value: userRole === 'LISTENER' || userRole === 'PUBLISHER' ? String(listenerAnalytics?.finishedBooks ?? '—') : 'N/A' },
+    { icon: 'time-outline', label: 'Current Streak', value: streakDisplay },
   ];
 
   const menuItems: MenuItem[] = [

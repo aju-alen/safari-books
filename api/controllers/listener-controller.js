@@ -206,6 +206,40 @@ export const bookmarkBook = async (req,res)=> {
     }
 }
 
+function toUtcYmd(d) {
+    const y = d.getUTCFullYear();
+    const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(d.getUTCDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+}
+
+function addDaysUtcFromYmd(ymd, deltaDays) {
+    const [y, m, day] = ymd.split('-').map(Number);
+    const dt = new Date(Date.UTC(y, m - 1, day));
+    dt.setUTCDate(dt.getUTCDate() + deltaDays);
+    return toUtcYmd(dt);
+}
+
+/** Consecutive UTC calendar days with listening-related library activity (anchored on today or yesterday). */
+function computeListeningStreakFromYmds(activityYmds) {
+    const set = new Set(activityYmds);
+    const today = toUtcYmd(new Date());
+    const yesterday = addDaysUtcFromYmd(today, -1);
+
+    let start = null;
+    if (set.has(today)) start = today;
+    else if (set.has(yesterday)) start = yesterday;
+    else return 0;
+
+    let streak = 0;
+    let cur = start;
+    while (set.has(cur)) {
+        streak += 1;
+        cur = addDaysUtcFromYmd(cur, -1);
+    }
+    return streak;
+}
+
 export const listenerAnalytics = async (req,res)=>{
     try {
 
@@ -222,8 +256,27 @@ export const listenerAnalytics = async (req,res)=>{
                 status: "IN_PROGRESS"
             }
         });
+
+        const librariesForStreak = await prisma.library.findMany({
+            where: {
+                userId: req.userId,
+                OR: [
+                    { timestamp: { gt: 0 } },
+                    { status: 'IN_PROGRESS' },
+                    { status: 'FINISHED' },
+                ],
+            },
+            select: { updatedAt: true },
+        });
+        const streakDates = librariesForStreak.map((lib) => toUtcYmd(new Date(lib.updatedAt)));
+        const listeningStreak = computeListeningStreakFromYmds(streakDates);
         
-        res.status(200).json({ message: "Publisher insights fetched successfully", finishedBooks, inProgressBooks });
+        res.status(200).json({
+            message: "Listener analytics fetched successfully",
+            finishedBooks,
+            inProgressBooks,
+            listeningStreak,
+        });
     } catch (error) {
             console.log(error);
             res.status(500).json({ message: "Internal server error", error });

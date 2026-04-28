@@ -1,14 +1,26 @@
 import { ScrollView, StyleSheet, Text, View, ActivityIndicator, TouchableOpacity } from 'react-native'
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { moderateScale, verticalScale, horizontalScale } from '@/utils/responsiveSize'
 import TrendingRelease from '@/components/TrendingRelease'
 import { ipURL } from '@/utils/backendURL'
 import { axiosWithAuth } from '@/utils/customAxios'
 import { useTheme } from '@/providers/ThemeProvider';
-import { Ionicons } from '@expo/vector-icons';
+import { BookCategoryLabels, type BookCategory } from '@/utils/categoriesdata';
 
 const API_URL = `${ipURL}/api/listeners/books-data`;
+
+function normalizeBookCategory(raw: unknown): string | null {
+  if (raw == null || raw === '') return null;
+  const s = String(raw).trim().toLowerCase();
+  return s || null;
+}
+
+function titleForCategoryKey(key: string): string {
+  const k = key as BookCategory;
+  if (k in BookCategoryLabels) return BookCategoryLabels[k];
+  return key.charAt(0).toUpperCase() + key.slice(1);
+}
 
 const DiscoverPage = () => {
   const [allBooks, setAllBooks] = useState([]);
@@ -16,41 +28,36 @@ const DiscoverPage = () => {
   const [error, setError] = useState('');
   const { theme } = useTheme();
 
-  useEffect(() => {
-    const fetchBooks = async () => {
-      setLoading(true);
-      setError('');
-      try {
-        const response = await axiosWithAuth.get(API_URL);
-        setAllBooks(response.data.books || []);
-      } catch (err) {
-        setError('Failed to load books. Please try again.');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchBooks();
+  const fetchBooks = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const response = await axiosWithAuth.get(API_URL);
+      setAllBooks(response.data.books || []);
+    } catch (err) {
+      setError('Failed to load books. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  const filterByCategory = (category) =>
-    allBooks.filter((book) =>
-      (book.categories || '').toLowerCase() === category.toLowerCase()
-    );
+  useEffect(() => {
+    fetchBooks();
+  }, [fetchBooks]);
 
-  const bookDataMystery = filterByCategory('mystery');
-  const bookDataScience = filterByCategory('science');
-  const bookDataEducation = filterByCategory('selfhelp');
-
-  const renderCategory = (title, books) => (
-    <View style={styles.category}>
-      <Text style={styles.categoryTitle}>{title}</Text>
-      {books.length > 0 ? (
-        <TrendingRelease bookData={books} />
-      ) : (
-        <Text style={styles.emptyText}>No books available</Text>
-      )}
-    </View>
-  );
+  const { categoryKeysSorted, booksByCategory } = useMemo(() => {
+    const map = new Map<string, typeof allBooks>();
+    for (const book of allBooks) {
+      const key = normalizeBookCategory(book.categories);
+      if (!key) continue;
+      if (!map.has(key)) map.set(key, []);
+      map.get(key).push(book);
+    }
+    const keys = Array.from(map.entries())
+      .sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]))
+      .map(([k]) => k);
+    return { categoryKeysSorted: keys, booksByCategory: map };
+  }, [allBooks]);
 
   const styles = StyleSheet.create({
     container: {
@@ -145,15 +152,29 @@ const DiscoverPage = () => {
         ) : error ? (
           <View style={styles.errorContainer}>
             <Text style={styles.errorText}>{error}</Text>
-            <TouchableOpacity style={styles.retryButton}>
+            <TouchableOpacity style={styles.retryButton} onPress={fetchBooks}>
               <Text style={styles.retryButtonText}>Retry</Text>
             </TouchableOpacity>
           </View>
+        ) : categoryKeysSorted.length === 0 ? (
+          <View style={styles.errorContainer}>
+            <Text style={styles.emptyText}>No categorized books yet. Check back soon.</Text>
+          </View>
         ) : (
           <>
-            {renderCategory('Mystery & Thriller', bookDataMystery)}
-            {renderCategory('Science & Technology', bookDataScience)}
-            {renderCategory('Education & Learning', bookDataEducation)}
+            {categoryKeysSorted.map((key) => {
+              const books = booksByCategory.get(key) || [];
+              return (
+                <View key={key} style={styles.category}>
+                  <Text style={styles.categoryTitle}>{titleForCategoryKey(key)}</Text>
+                  {books.length > 0 ? (
+                    <TrendingRelease bookData={books} />
+                  ) : (
+                    <Text style={styles.emptyText}>No books available</Text>
+                  )}
+                </View>
+              );
+            })}
           </>
         )}
       </ScrollView>
