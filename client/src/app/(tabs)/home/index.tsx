@@ -237,18 +237,19 @@ const HomePage = () => {
               />
               <Text style={[styles.appName, { color: theme.text }]}>Safari Books</Text>
             </View>
-            {/* <View style={styles.headerActions}>
-              <TouchableOpacity style={[styles.headerButton, { backgroundColor: theme.white, shadowColor: theme.text }]}>
-                <Ionicons name="notifications-outline" size={24} color={theme.text} />
+            <View style={styles.headerActions}>
+              <TouchableOpacity
+                style={[styles.headerButton, { backgroundColor: theme.white, shadowColor: theme.text }]}
+                onPress={() => router.push('/(tabs)/search')}
+                accessibilityLabel="Search catalogue"
+              >
+                <Ionicons name="search-outline" size={24} color={theme.text} />
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.headerButton, { backgroundColor: theme.white, shadowColor: theme.text }]}>
-                <Ionicons name="search" size={24} color={theme.text} />
-              </TouchableOpacity>
-            </View> */}
+            </View>
           </View>
           
           <View style={styles.welcomeSection}>
-            <Text style={[styles.welcomeText, { color: theme.text }]}>Welcome back! 👋</Text>
+            <Text style={[styles.welcomeText, { color: theme.text }]}>Welcome back!</Text>
             <Text style={[styles.welcomeSubtext, { color: theme.textMuted }]}>Ready to dive into your next adventure?</Text>
           </View>
 

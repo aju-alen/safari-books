@@ -52,6 +52,13 @@ const TabsLayout = () => {
                     }}
                 />
                 <Tabs.Screen
+                    name="search"
+                    options={{
+                        tabBarLabel: "Search",
+                        tabBarIcon: () => <Ionicons name="search-outline" size={24} color={theme.primary} />
+                    }}
+                />
+                <Tabs.Screen
                     name="discover"
                     options={{
                         tabBarLabel: "Discover",
