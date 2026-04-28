@@ -10,6 +10,7 @@ import {
   Animated,
   ScrollView,
   Pressable,
+  FlatList,
   type LayoutChangeEvent,
 } from 'react-native';
 import { Audio } from 'expo-av';
@@ -23,6 +24,7 @@ import { router } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { axiosWithAuth } from '@/utils/customAxios';
 import { ipURL } from '@/utils/backendURL';
+import { getDefaultPlaybackRate, getSleepTimerPresetMinutes } from '@/utils/playbackPreferences';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 type PlayerMode = 'audio' | 'text';
 
@@ -72,6 +74,7 @@ const AudioPlayer = ({
   const [sound, setSound] = useState(null);
   const soundRef = useRef(null);
   soundRef.current = sound;
+  const sleepTimerTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
   const [position, setPosition] = useState(0);
@@ -86,17 +89,36 @@ const AudioPlayer = ({
   // New state for enhanced functionality
   const [playbackRate, setPlaybackRate] = useState(1.0);
   const [isBookmarked, setIsBookmarked] = useState(false);
-  const [showTimer, setShowTimer] = useState(false);
-  const [timerOptions] = useState([15, 30, 45, 60, 90, 120]);
+  const [showSleepPicker, setShowSleepPicker] = useState(false);
+  const [sleepSettingsPreset, setSleepSettingsPreset] = useState<number | null>(null);
+  const [timerOptions] = useState([1, 15, 30, 45, 60, 90, 120]);
   const [selectedTimer, setSelectedTimer] = useState(null);
-  const [timerId, setTimerId] = useState(null);
   const [activeSegmentIndex, setActiveSegmentIndex] = useState<number>(-1);
   const [playerMode, setPlayerMode] = useState<PlayerMode>('audio');
   const [showReaderSettings, setShowReaderSettings] = useState(false);
+  const [showChapterToc, setShowChapterToc] = useState(false);
   const [readerFontSize, setReaderFontSize] = useState(20);
   const [readerBgIndex, setReaderBgIndex] = useState(0);
 
   const insets = useSafeAreaInsets();
+
+  const sleepPickerMinutes = useMemo(() => {
+    const opts = [...timerOptions];
+    const pref = sleepSettingsPreset;
+    if (pref != null && opts.includes(pref)) {
+      return [pref, ...opts.filter((m) => m !== pref)];
+    }
+    return opts;
+  }, [sleepSettingsPreset, timerOptions]);
+
+  const handleOpenSleepPicker = useCallback(() => {
+    void (async () => {
+      const pref = await getSleepTimerPresetMinutes();
+      setSleepSettingsPreset(pref);
+      setShowSleepPicker(true);
+    })();
+  }, []);
+
   const loadedSessionRef = useRef<{ url: string | null; bookId: string | null }>({
     url: null,
     bookId: null,
@@ -132,6 +154,28 @@ const AudioPlayer = ({
         .sort((a, b) => a.startMs - b.startMs),
     [timeStamp]
   );
+
+  const chapterTocEntries = useMemo(() => {
+    const out: { title: string; startMs: number }[] = [];
+    let lastHeading = '';
+    for (const seg of normalizedSegments) {
+      const h = (seg.chapterHeading || '').trim();
+      if (!h) continue;
+      if (h !== lastHeading) {
+        out.push({ title: h, startMs: seg.startMs });
+        lastHeading = h;
+      }
+    }
+    return out;
+  }, [normalizedSegments]);
+
+  const activeTocIndex = useMemo(() => {
+    if (chapterTocEntries.length === 0) return -1;
+    for (let i = chapterTocEntries.length - 1; i >= 0; i--) {
+      if (position >= chapterTocEntries[i].startMs) return i;
+    }
+    return 0;
+  }, [chapterTocEntries, position]);
 
   const computeSegmentIndex = useCallback(
     (ms: number) => {
@@ -426,6 +470,7 @@ const AudioPlayer = ({
           /* ignore */
         }
         setSound(null);
+        soundRef.current = null;
       }
       await unloadActiveSound();
 
@@ -449,6 +494,7 @@ const AudioPlayer = ({
       );
 
       setSound(newSound);
+      soundRef.current = newSound;
       registerActiveSound(newSound, {
         title,
         author,
@@ -461,9 +507,18 @@ const AudioPlayer = ({
       };
       setIsBuffering(false);
 
+      const defaultRate = await getDefaultPlaybackRate();
+      setPlaybackRate(defaultRate);
+
       if (savedTimestamp && savedTimestamp > 0) {
         await newSound.setPositionAsync(savedTimestamp);
         setPosition(savedTimestamp);
+      }
+
+      try {
+        await newSound.setRateAsync(defaultRate, true);
+      } catch {
+        /* ignore */
       }
     } catch (error) {
       console.error('Error loading audio:', error);
@@ -486,6 +541,7 @@ const AudioPlayer = ({
           /* ignore */
         }
         setSound(null);
+        soundRef.current = null;
         setIsPlaying(false);
         setPosition(0);
         setDuration(0);
@@ -633,34 +689,39 @@ const AudioPlayer = ({
     );
   };
 
-  const toggleTimer = () => {
-    setShowTimer(!showTimer);
+  const clearTimer = () => {
+    if (sleepTimerTimeoutRef.current != null) {
+      clearTimeout(sleepTimerTimeoutRef.current);
+      sleepTimerTimeoutRef.current = null;
+    }
+    setSelectedTimer(null);
   };
 
   const setTimer = (minutes) => {
     clearTimer();
     if (minutes > 0) {
-      const timer = setTimeout(() => {
-        if (sound && isPlaying) {
-          sound.pauseAsync();
-          Alert.alert('Timer', 'Playback stopped by timer');
+      sleepTimerTimeoutRef.current = setTimeout(() => {
+        sleepTimerTimeoutRef.current = null;
+        const s = soundRef.current;
+        if (s) {
+          void (async () => {
+            try {
+              const status = await s.getStatusAsync();
+              if (status.isLoaded && status.isPlaying) {
+                await s.pauseAsync();
+                Alert.alert('Timer', 'Playback stopped by timer');
+              }
+            } catch {
+              /* ignore */
+            }
+          })();
         }
         setSelectedTimer(null);
-        setTimerId(null);
       }, minutes * 60 * 1000);
-      
-      setSelectedTimer(minutes);
-      setTimerId(timer);
-      setShowTimer(false);
-    }
-  };
 
-  const clearTimer = () => {
-    if (timerId) {
-      clearTimeout(timerId);
-      setTimerId(null);
+      setSelectedTimer(minutes);
+      setShowSleepPicker(false);
     }
-    setSelectedTimer(null);
   };
 
   const changePlaybackRate = () => {
@@ -709,10 +770,11 @@ const AudioPlayer = ({
 
   const seekToMs = useCallback(
     async (ms: number) => {
-      if (!sound) return;
+      const s = soundRef.current;
+      if (!s) return;
       try {
         setIsSeeking(true);
-        await sound.setPositionAsync(ms);
+        await s.setPositionAsync(ms);
         setPosition(ms);
       } catch (error) {
         console.error('Failed to seek:', error);
@@ -720,8 +782,31 @@ const AudioPlayer = ({
         setIsSeeking(false);
       }
     },
-    [sound]
+    []
   );
+
+  const handleChapterTocJump = async (startMs: number) => {
+    setShowChapterToc(false);
+    try {
+      if (!soundRef.current) {
+        const saved = await loadSavedProgress();
+        await loadAudio(saved);
+      }
+      const s = soundRef.current;
+      if (!s) return;
+      setIsSeeking(true);
+      await s.setPositionAsync(startMs);
+      setPosition(startMs);
+      const st = await s.getStatusAsync();
+      if (st.isLoaded && !st.isPlaying) {
+        await s.playAsync();
+      }
+    } catch (e) {
+      console.error('Chapter jump failed', e);
+    } finally {
+      setIsSeeking(false);
+    }
+  };
 
   const handleSegmentPress = (segmentStartMs: number) => {
     void seekToMs(segmentStartMs);
@@ -821,14 +906,26 @@ const AudioPlayer = ({
               </Pressable>
             </View>
           </View>
-          <TouchableOpacity
-            onPress={() => setShowReaderSettings(true)}
-            style={styles.topIconBtn}
-            activeOpacity={0.7}
-            accessibilityLabel="Reader settings"
-          >
-            <Ionicons name="settings-outline" size={24} color={theme.text} />
-          </TouchableOpacity>
+          <View style={styles.topBarRight}>
+            {chapterTocEntries.length > 0 ? (
+              <TouchableOpacity
+                onPress={() => setShowChapterToc(true)}
+                style={styles.topIconBtn}
+                activeOpacity={0.7}
+                accessibilityLabel="Chapters"
+              >
+                <Ionicons name="list-outline" size={24} color={theme.text} />
+              </TouchableOpacity>
+            ) : null}
+            <TouchableOpacity
+              onPress={() => setShowReaderSettings(true)}
+              style={styles.topIconBtn}
+              activeOpacity={0.7}
+              accessibilityLabel="Reader settings"
+            >
+              <Ionicons name="settings-outline" size={24} color={theme.text} />
+            </TouchableOpacity>
+          </View>
         </View>
 
         {playerMode === 'audio' ? (
@@ -963,6 +1060,16 @@ const AudioPlayer = ({
               <View style={[styles.audioDockPill, { backgroundColor: audioDockPillBg }]}>
                 <TouchableOpacity
                   style={styles.audioDockMiniBtn}
+                  onPress={changePlaybackRate}
+                  activeOpacity={0.75}
+                  accessibilityLabel="Playback speed"
+                >
+                  <Text style={[styles.audioDockSpeedLabel, { color: audioDockIconColor }]}>
+                    {playbackRate === 1 ? '1×' : `${playbackRate}×`}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.audioDockMiniBtn}
                   onPress={handleRewind}
                   activeOpacity={0.75}
                   accessibilityLabel="Back ten seconds"
@@ -997,6 +1104,21 @@ const AudioPlayer = ({
                 >
                   <Ionicons name="play-skip-forward" size={24} color={audioDockIconColor} />
                   <Text style={[styles.audioDockTinyLabel, { color: audioDockIconColor }]}>10</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.audioDockMiniBtn}
+                  onPress={handleOpenSleepPicker}
+                  activeOpacity={0.75}
+                  accessibilityLabel="Sleep timer"
+                >
+                  <Ionicons
+                    name={selectedTimer != null ? 'moon' : 'moon-outline'}
+                    size={22}
+                    color={selectedTimer != null ? theme.primary : audioDockIconColor}
+                  />
+                  {selectedTimer != null ? (
+                    <Text style={[styles.audioDockTinyLabel, { color: theme.primary }]}>{selectedTimer}m</Text>
+                  ) : null}
                 </TouchableOpacity>
               </View>
             </View>
@@ -1121,6 +1243,108 @@ const AudioPlayer = ({
         ) : null}
 
         <Modal
+          visible={showChapterToc}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setShowChapterToc(false)}
+        >
+          <Pressable style={styles.settingsBackdrop} onPress={() => setShowChapterToc(false)}>
+            <Pressable
+              style={[styles.chapterTocSheet, { backgroundColor: theme.background }]}
+              onPress={(e) => e.stopPropagation()}
+            >
+              <View style={[styles.settingsGrabber, { backgroundColor: theme.maximumTrackTintColor }]} />
+              <Text style={[styles.settingsTitle, { color: theme.text }]}>Chapters</Text>
+              <FlatList
+                data={chapterTocEntries}
+                keyExtractor={(item, i) => `ch-${item.startMs}-${i}`}
+                style={styles.chapterTocList}
+                keyboardShouldPersistTaps="handled"
+                renderItem={({ item, index }) => (
+                  <TouchableOpacity
+                    style={[
+                      styles.tocRow,
+                      {
+                        borderBottomColor: theme.maximumTrackTintColor,
+                        backgroundColor:
+                          index === activeTocIndex ? `${String(theme.primary)}18` : 'transparent',
+                      },
+                    ]}
+                    onPress={() => void handleChapterTocJump(item.startMs)}
+                    activeOpacity={0.75}
+                  >
+                    <Text style={[styles.tocRowTitle, { color: theme.text }]} numberOfLines={3}>
+                      {item.title}
+                    </Text>
+                    <Text style={[styles.tocRowTime, { color: theme.textMuted }]}>
+                      {formatTime(item.startMs)}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              />
+            </Pressable>
+          </Pressable>
+        </Modal>
+
+        <Modal
+          visible={showSleepPicker}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setShowSleepPicker(false)}
+        >
+          <Pressable style={styles.settingsBackdrop} onPress={() => setShowSleepPicker(false)}>
+            <Pressable
+              style={[styles.chapterTocSheet, { backgroundColor: theme.background }]}
+              onPress={(e) => e.stopPropagation()}
+            >
+              <View style={[styles.settingsGrabber, { backgroundColor: theme.maximumTrackTintColor }]} />
+              <Text style={[styles.settingsTitle, { color: theme.text }]}>Sleep timer</Text>
+              {selectedTimer != null ? (
+                <TouchableOpacity
+                  style={[
+                    styles.tocRow,
+                    {
+                      borderBottomColor: theme.maximumTrackTintColor,
+                      backgroundColor: `${String(theme.primary)}12`,
+                    },
+                  ]}
+                  onPress={() => {
+                    clearTimer();
+                    setShowSleepPicker(false);
+                  }}
+                  activeOpacity={0.75}
+                >
+                  <Text style={[styles.tocRowTitle, { color: theme.primary }]}>Turn off timer</Text>
+                </TouchableOpacity>
+              ) : null}
+              <FlatList
+                data={sleepPickerMinutes}
+                keyExtractor={(m) => `sleep-${m}`}
+                style={styles.chapterTocList}
+                keyboardShouldPersistTaps="handled"
+                renderItem={({ item: m }) => (
+                  <TouchableOpacity
+                    style={[
+                      styles.tocRow,
+                      { borderBottomColor: theme.maximumTrackTintColor },
+                    ]}
+                    onPress={() => setTimer(m)}
+                    activeOpacity={0.75}
+                  >
+                    <Text style={[styles.tocRowTitle, { color: theme.text }]} numberOfLines={2}>
+                      {m === 1 ? '1 minute' : `${m} minutes`}
+                      {m === sleepSettingsPreset ? (
+                        <Text style={{ color: theme.textMuted, fontSize: 14 }}> · Preset</Text>
+                      ) : null}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              />
+            </Pressable>
+          </Pressable>
+        </Modal>
+
+        <Modal
           visible={showReaderSettings}
           transparent
           animationType="slide"
@@ -1191,6 +1415,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     zIndex: 2,
+  },
+  topBarRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
   },
   modeSwitchWrap: {
     flex: 1,
@@ -1508,7 +1737,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: horizontalScale(20),
+    gap: horizontalScale(12),
     marginHorizontal: horizontalScale(16),
     paddingVertical: 14,
     paddingHorizontal: 10,
@@ -1536,6 +1765,11 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '800',
     marginTop: -2,
+    letterSpacing: 0.2,
+  },
+  audioDockSpeedLabel: {
+    fontSize: moderateScale(14),
+    fontWeight: '800',
     letterSpacing: 0.2,
   },
   textModeTransport: {
@@ -1579,6 +1813,35 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.4)',
     justifyContent: 'flex-end',
+  },
+  chapterTocSheet: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 24,
+    maxHeight: '72%',
+  },
+  chapterTocList: {
+    flexGrow: 0,
+  },
+  tocRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  tocRowTitle: {
+    flex: 1,
+    fontSize: moderateScale(15),
+    fontWeight: '600',
+  },
+  tocRowTime: {
+    fontSize: moderateScale(13),
+    fontWeight: '500',
+    fontVariant: ['tabular-nums'],
   },
   settingsSheet: {
     borderTopLeftRadius: 20,

@@ -8,10 +8,22 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme, ThemeType } from '@/providers/ThemeProvider';
 import { clearPushTokenCache } from '@/utils/registerForPushNotificationsAsync';
 import { verticalScale, horizontalScale, moderateScale } from '@/utils/responsiveSize';
+import {
+  getDefaultPlaybackRate,
+  setDefaultPlaybackRate,
+  getSleepTimerPresetMinutes,
+  setSleepTimerPresetMinutes,
+  PLAYBACK_RATE_OPTIONS,
+  SLEEP_TIMER_PRESET_MINUTES,
+} from '@/utils/playbackPreferences';
 
 const SettingsPage = () => {
   const [userData, setUserData] = useState<any>(null);
   const [showThemeModal, setShowThemeModal] = useState(false);
+  const [showSpeedModal, setShowSpeedModal] = useState(false);
+  const [showSleepPresetModal, setShowSleepPresetModal] = useState(false);
+  const [defaultPlaybackRate, setDefaultPlaybackRateState] = useState(1);
+  const [sleepTimerPreset, setSleepTimerPresetState] = useState<number | null>(null);
   const { theme, isDarkMode, toggleTheme, currentTheme, setTheme } = useTheme();
 
   const themes = [
@@ -34,6 +46,17 @@ const SettingsPage = () => {
       setUserData(userData);
     };
     checkUser();
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      const [rate, sleep] = await Promise.all([
+        getDefaultPlaybackRate(),
+        getSleepTimerPresetMinutes(),
+      ]);
+      setDefaultPlaybackRateState(rate);
+      setSleepTimerPresetState(sleep);
+    })();
   }, []);
 
   const menuItems = [
@@ -94,6 +117,48 @@ const SettingsPage = () => {
             </View>
           </TouchableOpacity>
         ))}
+
+        <TouchableOpacity
+          style={[styles.menuItem, { backgroundColor: theme.white }]}
+          onPress={() => setShowSpeedModal(true)}
+        >
+          <View style={styles.menuItemContent}>
+            <View style={styles.menuItemLeft}>
+              <Ionicons name="speedometer-outline" size={moderateScale(24)} color={theme.text} />
+              <View style={styles.menuItemTextBlock}>
+                <Text style={[styles.menuItemText, { color: theme.text, marginLeft: 0 }]}>
+                  Default playback speed
+                </Text>
+                <Text style={[styles.menuItemSubtext, { color: theme.textMuted }]}>
+                  {defaultPlaybackRate === 1 ? '1× (normal)' : `${defaultPlaybackRate}×`}
+                </Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={moderateScale(20)} color={theme.textMuted} />
+          </View>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.menuItem, { backgroundColor: theme.white }]}
+          onPress={() => setShowSleepPresetModal(true)}
+        >
+          <View style={styles.menuItemContent}>
+            <View style={styles.menuItemLeft}>
+              <Ionicons name="moon-outline" size={moderateScale(24)} color={theme.text} />
+              <View style={styles.menuItemTextBlock}>
+                <Text style={[styles.menuItemText, { color: theme.text, marginLeft: 0 }]}>
+                  Sleep timer preset
+                </Text>
+                <Text style={[styles.menuItemSubtext, { color: theme.textMuted }]}>
+                  {sleepTimerPreset == null
+                    ? 'None (choose each time)'
+                    : `${sleepTimerPreset} min — listed first in the player`}
+                </Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={moderateScale(20)} color={theme.textMuted} />
+          </View>
+        </TouchableOpacity>
         
         {/* Dark Mode Toggle */}
         <View style={[styles.menuItem, { backgroundColor: theme.white }]}>
@@ -210,6 +275,139 @@ const SettingsPage = () => {
           </View>
         </View>
       </Modal>
+
+      <Modal
+        visible={showSpeedModal}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowSpeedModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: theme.white }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: theme.gray2 }]}>
+              <Text style={[styles.modalTitle, { color: theme.text }]}>Default speed</Text>
+              <TouchableOpacity
+                onPress={() => setShowSpeedModal(false)}
+                style={[styles.closeButton, { backgroundColor: `${theme.gray2}15` }]}
+              >
+                <Ionicons name="close" size={moderateScale(20)} color={theme.text} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView
+              style={[styles.themeList, { backgroundColor: theme.white }]}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.themeListContent}
+            >
+              {PLAYBACK_RATE_OPTIONS.map((rate) => (
+                <TouchableOpacity
+                  key={rate}
+                  style={[
+                    styles.themeOption,
+                    { backgroundColor: theme.background },
+                    Math.abs(defaultPlaybackRate - rate) < 0.001 && {
+                      borderColor: theme.primary,
+                      borderWidth: 2,
+                      backgroundColor: `${theme.primary}05`,
+                    },
+                  ]}
+                  onPress={async () => {
+                    await setDefaultPlaybackRate(rate);
+                    setDefaultPlaybackRateState(rate);
+                    setShowSpeedModal(false);
+                  }}
+                >
+                  <View style={styles.speedOptionRow}>
+                    <Text style={[styles.themeName, { color: theme.text, marginBottom: 0 }]}>
+                      {rate === 1 ? '1× (normal)' : `${rate}×`}
+                    </Text>
+                    {Math.abs(defaultPlaybackRate - rate) < 0.001 ? (
+                      <Ionicons name="checkmark-circle" size={22} color={theme.primary} />
+                    ) : null}
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={showSleepPresetModal}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowSleepPresetModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: theme.white }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: theme.gray2 }]}>
+              <Text style={[styles.modalTitle, { color: theme.text }]}>Sleep timer preset</Text>
+              <TouchableOpacity
+                onPress={() => setShowSleepPresetModal(false)}
+                style={[styles.closeButton, { backgroundColor: `${theme.gray2}15` }]}
+              >
+                <Ionicons name="close" size={moderateScale(20)} color={theme.text} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView
+              style={[styles.themeList, { backgroundColor: theme.white }]}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.themeListContent}
+            >
+              <TouchableOpacity
+                style={[
+                  styles.themeOption,
+                  { backgroundColor: theme.background },
+                  sleepTimerPreset == null && {
+                    borderColor: theme.primary,
+                    borderWidth: 2,
+                    backgroundColor: `${theme.primary}05`,
+                  },
+                ]}
+                onPress={async () => {
+                  await setSleepTimerPresetMinutes(null);
+                  setSleepTimerPresetState(null);
+                  setShowSleepPresetModal(false);
+                }}
+              >
+                <View style={styles.speedOptionRow}>
+                  <Text style={[styles.themeName, { color: theme.text, marginBottom: 0 }]}>None</Text>
+                  {sleepTimerPreset == null ? (
+                    <Ionicons name="checkmark-circle" size={22} color={theme.primary} />
+                  ) : null}
+                </View>
+              </TouchableOpacity>
+              {SLEEP_TIMER_PRESET_MINUTES.map((m) => (
+                <TouchableOpacity
+                  key={m}
+                  style={[
+                    styles.themeOption,
+                    { backgroundColor: theme.background },
+                    sleepTimerPreset === m && {
+                      borderColor: theme.primary,
+                      borderWidth: 2,
+                      backgroundColor: `${theme.primary}05`,
+                    },
+                  ]}
+                  onPress={async () => {
+                    await setSleepTimerPresetMinutes(m);
+                    setSleepTimerPresetState(m);
+                    setShowSleepPresetModal(false);
+                  }}
+                >
+                  <View style={styles.speedOptionRow}>
+                    <Text style={[styles.themeName, { color: theme.text, marginBottom: 0 }]}>
+                      {m === 1 ? '1 minute' : `${m} minutes`}
+                    </Text>
+                    {sleepTimerPreset === m ? (
+                      <Ionicons name="checkmark-circle" size={22} color={theme.primary} />
+                    ) : null}
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   )
 }
@@ -261,11 +459,21 @@ const styles = StyleSheet.create({
   menuItemLeft: {
     flexDirection: 'row',
     alignItems: 'center',
+    flex: 1,
+  },
+  menuItemTextBlock: {
+    marginLeft: moderateScale(12),
+    flex: 1,
   },
   menuItemText: {
     marginLeft: moderateScale(12),
     fontSize: moderateScale(16),
     fontWeight: '500',
+  },
+  menuItemSubtext: {
+    fontSize: moderateScale(13),
+    marginTop: moderateScale(4),
+    lineHeight: moderateScale(18),
   },
   logoutContainer: {
     paddingHorizontal: horizontalScale(16),
@@ -386,5 +594,11 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(12),
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  speedOptionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
   },
 });
