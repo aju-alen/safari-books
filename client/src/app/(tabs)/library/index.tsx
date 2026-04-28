@@ -1,5 +1,5 @@
-import { FlatList, StyleSheet, Text, TouchableOpacity, View, Image, ActivityIndicator } from 'react-native';
-import React, { useState, useEffect } from 'react';
+import { FlatList, StyleSheet, Text, TouchableOpacity, View, Image, ActivityIndicator, TextInput } from 'react-native';
+import React, { useState, useEffect, useMemo } from 'react';
 import { defaultStyles } from '@/styles';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,22 +9,28 @@ import { ipURL } from '@/utils/backendURL';
 import { router } from 'expo-router';
 import { horizontalScale, moderateScale, verticalScale } from '@/utils/responsiveSize';
 
-const status = {
-  'All Titles': 'All',
-  'In Progress': 'IN_PROGRESS',
-  'Finished': 'FINISHED',
-  'Not Started': 'NOT_STARTED',
-}
+const SORT_OPTIONS = [
+  { key: 'recent', label: 'Recent' },
+  { key: 'title_asc', label: 'Title A–Z' },
+  { key: 'title_desc', label: 'Title Z–A' },
+  { key: 'duration_asc', label: 'Shortest' },
+  { key: 'duration_desc', label: 'Longest' },
+] as const;
+
+type SortKey = (typeof SORT_OPTIONS)[number]['key'];
 
 const LibraryPage = () => {
   const { theme } = useTheme();
   const data = ["All", "Audiobooks"];
-  const subData = ["All Titles","In Progress", "Finished"];
+  const subData = ["All Titles", "In Progress", "Finished", "Not Started"];
 
   const [selectedItem, setSelectedItem] = useState("All");
   const [selectedSubItem, setSelectedSubItem] = useState("All Titles");
   const [libraryBooks, setLibraryBooks] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortKey, setSortKey] = useState<SortKey>('recent');
+  const [searchFocused, setSearchFocused] = useState(false);
 
   useEffect(() => {
     fetchLibraryBooks(selectedSubItem);
@@ -76,16 +82,16 @@ const LibraryPage = () => {
     );
   };
 
-  const fetchLibraryBooks = async (status) => {
-    console.log(status,'status');
-    if(status === 'All Titles'){
+  const fetchLibraryBooks = async (statusParam) => {
+    let status = statusParam;
+    if (status === 'All Titles') {
       status = 'All';
-    }
-    else if(status === 'In Progress'){
+    } else if (status === 'In Progress') {
       status = 'IN_PROGRESS';
-    }
-    else if(status === 'Finished'){
+    } else if (status === 'Finished') {
       status = 'FINISHED';
+    } else if (status === 'Not Started') {
+      status = 'NOT_STARTED';
     }
     try {
       setLoading(true);
@@ -98,6 +104,38 @@ const LibraryPage = () => {
       setLoading(false);
     }
   };
+
+  const displayBooks = useMemo(() => {
+    const dur = (b: { durationInHours?: number; durationInMinutes?: number }) =>
+      (b.durationInHours || 0) * 60 + (b.durationInMinutes || 0);
+    let list = [...libraryBooks];
+    const q = searchQuery.trim().toLowerCase();
+    if (q) {
+      list = list.filter(
+        (b) =>
+          (b.title && String(b.title).toLowerCase().includes(q)) ||
+          (b.authorName && String(b.authorName).toLowerCase().includes(q))
+      );
+    }
+    switch (sortKey) {
+      case 'title_asc':
+        list.sort((a, b) => String(a.title || '').localeCompare(String(b.title || ''), undefined, { sensitivity: 'base' }));
+        break;
+      case 'title_desc':
+        list.sort((a, b) => String(b.title || '').localeCompare(String(a.title || ''), undefined, { sensitivity: 'base' }));
+        break;
+      case 'duration_asc':
+        list.sort((a, b) => dur(a) - dur(b));
+        break;
+      case 'duration_desc':
+        list.sort((a, b) => dur(b) - dur(a));
+        break;
+      case 'recent':
+      default:
+        break;
+    }
+    return list;
+  }, [libraryBooks, searchQuery, sortKey]);
 
   const renderBookItem = ({ item }) => {
     const formatDuration = (hours, minutes) => {
@@ -185,6 +223,41 @@ const LibraryPage = () => {
     subFilterList: {
       paddingHorizontal: 16,
       marginTop: 12,
+    },
+    searchWrap: {
+      paddingHorizontal: 16,
+      marginTop: 12,
+    },
+    searchInner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      borderRadius: 14,
+      borderWidth: 1,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+    },
+    searchIcon: {
+      marginRight: 8,
+    },
+    searchField: {
+      flex: 1,
+      fontSize: 16,
+    },
+    sortScroll: {
+      marginTop: 12,
+      paddingHorizontal: 16,
+      maxHeight: 44,
+    },
+    sortChip: {
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+      borderRadius: 999,
+      borderWidth: 1,
+      marginRight: 8,
+    },
+    sortChipText: {
+      fontSize: 13,
+      fontWeight: '600',
     },
     item: {
       paddingHorizontal: 20,
@@ -330,6 +403,70 @@ const LibraryPage = () => {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.subFilterList}
         />
+        <View style={styles.searchWrap}>
+          <View
+            style={[
+              styles.searchInner,
+              {
+                backgroundColor: theme.lightWhite,
+                borderColor: searchFocused ? theme.primary : theme.gray2,
+              },
+            ]}
+          >
+            <Ionicons
+              name="search-outline"
+              size={20}
+              color={searchFocused ? theme.primary : theme.textMuted}
+              style={styles.searchIcon}
+            />
+            <TextInput
+              style={[styles.searchField, { color: theme.text }]}
+              placeholder="Search title or author..."
+              placeholderTextColor={theme.textMuted}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setSearchFocused(false)}
+              returnKeyType="search"
+            />
+            {searchQuery.length > 0 ? (
+              <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={12}>
+                <Ionicons name="close-circle" size={20} color={theme.textMuted} />
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        </View>
+        <FlatList
+          data={[...SORT_OPTIONS]}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          keyExtractor={(item) => item.key}
+          contentContainerStyle={styles.sortScroll}
+          renderItem={({ item }) => {
+            const selected = sortKey === item.key;
+            return (
+              <TouchableOpacity
+                style={[
+                  styles.sortChip,
+                  {
+                    backgroundColor: selected ? theme.primary : 'transparent',
+                    borderColor: selected ? theme.primary : theme.gray2,
+                  },
+                ]}
+                onPress={() => setSortKey(item.key)}
+              >
+                <Text
+                  style={[
+                    styles.sortChipText,
+                    { color: selected ? theme.white : theme.text },
+                  ]}
+                >
+                  {item.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          }}
+        />
       </View>
 
       {loading ? (
@@ -338,13 +475,43 @@ const LibraryPage = () => {
           <Text style={[styles.emptyStateSubtitle, { marginTop: 16 }]}>Loading your library...</Text>
         </View>
       ) : libraryBooks.length > 0 ? (
-        <FlatList
-          data={libraryBooks}
-          renderItem={renderBookItem}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingVertical: 16 }}
-          showsVerticalScrollIndicator={false}
-        />
+        displayBooks.length > 0 ? (
+          <FlatList
+            data={displayBooks}
+            renderItem={renderBookItem}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={{ paddingVertical: 16 }}
+            showsVerticalScrollIndicator={false}
+            ListHeaderComponent={
+              searchQuery.trim() ? (
+                <Text
+                  style={[
+                    styles.emptyStateSubtitle,
+                    { textAlign: 'center', marginBottom: 8, paddingHorizontal: 16 },
+                  ]}
+                >
+                  {displayBooks.length} match{displayBooks.length === 1 ? '' : 'es'}
+                </Text>
+              ) : null
+            }
+          />
+        ) : (
+          <View style={styles.emptyStateContainer}>
+            <View style={styles.emptyStateIconContainer}>
+              <Ionicons name="search-outline" size={64} color={theme.primary} />
+            </View>
+            <Text style={styles.emptyStateTitle}>No matches</Text>
+            <Text style={styles.emptyStateSubtitle}>
+              Try a different search or clear the filter.
+            </Text>
+            <TouchableOpacity
+              style={styles.browseButton}
+              onPress={() => setSearchQuery('')}
+            >
+              <Text style={styles.browseButtonText}>Clear search</Text>
+            </TouchableOpacity>
+          </View>
+        )
       ) : (
         <View style={styles.emptyStateContainer}>
           <View style={styles.emptyStateIconContainer}>
