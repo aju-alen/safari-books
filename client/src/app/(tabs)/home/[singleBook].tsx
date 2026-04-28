@@ -19,6 +19,7 @@ import { axiosWithAuth } from '@/utils/customAxios';
 import SingleBookSkeleton from '@/components/SingleBookSkeleton';
 import { BOOK_COVER_ASPECT_RATIO } from '@/constants/bookCover';
 import * as ExpoSecureStore from 'expo-secure-store';
+import { usePlaybackQueueStore } from '@/store/playbackQueueStore';
 
 /** e.g. "6 April 2025" from API date string */
 function formatReleaseDateDisplay(value: unknown): string {
@@ -38,6 +39,8 @@ const SingleBookPage = () => {
     singleBook: string;
     openPlayer?: string;
   }>();
+  const bookIdParam = (Array.isArray(singleBook) ? singleBook[0] : singleBook) ?? '';
+  const addToQueue = usePlaybackQueueStore((s) => s.addToQueue);
   const [singleBookData, setSingleBookData] = useState([]);
   const [isModalVisible, setModalVisible] = useState(false);
   const [sound, setSound] = useState(null);
@@ -57,7 +60,7 @@ const SingleBookPage = () => {
 
   const getSingleBookData = async () => {
     try {
-      const resp = await axios.get(`${ipURL}/api/listeners/book-data/${singleBook}`);
+      const resp = await axios.get(`${ipURL}/api/listeners/book-data/${bookIdParam}`);
       setSingleBookData([resp.data]);
     } catch (error) {
       console.error('Error fetching single book data:', error);
@@ -66,7 +69,7 @@ const SingleBookPage = () => {
 
   const getBookRecommendations = async () => {
     try {
-      const resp = await axios.get(`${ipURL}/api/listeners/book-recommendations/${singleBook}`);
+      const resp = await axios.get(`${ipURL}/api/listeners/book-recommendations/${bookIdParam}`);
       setBookRecommendations(resp.data.books);
     } catch (error) {
       console.error('Error fetching book recommendations:', error);
@@ -89,7 +92,7 @@ const SingleBookPage = () => {
     };
     
     fetchData();
-  }, []);
+  }, [bookIdParam]);
 
   useEffect(() => {
     if (openPlayer !== '1' || loading) return;
@@ -124,8 +127,43 @@ const SingleBookPage = () => {
       title: singleBookData[0]?.title,
       author: singleBookData[0]?.authorName,
       coverImage: singleBookData[0]?.coverImage,
-      bookId: Array.isArray(singleBook) ? singleBook[0] : singleBook,
+      bookId: bookIdParam,
     });
+  };
+
+  const handleAddToQueue = async () => {
+    try {
+      const raw = await ExpoSecureStore.getItemAsync('userDetails');
+      if (!raw) {
+        Alert.alert('Sign in required', 'Please log in to use the queue.');
+        return;
+      }
+      const role = JSON.parse(raw).role;
+      if (role === 'GUEST') {
+        Alert.alert('Please log in', 'Create an account to build a listening queue.');
+        router.replace('/(authenticate)/login');
+        return;
+      }
+    } catch {
+      Alert.alert('Error', 'Could not verify your account.');
+      return;
+    }
+    const book = singleBookData[0];
+    if (!book?.completeAudioUrl) {
+      Alert.alert(
+        'Not available',
+        'Full audiobook is not available to queue yet. Open access from Listen Now after subscribing.'
+      );
+      return;
+    }
+    addToQueue({
+      id: bookIdParam,
+      title: book.title,
+      authorName: book.authorName,
+      coverImage: book.coverImage,
+      completeAudioUrl: book.completeAudioUrl,
+    });
+    Alert.alert('Queue', 'Added to your queue.');
   };
 
   const closeModal = async () => {
@@ -154,7 +192,7 @@ const SingleBookPage = () => {
 
   const toggleBookmark = async () => {
     setIsBookmarked(!isBookmarked);
-    const bookmarkResponse  = await axiosWithAuth.put(`${ipURL}/api/listeners/bookmark/${singleBook}`);
+    const bookmarkResponse  = await axiosWithAuth.put(`${ipURL}/api/listeners/bookmark/${bookIdParam}`);
     console.log(bookmarkResponse.data,'bookmarkResponse');
   };
 
@@ -173,7 +211,7 @@ const SingleBookPage = () => {
     }
     if (isPro) {
       // Logic for already subscribed users
-      const resp = await axiosWithAuth.post(`${ipURL}/api/library/create-library/${singleBook}`);
+      const resp = await axiosWithAuth.post(`${ipURL}/api/library/create-library/${bookIdParam}`);
       console.log('User is already subscribed');
       setCurrentAudioUrl(singleBookData[0]?.completeAudioUrl);
       setPlayerVisible(true);
@@ -451,6 +489,23 @@ const SingleBookPage = () => {
       fontSize: moderateScale(16),
       fontWeight: '700',
     },
+    queueButton: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      gap: horizontalScale(10),
+      paddingVertical: verticalScale(14),
+      paddingHorizontal: horizontalScale(24),
+      borderRadius: moderateScale(28),
+      backgroundColor: theme.gray2,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: theme.maximumTrackTintColor,
+    },
+    queueButtonText: {
+      color: theme.text,
+      fontSize: moderateScale(16),
+      fontWeight: '600',
+    },
     shareContainer: {
       flexDirection: 'row',
       justifyContent: 'center',
@@ -625,6 +680,13 @@ const SingleBookPage = () => {
               <TouchableOpacity style={styles.buyButton} onPress={handlePurchase}>
                 <Text style={styles.buyButtonText}>{isPro ? 'Listen Now' : `Subscribe to Listen`}</Text>
               </TouchableOpacity>
+
+              {singleBookData[0]?.completeAudioUrl ? (
+                <TouchableOpacity style={styles.queueButton} onPress={handleAddToQueue} activeOpacity={0.85}>
+                  <Ionicons name="list-outline" size={22} color={theme.text} />
+                  <Text style={styles.queueButtonText}>Add to queue</Text>
+                </TouchableOpacity>
+              ) : null}
             </View>
 
             <View style={styles.section}>
@@ -729,7 +791,7 @@ const SingleBookPage = () => {
         title={singleBookData[0]?.title}
         author={singleBookData[0]?.authorName}
         authorAvatar={singleBookData[0]?.authorAvatar || singleBookData[0]?.coverImage}
-        bookId={singleBook}
+        bookId={bookIdParam}
         timeStamp={singleBookData[0]?.timeStamp || []}
         language={singleBookData[0]?.language}
         rating={singleBookData[0]?.rating}

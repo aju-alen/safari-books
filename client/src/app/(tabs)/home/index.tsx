@@ -240,7 +240,7 @@ const HomePage = () => {
             <View style={styles.headerActions}>
               <TouchableOpacity
                 style={[styles.headerButton, { backgroundColor: theme.white, shadowColor: theme.text }]}
-                onPress={() => router.push('/(tabs)/search')}
+                onPress={() => router.push('/(tabs)/home/search')}
                 accessibilityLabel="Search catalogue"
               >
                 <Ionicons name="search-outline" size={24} color={theme.text} />

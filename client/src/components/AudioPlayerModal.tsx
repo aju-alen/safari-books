@@ -18,6 +18,8 @@ import { moderateScale, verticalScale, horizontalScale } from '@/utils/responsiv
 import Slider from '@react-native-community/slider';
 import { useTheme } from '@/providers/ThemeProvider';
 import { useAudio } from '@/store/AudioContext';
+import { usePlaybackQueueStore } from '@/store/playbackQueueStore';
+import { router } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { axiosWithAuth } from '@/utils/customAxios';
 import { ipURL } from '@/utils/backendURL';
@@ -64,6 +66,9 @@ const AudioPlayer = ({
     getActiveSoundForBook,
     unloadActiveSound,
   } = useAudio();
+  const queueItems = usePlaybackQueueStore((s) => s.items);
+  const removeFromQueue = usePlaybackQueueStore((s) => s.removeFromQueue);
+  const moveQueueItemUp = usePlaybackQueueStore((s) => s.moveUp);
   const [sound, setSound] = useState(null);
   const soundRef = useRef(null);
   soundRef.current = sound;
@@ -493,6 +498,15 @@ const AudioPlayer = ({
     }
   };
 
+  const advanceToNextQueuedBook = async () => {
+    const next = usePlaybackQueueStore.getState().shiftNext();
+    if (!next) return false;
+    await stopAndUnloadAudio();
+    onClose();
+    router.replace(`/(tabs)/home/${next.id}?openPlayer=1`);
+    return true;
+  };
+
   const onPlaybackStatusUpdate = (status) => {
     if (status.isLoaded) {
       setDuration(status.durationMillis);
@@ -514,8 +528,11 @@ const AudioPlayer = ({
       if (status.didJustFinish) {
         syncPlaybackState(false);
         void (async () => {
-          await stopAndUnloadAudio();
-          onClose();
+          const advanced = await advanceToNextQueuedBook();
+          if (!advanced) {
+            await stopAndUnloadAudio();
+            onClose();
+          }
         })();
       }
     } else if (status.error) {
@@ -671,6 +688,23 @@ const AudioPlayer = ({
       await saveProgress();
     }
     onClose();
+  };
+
+  const handlePlayNextInQueue = () => {
+    void (async () => {
+      const peeked = usePlaybackQueueStore.getState().peekNext();
+      if (!peeked) {
+        Alert.alert(
+          'Queue',
+          'No books in your queue. Add titles from a book page when full audio is available.'
+        );
+        return;
+      }
+      if (position > 0 && bookId) {
+        await saveProgress();
+      }
+      await advanceToNextQueuedBook();
+    })();
   };
 
   const seekToMs = useCallback(
@@ -866,6 +900,60 @@ const AudioPlayer = ({
                   </View>
                 </View>
               </View>
+
+              {queueItems.length > 0 ? (
+                <View style={styles.queueSection}>
+                  <View style={styles.queueTitleRow}>
+                    <Text style={[styles.queueTitle, { color: theme.text }]}>Up next</Text>
+                    <TouchableOpacity
+                      style={[styles.queuePlayNext, { backgroundColor: `${theme.primary}22` }]}
+                      onPress={handlePlayNextInQueue}
+                      activeOpacity={0.85}
+                    >
+                      <Ionicons name="play-forward" size={18} color={theme.primary} />
+                      <Text style={[styles.queuePlayNextText, { color: theme.primary }]}>
+                        Play next
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                  {queueItems.map((q, index) => (
+                    <View
+                      key={q.id}
+                      style={[
+                        styles.queueRow,
+                        { backgroundColor: theme.gray2, borderColor: theme.maximumTrackTintColor },
+                      ]}
+                    >
+                      <View style={styles.queueRowInfo}>
+                        <Text style={[styles.queueRowTitle, { color: theme.text }]} numberOfLines={2}>
+                          {q.title}
+                        </Text>
+                        <Text style={[styles.queueRowAuthor, { color: theme.textMuted }]} numberOfLines={1}>
+                          {q.authorName}
+                        </Text>
+                      </View>
+                      <View style={styles.queueRowActions}>
+                        {index > 0 ? (
+                          <TouchableOpacity
+                            onPress={() => moveQueueItemUp(q.id)}
+                            hitSlop={8}
+                            accessibilityLabel="Move up in queue"
+                          >
+                            <Ionicons name="chevron-up" size={22} color={theme.primary} />
+                          </TouchableOpacity>
+                        ) : null}
+                        <TouchableOpacity
+                          onPress={() => removeFromQueue(q.id)}
+                          hitSlop={8}
+                          accessibilityLabel="Remove from queue"
+                        >
+                          <Ionicons name="trash-outline" size={20} color={theme.textMuted} />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              ) : null}
             </ScrollView>
 
             <View
@@ -1341,6 +1429,61 @@ const styles = StyleSheet.create({
   audioTimelineBlock: {
     width: '100%',
     marginTop: verticalScale(8),
+  },
+  queueSection: {
+    width: '100%',
+    marginTop: verticalScale(20),
+    paddingHorizontal: horizontalScale(4),
+  },
+  queueTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: verticalScale(10),
+    gap: 8,
+  },
+  queueTitle: {
+    fontSize: moderateScale(16),
+    fontWeight: '700',
+    flex: 1,
+  },
+  queuePlayNext: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 999,
+  },
+  queuePlayNextText: {
+    fontSize: moderateScale(13),
+    fontWeight: '700',
+  },
+  queueRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    marginBottom: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  queueRowInfo: {
+    flex: 1,
+    marginRight: 8,
+  },
+  queueRowTitle: {
+    fontSize: moderateScale(14),
+    fontWeight: '600',
+  },
+  queueRowAuthor: {
+    fontSize: moderateScale(12),
+    marginTop: 2,
+  },
+  queueRowActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   audioSliderWrap: {
     width: '100%',
