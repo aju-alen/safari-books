@@ -12,7 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAudio } from './AudioContext';
 import { useTheme } from '@/providers/ThemeProvider';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, usePathname } from 'expo-router';
 import { moderateScale } from '@/utils/responsiveSize';
 
 const TAB_BAR_BASE = Platform.OS === 'android' ? 60 : 52;
@@ -20,15 +20,17 @@ const TAB_BAR_BASE = Platform.OS === 'android' ? 60 : 52;
 const MiniPlayer = () => {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
-  const { currentTrack, isPlaying, handlePlayPause, miniPlayerVisible } = useAudio();
+  const pathname = usePathname();
+  const { currentTrack, isPlaying, handlePlayPause, miniPlayerVisible, unloadActiveSound } = useAudio();
 
-  if (!miniPlayerVisible || !currentTrack) return null;
+  const isFullAudioPlayerRoute = /\/play\//.test(pathname);
+  if (isFullAudioPlayerRoute || !miniPlayerVisible || !currentTrack) return null;
 
   const bottom = TAB_BAR_BASE + insets.bottom + 6;
 
   const openFullPlayer = () => {
     if (currentTrack.bookId) {
-      router.push(`/(tabs)/home/${currentTrack.bookId}?openPlayer=1`);
+      router.push(`/(tabs)/home/play/${currentTrack.bookId}`);
     }
   };
 
@@ -60,6 +62,14 @@ const MiniPlayer = () => {
             size={26}
             color={theme.primary}
           />
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => void unloadActiveSound()}
+          style={styles.closeButton}
+          hitSlop={12}
+          accessibilityLabel="Close mini player and stop playback"
+        >
+          <Ionicons name="close" size={24} color={theme.textMuted} />
         </TouchableOpacity>
       </View>
     </View>
@@ -115,6 +125,10 @@ const styles = StyleSheet.create({
   },
   playButton: {
     padding: 8,
+  },
+  closeButton: {
+    padding: 8,
+    marginLeft: -2,
   },
 });
 

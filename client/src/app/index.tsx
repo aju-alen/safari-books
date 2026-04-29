@@ -20,7 +20,6 @@ const App = () => {
   useEffect(() => {
     const user = async () => {
       const user = await SecureStore.getItemAsync("userDetails");
-      console.log(user, 'user');
       
       if (!user) {
         setLoading(false);

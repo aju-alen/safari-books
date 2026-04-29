@@ -176,7 +176,7 @@ const LibraryPage = () => {
         style={styles.bookItem}
         onPress={() => router.push(`/(tabs)/home/${item.id}`)}
       >
-        <Image source={{ uri: item.coverImage }} style={styles.bookCover} />
+        <Image source={{ uri: item.coverImage }} style={styles.bookCover} resizeMode="stretch" />
         <View style={styles.bookInfo}>
           <Text style={styles.bookTitle} numberOfLines={2}>{item.title}</Text>
           <Text style={styles.bookAuthor}>{item.authorName}</Text>

@@ -6,7 +6,6 @@ import { defaultStyles } from '@/styles';
 import { horizontalScale, moderateScale, verticalScale } from '@/utils/responsiveSize';
 import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
-import AudioPlayerModal from '@/components/AudioPlayerModal';
 import { useAudio } from '@/store/AudioContext';
 import { ipURL } from '@/utils/backendURL';
 import { BookCategoryLabels } from '@/utils/categoriesdata';
@@ -35,23 +34,19 @@ function formatReleaseDateDisplay(value: unknown): string {
 
 const SingleBookPage = () => {
   const { theme } = useTheme();
-  const { singleBook, openPlayer } = useLocalSearchParams<{
+  const { singleBook } = useLocalSearchParams<{
     singleBook: string;
-    openPlayer?: string;
   }>();
   const bookIdParam = (Array.isArray(singleBook) ? singleBook[0] : singleBook) ?? '';
   const addToQueue = usePlaybackQueueStore((s) => s.addToQueue);
   const [singleBookData, setSingleBookData] = useState([]);
   const [isModalVisible, setModalVisible] = useState(false);
   const [sound, setSound] = useState(null);
-  const [isPlayerVisible, setPlayerVisible] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [showFullSummary, setShowFullSummary] = useState(false);
-  const [currentAudioUrl, setCurrentAudioUrl] = useState('');
   const [loading, setLoading] = useState(true);
   const { isPro } = useRevenueCat();
   const [bookRecommendations, setBookRecommendations] = useState([]);
-  console.log(singleBookData,'singleBookData');
   
   // useEffect(() => {
   //   const book = eBookData.find((book) => book.id === singleBook);
@@ -93,15 +88,6 @@ const SingleBookPage = () => {
     
     fetchData();
   }, [bookIdParam]);
-
-  useEffect(() => {
-    if (openPlayer !== '1' || loading) return;
-    const book = singleBookData[0];
-    if (!book?.completeAudioUrl) return;
-    setCurrentAudioUrl(book.completeAudioUrl);
-    setPlayerVisible(true);
-    router.setParams({ openPlayer: undefined });
-  }, [openPlayer, loading, singleBookData]);
 
   const { playTrack } = useAudio();
 
@@ -196,7 +182,6 @@ const SingleBookPage = () => {
     console.log(bookmarkResponse.data,'bookmarkResponse');
   };
 
-  console.log('singleBookData', singleBookData);
 
   const handlePurchase = async() => {
 
@@ -213,8 +198,7 @@ const SingleBookPage = () => {
       // Logic for already subscribed users
       const resp = await axiosWithAuth.post(`${ipURL}/api/library/create-library/${bookIdParam}`);
       console.log('User is already subscribed');
-      setCurrentAudioUrl(singleBookData[0]?.completeAudioUrl);
-      setPlayerVisible(true);
+      router.push(`/(tabs)/home/play/${bookIdParam}`);
       
     } else {
       // Logic for purchasing the book
@@ -617,18 +601,13 @@ const SingleBookPage = () => {
     >
       <SafeAreaView>
         <View style={styles.pageContent}>
-          <View style={styles.header}>
-            <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-              <Ionicons name="arrow-back" size={24} color={theme.text} />
-            </TouchableOpacity>
-          </View>
 
           <View style={styles.imageContainer}>
             <View style={styles.coverFrame}>
               <Image
                 source={{ uri: singleBookData[0]?.coverImage }}
                 style={styles.coverImage}
-                resizeMode="cover"
+                resizeMode='stretch'
               />
             </View>
 
@@ -645,12 +624,6 @@ const SingleBookPage = () => {
                 </Text>
               </View>
 
-              {/* <View style={styles.ratingContainer}>
-                <View style={styles.stars}>
-                  {renderRatingStars(singleBookData[0]?.rating)}
-                </View>
-                <Text style={styles.ratingText}>{singleBookData[0]?.rating}</Text>
-              </View> */}
             </View>
 
             <View style={styles.creditsContainer}>
@@ -669,8 +642,7 @@ const SingleBookPage = () => {
               <TouchableOpacity
                 style={styles.primaryButton}
                 onPress={() => {
-                  setCurrentAudioUrl(singleBookData[0]?.sampleAudioURL);
-                  setPlayerVisible(true);
+                  router.push(`/(tabs)/home/play/${bookIdParam}?source=sample`);
                 }}
               >
                 <Ionicons name="play" size={22} color={theme.primary} />
@@ -708,28 +680,6 @@ const SingleBookPage = () => {
               </View>
             </View>
 
-            {/* <View style={styles.section}>
-              <Text style={styles.sectionTitle}>What Listeners Say</Text>
-              <View style={styles.reviewCard}>
-                <View style={styles.reviewHeader}>
-                  <View style={styles.reviewerInfo}>
-                    <View style={styles.reviewerAvatar}>
-                      <Text style={styles.avatarText}>JD</Text>
-                    </View>
-                    <Text style={styles.reviewerName}>John Doe</Text>
-                  </View>
-                  <View style={styles.stars}>
-                    {renderRatingStars(5)}
-                  </View>
-                </View>
-                <Text style={styles.reviewText}>
-                  "This audiobook completely changed my perspective. The narration is exceptional and brings the story to life!"
-                </Text>
-              </View>
-              <TouchableOpacity style={styles.allReviewsButton}>
-                <Text style={styles.allReviewsText}>See all reviews</Text>
-              </TouchableOpacity>
-            </View> */}
 
             <View style={styles.section}>
               <View style={styles.sectionCard}>
@@ -762,7 +712,7 @@ const SingleBookPage = () => {
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.recommendationsScroll}>
                 {bookRecommendations.slice(0, 5).map((book, index) => (
                   <View key={index} style={styles.recommendationItem}>
-                    <Image source={{ uri: book.coverImage }} style={styles.recommendationCover} />
+                    <Image source={{ uri: book.coverImage }} style={styles.recommendationCover} resizeMode="stretch" />
                     <Text style={styles.recommendationTitle} numberOfLines={1}>{book.title}</Text>
                     <Text style={styles.recommendationAuthor} numberOfLines={1}>{book.authorName}</Text>
                   </View>
@@ -783,20 +733,6 @@ const SingleBookPage = () => {
           </View>
         </Modal>
       </SafeAreaView>
-      <AudioPlayerModal
-        isVisible={isPlayerVisible}
-        onClose={() => setPlayerVisible(false)}
-        audioUrl={currentAudioUrl}
-        bookCover={singleBookData[0]?.coverImage}
-        title={singleBookData[0]?.title}
-        author={singleBookData[0]?.authorName}
-        authorAvatar={singleBookData[0]?.authorAvatar || singleBookData[0]?.coverImage}
-        bookId={bookIdParam}
-        timeStamp={singleBookData[0]?.timeStamp || []}
-        language={singleBookData[0]?.language}
-        rating={singleBookData[0]?.rating}
-      />
-      
     </ScrollView>
   );
 };

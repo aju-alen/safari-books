@@ -1,5 +1,5 @@
 import {  FONTSIZE } from '@/constants/tokens';
-import { Tabs } from 'expo-router';
+import { Tabs, usePathname } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import MiniPlayer from '@/store/Miniplayer';
@@ -13,6 +13,21 @@ import { Platform } from 'react-native';
 const TabsLayout = () => {
     const {theme} = useTheme()
     const isAndroid = Platform.OS === 'android';
+    const pathname = usePathname();
+    const isFullAudioPlayer = /\/play\//.test(pathname);
+
+    const tabBarVisibleStyle = {
+        position: 'absolute' as const,
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+        borderTopWidth: 0,
+        paddingTop: 8,
+        backgroundColor: theme.background,
+        ...(isAndroid && {
+            height: 60,
+        }),
+    };
+
     return (
         <RevenueCatProvider>
         <View style={styles.container}>
@@ -24,17 +39,9 @@ const TabsLayout = () => {
                     fontWeight: '500'
                 },
                 headerShown: false,
-                tabBarStyle: {
-                    position: 'absolute',
-                    borderTopLeftRadius: 20,
-                    borderTopRightRadius: 20,
-                    borderTopWidth: 0,
-                    paddingTop: 8,
-                    backgroundColor: theme.background,
-                    ...(isAndroid && {
-                        height: 60,
-                    }),
-                },
+                tabBarStyle: isFullAudioPlayer
+                    ? { display: 'none', height: 0, opacity: 0 }
+                    : tabBarVisibleStyle,
             }}>
                 <Tabs.Screen
                     name="home"

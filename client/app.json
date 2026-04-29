@@ -2,7 +2,7 @@
   "expo": {
     "name": "Safari Books",
     "slug": "safari-books",
-    "version": "1.0.2",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/sbLogo.png",
     "userInterfaceStyle": "dark",
@@ -36,7 +36,7 @@
           "backgroundColor": "#000000"
         }
       },
-      "buildNumber": "17"
+      "buildNumber": "19"
     },
     "android": {
       "versionCode": 11,

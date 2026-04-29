@@ -11,6 +11,7 @@ import {
   ScrollView,
   Pressable,
   FlatList,
+  BackHandler,
   type LayoutChangeEvent,
 } from 'react-native';
 import { Audio } from 'expo-av';
@@ -27,6 +28,9 @@ import { ipURL } from '@/utils/backendURL';
 import { getDefaultPlaybackRate, getSleepTimerPresetMinutes } from '@/utils/playbackPreferences';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 type PlayerMode = 'audio' | 'text';
+
+/** Single overlay: menu → chapters or reader without swapping Modal instances (fixes touch issues). */
+type SettingsSheetPanel = 'menu' | 'chapters' | 'reader';
 
 
 
@@ -48,7 +52,6 @@ type SegmentTimeStamp = {
 };
 
 const AudioPlayer = ({ 
-  isVisible, 
   onClose, 
   audioUrl, 
   bookCover, 
@@ -59,6 +62,8 @@ const AudioPlayer = ({
   timeStamp = [],
   language,
   rating,
+  /** When true, show top bar (back, mode switch, settings). */
+  header = true,
 }) => {
   const { theme, isDarkMode } = useTheme();
   const {
@@ -95,8 +100,7 @@ const AudioPlayer = ({
   const [selectedTimer, setSelectedTimer] = useState(null);
   const [activeSegmentIndex, setActiveSegmentIndex] = useState<number>(-1);
   const [playerMode, setPlayerMode] = useState<PlayerMode>('audio');
-  const [showReaderSettings, setShowReaderSettings] = useState(false);
-  const [showChapterToc, setShowChapterToc] = useState(false);
+  const [settingsSheetPanel, setSettingsSheetPanel] = useState<SettingsSheetPanel | null>(null);
   const [readerFontSize, setReaderFontSize] = useState(20);
   const [readerBgIndex, setReaderBgIndex] = useState(0);
 
@@ -265,7 +269,6 @@ const AudioPlayer = ({
 
   // Progress saving function
   const saveProgress = useCallback(async () => {
-    console.log(isSavingProgress, 'isSavingProgress', bookId, 'bookId');
     
     if (!bookId || isSavingProgress) return;
     
@@ -298,6 +301,13 @@ const AudioPlayer = ({
     }
   }, [bookId, position, duration, isSavingProgress]);
 
+  const saveProgressRef = useRef(saveProgress);
+  saveProgressRef.current = saveProgress;
+  const positionRef = useRef(position);
+  positionRef.current = position;
+  const bookIdForSaveRef = useRef(bookId);
+  bookIdForSaveRef.current = bookId;
+
   // Save progress when screen loses focus
   useFocusEffect(
     useCallback(() => {
@@ -307,8 +317,21 @@ const AudioPlayer = ({
           saveProgress();
         }
       };
-    }, [isLoading])
+    }, [bookId, position, saveProgress])
   );
+
+  useEffect(() => {
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      void (async () => {
+        if (positionRef.current > 0 && bookIdForSaveRef.current) {
+          await saveProgressRef.current();
+        }
+        onClose();
+      })();
+      return true;
+    });
+    return () => sub.remove();
+  }, [onClose]);
 
   // Reset saved progress when bookId changes
   useEffect(() => {
@@ -321,7 +344,7 @@ const AudioPlayer = ({
     let cancelled = false;
 
     const run = async () => {
-      if (!isVisible || !audioUrl) return;
+      if (!audioUrl) return;
 
       const bid = bookId != null ? String(bookId) : '';
       const existing = bid ? getActiveSoundForBook(bid) : null;
@@ -360,18 +383,7 @@ const AudioPlayer = ({
     return () => {
       cancelled = true;
     };
-  }, [isVisible, audioUrl, bookId]);
-
-  // When full player is hidden: minimize only (keep playback + mini bar)
-  useEffect(() => {
-    if (isVisible) return;
-    setSavedProgressLoaded(false);
-    setSavedTimestamp(null);
-    setActiveSegmentIndex(-1);
-    previousActiveSegmentRef.current = -1;
-    setPlayerMode('audio');
-    setShowReaderSettings(false);
-  }, [isVisible]);
+  }, [audioUrl, bookId]);
 
   // Periodic progress saving during playback - every 20 seconds
   // useEffect(() => {
@@ -558,8 +570,7 @@ const AudioPlayer = ({
     const next = usePlaybackQueueStore.getState().shiftNext();
     if (!next) return false;
     await stopAndUnloadAudio();
-    onClose();
-    router.replace(`/(tabs)/home/${next.id}?openPlayer=1`);
+    router.replace(`/(tabs)/home/play/${next.id}`);
     return true;
   };
 
@@ -665,30 +676,6 @@ const AudioPlayer = ({
     }
   };
 
-  const handleSkipBack = async () => {
-    if (sound) {
-      const newPosition = Math.max(0, position - 30000); // 30 seconds back
-      await sound.setPositionAsync(newPosition);
-      setPosition(newPosition);
-    }
-  };
-
-  const handleSkipForward = async () => {
-    if (sound) {
-      const newPosition = Math.min(duration, position + 30000); // 30 seconds forward
-      await sound.setPositionAsync(newPosition);
-      setPosition(newPosition);
-    }
-  };
-
-  const toggleBookmark = () => {
-    setIsBookmarked(!isBookmarked);
-    Alert.alert(
-      isBookmarked ? 'Bookmark Removed' : 'Bookmark Added',
-      isBookmarked ? 'Bookmark has been removed' : 'Current position has been bookmarked'
-    );
-  };
-
   const clearTimer = () => {
     if (sleepTimerTimeoutRef.current != null) {
       clearTimeout(sleepTimerTimeoutRef.current);
@@ -786,7 +773,7 @@ const AudioPlayer = ({
   );
 
   const handleChapterTocJump = async (startMs: number) => {
-    setShowChapterToc(false);
+    setSettingsSheetPanel(null);
     try {
       if (!soundRef.current) {
         const saved = await loadSavedProgress();
@@ -857,76 +844,53 @@ const AudioPlayer = ({
     ) : null;
 
   return (
-    <Modal
-      visible={isVisible}
-      transparent
-      animationType="fade"
-      onRequestClose={handleMinimize}
-    >
       <View style={[styles.greenBg, { backgroundColor: mainBgColor }]}>
-        <View style={[styles.topBar, { paddingTop: Math.max(insets.top, 12) + 4 }]}>
-          <TouchableOpacity onPress={handleMinimize} style={styles.topIconBtn} activeOpacity={0.7}>
-            <Ionicons name="chevron-back" size={28} color={theme.text} />
-          </TouchableOpacity>
-          <View style={styles.modeSwitchWrap}>
-            <View style={[styles.modeSwitch, { backgroundColor: theme.secondary }]}>
-              <Pressable
-                onPress={() => setPlayerMode('audio')}
-                style={({ pressed }) => [
-                  styles.modePill,
-                  playerMode === 'audio' && { backgroundColor: theme.tabs },
-                  pressed && { opacity: 0.9 },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.modePillText,
-                    { color: playerMode === 'audio' ? theme.text : theme.textMuted },
-                  ]}
-                >
-                  Audio
-                </Text>
-              </Pressable>
-              <Pressable
-                onPress={() => setPlayerMode('text')}
-                style={({ pressed }) => [
-                  styles.modePill,
-                  playerMode === 'text' && { backgroundColor: theme.tabs },
-                  pressed && { opacity: 0.9 },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.modePillText,
-                    { color: playerMode === 'text' ? theme.text : theme.textMuted },
-                  ]}
-                >
-                  Text
-                </Text>
-              </Pressable>
-            </View>
-          </View>
-          <View style={styles.topBarRight}>
-            {chapterTocEntries.length > 0 ? (
-              <TouchableOpacity
-                onPress={() => setShowChapterToc(true)}
-                style={styles.topIconBtn}
-                activeOpacity={0.7}
-                accessibilityLabel="Chapters"
-              >
-                <Ionicons name="list-outline" size={24} color={theme.text} />
-              </TouchableOpacity>
-            ) : null}
+        {header ? (
+          <View style={[styles.topBar, { paddingTop: Math.max(insets.top, 12) + 4 }]}>
             <TouchableOpacity
-              onPress={() => setShowReaderSettings(true)}
+              onPress={handleMinimize}
               style={styles.topIconBtn}
               activeOpacity={0.7}
-              accessibilityLabel="Reader settings"
+              accessibilityLabel="Back"
             >
-              <Ionicons name="settings-outline" size={24} color={theme.text} />
+              <Ionicons name="chevron-back" size={28} color={theme.text} />
             </TouchableOpacity>
+            <View style={styles.modeSwitchWrap}>
+              <View style={[styles.modeSwitch, { backgroundColor: theme.secondary }]}>
+                <Pressable
+                  onPress={() => setPlayerMode('audio')}
+                  style={({ pressed }) => [
+                    styles.modePill,
+                    playerMode === 'audio' && { backgroundColor: theme.tabs },
+                    pressed && { opacity: 0.9 },
+                  ]}
+                >
+                  <Ionicons name="play-outline" size={24} color={theme.text} />
+                </Pressable>
+                <Pressable
+                  onPress={() => setPlayerMode('text')}
+                  style={({ pressed }) => [
+                    styles.modePill,
+                    playerMode === 'text' && { backgroundColor: theme.tabs },
+                    pressed && { opacity: 0.9 },
+                  ]}
+                >
+                  <Ionicons name="reader-outline" size={24} color={theme.text} />
+                </Pressable>
+              </View>
+            </View>
+            <View style={styles.topBarRight}>
+              <TouchableOpacity
+                onPress={() => setSettingsSheetPanel('menu')}
+                style={styles.topIconBtn}
+                activeOpacity={0.7}
+                accessibilityLabel="Settings"
+              >
+                <Ionicons name="settings-outline" size={24} color={theme.text} />
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
+        ) : null}
 
         {playerMode === 'audio' ? (
           <>
@@ -946,7 +910,7 @@ const AudioPlayer = ({
                   />
                   <View style={[styles.vinylRingMid, { borderColor: `${String(theme.primary)}35` }]} />
                   <View style={styles.audioCoverWrap}>
-                    <Image source={{ uri: bookCover }} style={styles.audioCoverImage} resizeMode="contain" />
+                    <Image source={{ uri: bookCover }} style={styles.audioCoverImage} resizeMode="stretch" />
                   </View>
                 </View>
 
@@ -978,7 +942,7 @@ const AudioPlayer = ({
               </View>
 
               <View style={styles.audioTimelineBlock}>
-                <View style={[styles.audioSliderWrap, { marginTop: 8 }]}>
+                <View style={styles.audioSliderWrap}>
                   <Slider
                     style={styles.slider}
                     minimumValue={0}
@@ -1243,59 +1207,26 @@ const AudioPlayer = ({
         ) : null}
 
         <Modal
-          visible={showChapterToc}
-          transparent
-          animationType="slide"
-          onRequestClose={() => setShowChapterToc(false)}
-        >
-          <Pressable style={styles.settingsBackdrop} onPress={() => setShowChapterToc(false)}>
-            <Pressable
-              style={[styles.chapterTocSheet, { backgroundColor: theme.background }]}
-              onPress={(e) => e.stopPropagation()}
-            >
-              <View style={[styles.settingsGrabber, { backgroundColor: theme.maximumTrackTintColor }]} />
-              <Text style={[styles.settingsTitle, { color: theme.text }]}>Chapters</Text>
-              <FlatList
-                data={chapterTocEntries}
-                keyExtractor={(item, i) => `ch-${item.startMs}-${i}`}
-                style={styles.chapterTocList}
-                keyboardShouldPersistTaps="handled"
-                renderItem={({ item, index }) => (
-                  <TouchableOpacity
-                    style={[
-                      styles.tocRow,
-                      {
-                        borderBottomColor: theme.maximumTrackTintColor,
-                        backgroundColor:
-                          index === activeTocIndex ? `${String(theme.primary)}18` : 'transparent',
-                      },
-                    ]}
-                    onPress={() => void handleChapterTocJump(item.startMs)}
-                    activeOpacity={0.75}
-                  >
-                    <Text style={[styles.tocRowTitle, { color: theme.text }]} numberOfLines={3}>
-                      {item.title}
-                    </Text>
-                    <Text style={[styles.tocRowTime, { color: theme.textMuted }]}>
-                      {formatTime(item.startMs)}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-              />
-            </Pressable>
-          </Pressable>
-        </Modal>
-
-        <Modal
           visible={showSleepPicker}
           transparent
           animationType="slide"
           onRequestClose={() => setShowSleepPicker(false)}
         >
-          <Pressable style={styles.settingsBackdrop} onPress={() => setShowSleepPicker(false)}>
+          <View style={styles.settingsBackdrop}>
             <Pressable
-              style={[styles.chapterTocSheet, { backgroundColor: theme.background }]}
-              onPress={(e) => e.stopPropagation()}
+              style={[StyleSheet.absoluteFill, styles.modalBackdropHitbox]}
+              onPress={() => setShowSleepPicker(false)}
+              accessibilityLabel="Dismiss sleep timer"
+            />
+            <View
+              style={[
+                styles.chapterTocSheet,
+                {
+                  backgroundColor: theme.background,
+                  zIndex: 2,
+                  elevation: 24,
+                },
+              ]}
             >
               <View style={[styles.settingsGrabber, { backgroundColor: theme.maximumTrackTintColor }]} />
               <Text style={[styles.settingsTitle, { color: theme.text }]}>Sleep timer</Text>
@@ -1340,66 +1271,178 @@ const AudioPlayer = ({
                   </TouchableOpacity>
                 )}
               />
-            </Pressable>
-          </Pressable>
+            </View>
+          </View>
         </Modal>
 
         <Modal
-          visible={showReaderSettings}
+          visible={settingsSheetPanel !== null}
           transparent
           animationType="slide"
-          onRequestClose={() => setShowReaderSettings(false)}
+          onRequestClose={() => setSettingsSheetPanel(null)}
         >
-          <Pressable
-            style={styles.settingsBackdrop}
-            onPress={() => setShowReaderSettings(false)}
-          >
+          <View style={styles.settingsBackdrop}>
             <Pressable
-              style={[styles.settingsSheet, { backgroundColor: theme.background }]}
-              onPress={(e) => e.stopPropagation()}
+              style={[StyleSheet.absoluteFill, styles.modalBackdropHitbox]}
+              onPress={() => setSettingsSheetPanel(null)}
+              accessibilityLabel="Dismiss settings"
+            />
+            <View
+              style={[
+                settingsSheetPanel === 'chapters' ? styles.chapterTocSheet : styles.settingsSheet,
+                {
+                  backgroundColor: theme.background,
+                  zIndex: 2,
+                  elevation: 24,
+                },
+              ]}
             >
               <View style={[styles.settingsGrabber, { backgroundColor: theme.maximumTrackTintColor }]} />
-              <Text style={[styles.settingsTitle, { color: theme.text }]}>Reader</Text>
-              <Text style={[styles.settingsLabel, { color: theme.textMuted }]}>Font size</Text>
-              <View style={styles.fontStepper}>
-                <TouchableOpacity
-                  onPress={() => setReaderFontSize((s) => Math.max(14, s - 1))}
-                  style={[styles.fontStepperBtn, { borderColor: theme.textMuted }]}
-                >
-                  <Ionicons name="remove" size={22} color={theme.text} />
-                </TouchableOpacity>
-                <Text style={[styles.fontStepperValue, { color: theme.text }]}>{readerFontSize}</Text>
-                <TouchableOpacity
-                  onPress={() => setReaderFontSize((s) => Math.min(32, s + 1))}
-                  style={[styles.fontStepperBtn, { borderColor: theme.textMuted }]}
-                >
-                  <Ionicons name="add" size={22} color={theme.text} />
-                </TouchableOpacity>
-              </View>
-              <Text style={[styles.settingsLabel, { color: theme.textMuted, marginTop: 20 }]}>
-                Page color
-              </Text>
-              <View style={styles.swatchRow}>
-                {readerBackgroundOptions.map((bg, i) => (
-                  <TouchableOpacity
-                    key={`reader-bg-${i}`}
-                    onPress={() => setReaderBgIndex(i)}
-                    style={[
-                      styles.swatch,
-                      { backgroundColor: bg, borderColor: readerBgIndex === i ? theme.primary : 'transparent' },
+              {settingsSheetPanel === 'menu' ? (
+                <>
+                  <Text style={[styles.settingsTitle, { color: theme.text, marginBottom: 12 }]}>Settings</Text>
+                  {chapterTocEntries.length > 0 ? (
+                    <Pressable
+                      style={({ pressed }) => [
+                        styles.playerSettingsRow,
+                        {
+                          borderBottomColor: theme.maximumTrackTintColor,
+                          marginTop: 0,
+                          opacity: pressed ? 0.75 : 1,
+                        },
+                      ]}
+                      onPress={() => setSettingsSheetPanel('chapters')}
+                    >
+                      <Ionicons name="list-outline" size={22} color={theme.primary} />
+                      <View style={styles.playerSettingsRowText}>
+                        <Text style={[styles.playerSettingsRowTitle, { color: theme.text }]}>Chapters</Text>
+                        <Text style={[styles.playerSettingsRowSub, { color: theme.textMuted }]}>
+                          Jump to a section
+                        </Text>
+                      </View>
+                      <Ionicons name="chevron-forward" size={20} color={theme.textMuted} />
+                    </Pressable>
+                  ) : null}
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.playerSettingsRow,
+                      {
+                        borderBottomColor: theme.maximumTrackTintColor,
+                        opacity: pressed ? 0.75 : 1,
+                      },
                     ]}
+                    onPress={() => setSettingsSheetPanel('reader')}
+                  >
+                    <Ionicons name="document-text-outline" size={22} color={theme.primary} />
+                    <View style={styles.playerSettingsRowText}>
+                      <Text style={[styles.playerSettingsRowTitle, { color: theme.text }]}>
+                        Reader appearance
+                      </Text>
+                      <Text style={[styles.playerSettingsRowSub, { color: theme.textMuted }]}>
+                        Font size and colors for Text mode
+                      </Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={20} color={theme.textMuted} />
+                  </Pressable>
+                </>
+              ) : null}
+              {settingsSheetPanel === 'chapters' ? (
+                <>
+                  <Pressable
+                    style={({ pressed }) => [styles.settingsBackRow, { opacity: pressed ? 0.75 : 1 }]}
+                    onPress={() => setSettingsSheetPanel('menu')}
+                    accessibilityLabel="Back to settings"
+                  >
+                    <Ionicons name="chevron-back" size={26} color={theme.text} />
+                    <Text style={[styles.settingsTitle, { color: theme.text, marginBottom: 0, flex: 1 }]}>
+                      Chapters
+                    </Text>
+                  </Pressable>
+                  <FlatList
+                    data={chapterTocEntries}
+                    keyExtractor={(item, i) => `ch-${item.startMs}-${i}`}
+                    style={styles.chapterTocList}
+                    keyboardShouldPersistTaps="handled"
+                    renderItem={({ item, index }) => (
+                      <TouchableOpacity
+                        style={[
+                          styles.tocRow,
+                          {
+                            borderBottomColor: theme.maximumTrackTintColor,
+                            backgroundColor:
+                              index === activeTocIndex ? `${String(theme.primary)}18` : 'transparent',
+                          },
+                        ]}
+                        onPress={() => void handleChapterTocJump(item.startMs)}
+                        activeOpacity={0.75}
+                      >
+                        <Text style={[styles.tocRowTitle, { color: theme.text }]} numberOfLines={3}>
+                          {item.title}
+                        </Text>
+                        <Text style={[styles.tocRowTime, { color: theme.textMuted }]}>
+                          {formatTime(item.startMs)}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
                   />
-                ))}
-              </View>
-              <Text style={[styles.settingsHint, { color: theme.textMuted }]}>
-                Playback follows each timestamped section. The left bar marks the current section; tap a
-                section to jump.
-              </Text>
-            </Pressable>
-          </Pressable>
+                </>
+              ) : null}
+              {settingsSheetPanel === 'reader' ? (
+                <>
+                  <Pressable
+                    style={({ pressed }) => [styles.settingsBackRow, { opacity: pressed ? 0.75 : 1 }]}
+                    onPress={() => setSettingsSheetPanel('menu')}
+                    accessibilityLabel="Back to settings"
+                  >
+                    <Ionicons name="chevron-back" size={26} color={theme.text} />
+                    <Text style={[styles.settingsTitle, { color: theme.text, marginBottom: 0, flex: 1 }]}>
+                      Reader
+                    </Text>
+                  </Pressable>
+                  <Text style={[styles.settingsLabel, { color: theme.textMuted }]}>Font size</Text>
+                  <View style={styles.fontStepper}>
+                    <TouchableOpacity
+                      onPress={() => setReaderFontSize((s) => Math.max(14, s - 1))}
+                      style={[styles.fontStepperBtn, { borderColor: theme.textMuted }]}
+                    >
+                      <Ionicons name="remove" size={22} color={theme.text} />
+                    </TouchableOpacity>
+                    <Text style={[styles.fontStepperValue, { color: theme.text }]}>{readerFontSize}</Text>
+                    <TouchableOpacity
+                      onPress={() => setReaderFontSize((s) => Math.min(32, s + 1))}
+                      style={[styles.fontStepperBtn, { borderColor: theme.textMuted }]}
+                    >
+                      <Ionicons name="add" size={22} color={theme.text} />
+                    </TouchableOpacity>
+                  </View>
+                  <Text style={[styles.settingsLabel, { color: theme.textMuted, marginTop: 20 }]}>
+                    Page color
+                  </Text>
+                  <View style={styles.swatchRow}>
+                    {readerBackgroundOptions.map((bg, i) => (
+                      <TouchableOpacity
+                        key={`reader-bg-${i}`}
+                        onPress={() => setReaderBgIndex(i)}
+                        style={[
+                          styles.swatch,
+                          {
+                            backgroundColor: bg,
+                            borderColor: readerBgIndex === i ? theme.primary : 'transparent',
+                          },
+                        ]}
+                      />
+                    ))}
+                  </View>
+                  <Text style={[styles.settingsHint, { color: theme.textMuted }]}>
+                    Playback follows each timestamped section. The left bar marks the current section; tap a
+                    section to jump.
+                  </Text>
+                </>
+              ) : null}
+            </View>
+          </View>
         </Modal>
       </View>
-    </Modal>
   );
 };
 
@@ -1454,13 +1497,14 @@ const styles = StyleSheet.create({
   audioHero: {
     alignItems: 'center',
     width: '100%',
-    marginBottom: verticalScale(24),
+    gap: verticalScale(20),
+    marginBottom: verticalScale(20),
   },
   audioCoverWrap: {
     width: horizontalScale(248),
     height: verticalScale(300),
     alignSelf: 'center',
-    marginBottom: verticalScale(14),
+    marginBottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: moderateScale(28),
@@ -1591,6 +1635,8 @@ const styles = StyleSheet.create({
     letterSpacing: 0.35,
     maxWidth: '100%',
     paddingHorizontal: 4,
+    marginTop: 0,
+    marginBottom: 0,
   },
   authorName: {
     fontSize: 14,
@@ -1606,6 +1652,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   audioScrollInner: {
+    paddingTop: verticalScale(20),
     paddingHorizontal: horizontalScale(20),
     alignItems: 'stretch',
   },
@@ -1615,7 +1662,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: verticalScale(300),
-    marginBottom: verticalScale(10),
+    marginBottom: 0,
   },
   vinylRingOuter: {
     position: 'absolute',
@@ -1637,8 +1684,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     flexWrap: 'wrap',
-    gap: 14,
-    marginBottom: verticalScale(14),
+    gap: moderateScale(14),
+    marginBottom: 0,
   },
   audioMetaChip: {
     flexDirection: 'row',
@@ -1652,16 +1699,17 @@ const styles = StyleSheet.create({
   audioAuthorSubtitle: {
     fontSize: 14,
     textAlign: 'center',
-    marginTop: 4,
-    marginBottom: 4,
+    marginTop: 0,
+    marginBottom: 0,
   },
   audioTimelineBlock: {
     width: '100%',
-    marginTop: verticalScale(8),
+    marginTop: 0,
+    marginBottom: verticalScale(20),
   },
   queueSection: {
     width: '100%',
-    marginTop: verticalScale(20),
+    marginTop: 0,
     paddingHorizontal: horizontalScale(4),
   },
   queueTitleRow: {
@@ -1814,6 +1862,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.4)',
     justifyContent: 'flex-end',
   },
+  /** Ensures backdrop Pressable sits below the sheet for hit-testing (iOS/Android). */
+  modalBackdropHitbox: {
+    zIndex: 0,
+  },
   chapterTocSheet: {
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
@@ -1842,6 +1894,32 @@ const styles = StyleSheet.create({
     fontSize: moderateScale(13),
     fontWeight: '500',
     fontVariant: ['tabular-nums'],
+  },
+  playerSettingsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  playerSettingsRowText: {
+    flex: 1,
+  },
+  playerSettingsRowTitle: {
+    fontSize: moderateScale(16),
+    fontWeight: '600',
+  },
+  playerSettingsRowSub: {
+    fontSize: moderateScale(13),
+    marginTop: 4,
+    lineHeight: moderateScale(18),
+  },
+  settingsBackRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 10,
+    paddingVertical: 4,
   },
   settingsSheet: {
     borderTopLeftRadius: 20,

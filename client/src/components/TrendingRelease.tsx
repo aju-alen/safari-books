@@ -158,7 +158,7 @@ const TrendingRelease = ({ bookData }) => {
                 <Image
                   source={{ uri: coverImage || 'https://via.placeholder.com/400x600/e8e8e8/888888?text=%20' }}
                   style={styles.coverImg}
-                  resizeMode="contain"
+                  resizeMode="stretch"
                 />
               </View>
               {showNew ? (

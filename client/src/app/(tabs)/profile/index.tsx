@@ -39,7 +39,6 @@ const ProfilePage = () => {
   const getUserDetails = async () => {
     try {
       const details = await SecureStore.getItemAsync('userDetails');
-      console.log(details, 'details in profile');
       setUserRole(JSON.parse(details).role);
       const response = await axiosWithAuth.get(`${ipURL}/api/listeners/listener-analytics`)
       setListenerAnalytics(response.data)

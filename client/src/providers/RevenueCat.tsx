@@ -22,7 +22,6 @@ export const RevenueCatProvider = ({ children }: any) => {
 
   useEffect(() => {
     const init = async () => {
-       console.log(APIKeys.apple,'api apple key');
       if (Platform.OS === 'android') {
         await Purchases.configure({ apiKey: APIKeys.google });
       } else {
@@ -65,7 +64,6 @@ export const RevenueCatProvider = ({ children }: any) => {
 // Export context for easy usage
 export const useRevenueCat = () => {
   const context = useContext(RevenueCatContext);
-  console.log(context, 'context');
   
   return useContext(RevenueCatContext) as RevenueCatProps;
 };

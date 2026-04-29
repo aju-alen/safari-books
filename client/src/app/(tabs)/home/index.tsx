@@ -126,7 +126,7 @@ const HomePage = () => {
       onPress={() => router.push(`/(tabs)/home/${book.id}`)}
     >
       <View style={styles.heroContent}>
-        <Image source={{ uri: book.coverImage }} style={styles.heroCover} resizeMode='contain' />
+        <Image source={{ uri: book.coverImage }} style={styles.heroCover} resizeMode='stretch' />
         <View style={styles.heroInfo}>
           <View style={[styles.heroBadge, { backgroundColor: theme.white }]}>
             <Text style={[styles.heroBadgeText, { color: theme.primary }]}>FEATURED</Text>
@@ -166,7 +166,7 @@ const HomePage = () => {
             { backgroundColor: theme.gray2, borderColor: theme.maximumTrackTintColor, shadowColor: theme.text },
           ]}
         >
-          <Image source={{ uri: book.coverImage }} style={styles.coverImage} resizeMode="cover" />
+          <Image source={{ uri: book.coverImage }} style={styles.coverImage} resizeMode="stretch" />
         </View>
         {book.isNew && (
           <View style={[styles.newBadge, { backgroundColor: theme.tertiary }]}>
