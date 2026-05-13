@@ -279,7 +279,7 @@ export const getAllCompanyData = async (req, res) => {
     try {
         const companyData = await prisma.company.findMany({
             where: {
-                userId: req.body.userId,
+                userId: req.params.userId,
             }
         });
         res.status(200).json({ message: "All data fetched successfully", companyData });
