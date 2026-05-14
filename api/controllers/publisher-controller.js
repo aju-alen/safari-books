@@ -7,6 +7,8 @@ dotenv.config();
 import { prisma } from '../utils/database.js'
 import { googleTtsConvert } from '../utils/google-tts-convert.js'
 import { uploadAudioBufferToS3 } from '../utils/uploadAudioBuffer.js'
+import { publisherConfirmationEmailTemplate } from '../utils/emailTemplate.js'
+import { resendEmailBoiler } from '../utils/resendFunction.js'
 export const publisherCompany = async (req, res) => {
     console.log(req.body);
     try {
@@ -20,7 +22,9 @@ export const publisherCompany = async (req, res) => {
                 kraPin: req.body.kraPin,
                 companyRegNoPdfUrl: req.body.companyRegNoPdfUrl,
                 kraPinPdfUrl: req.body.kraPinPdfUrl,
-                userId: req.body.userId
+                userId: req.body.userId,
+                isVerified: false,
+                isRejected: false,
             }
         });
         res.status(201).json({ message: "Company registered successfully", createCompany });
@@ -45,7 +49,9 @@ export const publisherAuthor = async (req, res) => {
                 kraPin: req.body.kraPin,
                 kraPinPdfUrl: req.body.kraPinPdfUrl,
                 writersGuildNo: req.body.writersGuildNo,
-                userId: req.body.userId
+                userId: req.body.userId,
+                isVerified: false,
+                isRejected: false,
             }
         });
         res.status(201).json({ message: "Author registered successfully", createAuthor });
@@ -59,12 +65,16 @@ export const publisherAuthor = async (req, res) => {
 
 export const publisherCompanyUpdate = async (req, res) => {
     try {
+        console.log(req.body, 'this is body data');
         const findUnique = await prisma.company.findUnique({
             where: {
                 id: req.body.id,
             }
         });
         if(findUnique){
+            const rejectionReset = findUnique.isRejected
+                ? { isRejected: false, rejectedAt: null, reject: null }
+                : {};
             const updateCompany = await prisma.company.update({
                 where: {
                     id: req.body.id,
@@ -86,11 +96,20 @@ export const publisherCompanyUpdate = async (req, res) => {
                     rightsHolder:req.body.rightsHolder,
                     coverImage:req.body.coverImage,
                     amount:req.body.amount * 100,
-                    isRegistrationComplete: true // Mark registration as complete
+                    isRegistrationComplete: true, // Mark registration as complete
+                    ...rejectionReset,
                 }
             });
         }
         else{
+            const findAuthor = await prisma.author.findUnique({
+                where: {
+                    id: req.body.id,
+                },
+            });
+            const rejectionReset = findAuthor?.isRejected
+                ? { isRejected: false, rejectedAt: null, reject: null }
+                : {};
             const updateAuthor = await prisma.author.update({
                 where: {
                     id: req.body.id,
@@ -112,11 +131,13 @@ export const publisherCompanyUpdate = async (req, res) => {
                     rightsHolder:req.body.rightsHolder,
                     coverImage:req.body.coverImage,
                     amount:req.body.amount * 100,
-                    isRegistrationComplete: true // Mark registration as complete
+                    isRegistrationComplete: true, // Mark registration as complete
+                    ...rejectionReset,
                 }
             });
         }
-
+        const emailTemplate = publisherConfirmationEmailTemplate();
+        const response = await resendEmailBoiler(process.env.NAMECHEAP_EMAIL, req.body.email, 'Publisher Confirmation', emailTemplate);
         // sendConfirmationEmailToPublisher(req.email, req.name);
         // sendConfirmationEmailToAdmin(process.env.NAMECHEAP_EMAIL, req.name);
        
@@ -129,6 +150,56 @@ export const publisherCompanyUpdate = async (req, res) => {
 
     }
 }
+
+export const updatePublisherRejectField = async (req, res) => {
+    try {
+        if (req.middlewareRole !== 'PUBLISHER') {
+            return res.status(403).json({ message: 'Only publisher accounts can update this field.' });
+        }
+        const { publisherId, isCompany, reject } = req.body;
+        if (!publisherId) {
+            return res.status(400).json({ message: 'publisherId is required.' });
+        }
+        if (typeof reject !== 'string') {
+            return res.status(400).json({ message: 'reject must be a string.' });
+        }
+        const trimmed = reject.trim();
+        if (trimmed.length > 8000) {
+            return res.status(400).json({ message: 'Text exceeds maximum length (8000 characters).' });
+        }
+
+        const isCo = String(isCompany) === 'true' || isCompany === true;
+
+        if (isCo) {
+            const row = await prisma.company.findUnique({ where: { id: publisherId } });
+            if (!row) return res.status(404).json({ message: 'Listing not found.' });
+            if (row.userId !== req.userId) return res.status(403).json({ message: 'Forbidden.' });
+            if (!row.isRejected) {
+                return res.status(400).json({ message: 'This listing is not marked as rejected.' });
+            }
+            await prisma.company.update({
+                where: { id: publisherId },
+                data: { reject: trimmed },
+            });
+        } else {
+            const row = await prisma.author.findUnique({ where: { id: publisherId } });
+            if (!row) return res.status(404).json({ message: 'Listing not found.' });
+            if (row.userId !== req.userId) return res.status(403).json({ message: 'Forbidden.' });
+            if (!row.isRejected) {
+                return res.status(400).json({ message: 'This listing is not marked as rejected.' });
+            }
+            await prisma.author.update({
+                where: { id: publisherId },
+                data: { reject: trimmed },
+            });
+        }
+
+        return res.status(200).json({ message: 'Rejection notes updated successfully.' });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ message: 'Internal server error', error });
+    }
+};
 
 const sendConfirmationEmailToPublisher = async (email, name) => {
     console.log(process.env.NAMECHEAP_EMAIL);
@@ -243,7 +314,9 @@ export const getAllAuthorData = async (req, res) => {
            select: {
             id: true,
             title: true,
-            isVerified:true
+            isVerified: true,
+            isRejected: true,
+            reject: true,
            }
         });
         res.status(200).json({ message: "All data fetched successfully", authorData });
@@ -351,13 +424,13 @@ try {
 
     const bookCount = await prisma.book.count({
         where: {
-            userId: req.body.userId,
+            userId: req.params.userId,
         }
     });
 
     const ListenersStats = await prisma.library.count({
         where: {
-            userId: req.body.userId,
+            userId: req.params.userId,
         }
     });
 

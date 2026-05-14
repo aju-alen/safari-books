@@ -11,7 +11,6 @@ import {
   Download,
   RefreshCw,
   LogOut,
-  Filter,
   Search,
   AlertCircle,
   X,
@@ -46,15 +45,167 @@ interface Publisher {
   narrationStyle?: string[];
   coverImage?: string;
   audioSampleURL?: string;
+  completeAudioUrl?: string;
+  narrationSegments?: string | null;
   pdfURL?: string;
   rightsHolder?: boolean;
 }
 
+interface RawUserMeta {
+  createdAt?: string;
+}
+
+interface RawCompany {
+  id: string;
+  companyName?: string;
+  name?: string;
+  isVerified: boolean;
+  createdAt?: string;
+  user?: RawUserMeta;
+  companyRegNoPdfUrl: string;
+  kraPinPdfUrl: string;
+  companyRegNo: string;
+  kraPin: string;
+  title: string;
+  email?: string;
+  telephone?: string;
+  address?: string;
+  synopsis?: string;
+  language?: string;
+  categories?: string;
+  ISBNDOIISRC?: string;
+  date?: string;
+  narrator?: string;
+  narrationSampleHeartzRate?: string;
+  narrationSpeakingRate?: string;
+  narrationGender?: string;
+  narrationLanguageCode?: string;
+  narrationVoiceName?: string;
+  coverImage?: string;
+  audioSampleURL?: string;
+  completeAudioUrl?: string;
+  narrationSegments?: string | null;
+  pdfURL?: string;
+  rightsHolder?: boolean;
+}
+
+interface RawAuthor {
+  id: string;
+  fullName?: string;
+  name?: string;
+  isVerified: boolean;
+  createdAt?: string;
+  user?: RawUserMeta;
+  idppPdfUrl: string;
+  kraPinPdfUrl: string;
+  idppNo: string;
+  kraPin: string;
+  title: string;
+  email?: string;
+  telephone?: string;
+  address?: string;
+  synopsis?: string;
+  language?: string;
+  categories?: string;
+  ISBNDOIISRC?: string;
+  date?: string;
+  narrator?: string;
+  narrationSampleHeartzRate?: string;
+  narrationSpeakingRate?: string;
+  narrationGender?: string;
+  narrationLanguageCode?: string;
+  narrationVoiceName?: string;
+  coverImage?: string;
+  audioSampleURL?: string;
+  completeAudioUrl?: string;
+  narrationSegments?: string | null;
+  pdfURL?: string;
+  rightsHolder?: boolean;
+}
+
+type AudioTaskType = 'sample' | 'full';
+type AudioTaskStatus = 'running' | 'completed' | 'failed';
+
+const ACCENT_PALETTE = ['#0d9488', '#2563eb', '#7c3aed', '#c026d3', '#ea580c', '#ca8a04'];
+
+function stableAccentFromId(id: string): string {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) {
+    h = id.charCodeAt(i) + ((h << 5) - h);
+  }
+  return ACCENT_PALETTE[Math.abs(h) % ACCENT_PALETTE.length];
+}
+
+/** Book timeline segments use `s`/`e` in ms (see admin full-audio pipeline). */
+function durationFromNarrationSegmentsJson(
+  raw: string | undefined | null
+): { hours: number; minutes: number } {
+  if (!raw || typeof raw !== 'string') return { hours: 0, minutes: 0 };
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed) || parsed.length === 0) return { hours: 0, minutes: 0 };
+    let maxEnd = 0;
+    let hasTimeline = false;
+    for (const seg of parsed) {
+      if (!seg || typeof seg !== 'object') continue;
+      const e = seg.e;
+      const s = seg.s;
+      if (Number.isFinite(e) && Number.isFinite(s) && e > s) {
+        hasTimeline = true;
+        maxEnd = Math.max(maxEnd, Number(e));
+      }
+    }
+    if (!hasTimeline || maxEnd <= 0) return { hours: 0, minutes: 0 };
+    let totalMinutes = Math.ceil(maxEnd / 60000);
+    if (maxEnd > 0 && totalMinutes === 0) totalMinutes = 1;
+    return {
+      hours: Math.floor(totalMinutes / 60),
+      minutes: totalMinutes % 60,
+    };
+  } catch {
+    return { hours: 0, minutes: 0 };
+  }
+}
+
+function buildVerifyPublisherRequestBody(p: Publisher) {
+  const { hours, minutes } = durationFromNarrationSegmentsJson(p.narrationSegments);
+  const completeAudio =
+    (p.completeAudioUrl || '').trim() || (p.audioSampleURL || '').trim();
+  const narratorName = (p.narrator || '').trim() || 'Audiobook';
+  return {
+    type: p.isCompany ? 'company' : 'author',
+    durationHours: hours,
+    durationMinutes: minutes,
+    completeAudioSample: completeAudio,
+    narratorName,
+    colorCode: stableAccentFromId(p.id),
+    pdfURL: p.pdfURL,
+  };
+}
+
+interface AudioTask {
+  key: string;
+  publisherId: string;
+  publisherName: string;
+  isCompany: boolean;
+  type: AudioTaskType;
+  status: AudioTaskStatus;
+  phase: string;
+  message: string;
+  progress: number;
+  resultUrl?: string;
+  error?: string;
+  startedAt: number;
+  updatedAt: number;
+  publisher: Publisher;
+}
+
+const MAX_AUDIO_TASKS = 10;
+
 const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [publisherData, setPublisherData] = useState<{ companies: Publisher[]; authors: Publisher[] }>({ 
+  const [publisherData, setPublisherData] = useState<{ companies: RawCompany[]; authors: RawAuthor[] }>({ 
     companies: [], 
     authors: [] 
   });
@@ -62,15 +213,9 @@ const AdminDashboard: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPublisher, setSelectedPublisher] = useState<Publisher | null>(null);
   const [showDetails, setShowDetails] = useState(false);
-  const [showVerificationModal, setShowVerificationModal] = useState(false);
-  const [verificationData, setVerificationData] = useState({
-    durationHours: '',
-    durationMinutes: '',
-    completeAudioSample: '',
-    narratorName: '',
-    colorCode: ''
-  });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [audioTasks, setAudioTasks] = useState<Record<string, AudioTask>>({});
+  const [showAudioPanel, setShowAudioPanel] = useState(true);
 
   console.log(publisherData, 'publisherData');
 
@@ -100,12 +245,6 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await loadPublisherData();
-    setRefreshing(false);
-  };
-
   const handleLogout = () => {
     localStorage.removeItem('dubaiAnalytica-userAccess');
     navigate('/super-admin-login');
@@ -115,11 +254,11 @@ const AdminDashboard: React.FC = () => {
     let filteredList: Publisher[] = [];
     
     if (filterType === 'all' || filterType === 'companies') {
-      const companies = publisherData.companies.map((company: any) => 
+      const companies = publisherData.companies.map((company: RawCompany) => 
         { console.log(company, 'company in companies');
           return ({
         id: company.id,
-        name: company.companyName || company.name,
+        name: company.companyName || company.name || 'Unknown Publisher',
         isCompany: true,
         isVerified: company.isVerified,
         submissionDate: new Date(company.createdAt || company.user?.createdAt || Date.now()).toISOString().split('T')[0],
@@ -129,7 +268,7 @@ const AdminDashboard: React.FC = () => {
         document2Label: 'KRA PIN',
         documentNumber1: company.companyRegNo,
         documentNumber2: company.kraPin,
-        bookTitle: company.title,
+        bookTitle: company.title || '',
         email: company.email,
         phone: company.telephone,
         address: company.address,
@@ -145,9 +284,11 @@ const AdminDashboard: React.FC = () => {
           company.narrationGender,
           company.narrationLanguageCode,
           company.narrationVoiceName
-        ].filter(Boolean),
+        ].filter((value): value is string => Boolean(value)),
         coverImage: company.coverImage,
         audioSampleURL: company.audioSampleURL,
+        completeAudioUrl: company.completeAudioUrl,
+        narrationSegments: company.narrationSegments ?? null,
         pdfURL: company.pdfURL,
         rightsHolder: company.rightsHolder
       })});
@@ -161,10 +302,10 @@ const AdminDashboard: React.FC = () => {
     
     if (filterType === 'all' || filterType === 'authors') {
 
-      const authors = publisherData.authors.map((author: any) => { console.log(author, 'author in authors');
+      const authors = publisherData.authors.map((author: RawAuthor) => { console.log(author, 'author in authors');
         return ({
         id: author.id,
-        name: author.fullName || author.name,
+        name: author.fullName || author.name || 'Unknown Publisher',
         isCompany: false,
         isVerified: author.isVerified,
         submissionDate: new Date(author.createdAt || author.user?.createdAt || Date.now()).toISOString().split('T')[0],
@@ -174,7 +315,7 @@ const AdminDashboard: React.FC = () => {
         document2Label: 'KRA PIN',
         documentNumber1: author.idppNo,
         documentNumber2: author.kraPin,
-        bookTitle: author.title,
+        bookTitle: author.title || '',
         email: author.email,
         phone: author.telephone,
         address: author.address,
@@ -190,9 +331,11 @@ const AdminDashboard: React.FC = () => {
           author.narrationGender,
           author.narrationLanguageCode,
           author.narrationVoiceName
-        ].filter(Boolean),
+        ].filter((value): value is string => Boolean(value)),
         coverImage: author.coverImage,
         audioSampleURL: author.audioSampleURL,
+        completeAudioUrl: author.completeAudioUrl,
+        narrationSegments: author.narrationSegments ?? null,
         pdfURL: author.pdfURL,
         rightsHolder: author.rightsHolder
       })});
@@ -217,45 +360,46 @@ const AdminDashboard: React.FC = () => {
   };
 
   const handleVerifyPublisher = async (publisher: Publisher) => {
-    setSelectedPublisher(publisher);
-    setShowVerificationModal(true);
-  };
+    const label = publisher.bookTitle || publisher.name;
+    if (
+      !window.confirm(
+        `Approve and publish "${label}"?\n\nDetails (filled automatically):\n• Runtime from narration timeline when available, else 0h 0m\n• Full audio: complete URL if set, otherwise sample URL\n• Narrator and accent color from the listing\n\nThis creates the storefront book and emails the publisher.`,
+      )
+    ) {
+      return;
+    }
 
-  const handleSubmitVerification = async () => {
-    if (!selectedPublisher) return;
-    
     setIsSubmitting(true);
     try {
-      const response = await fetch(`http://localhost:3001/api/admin/verify-publisher/${selectedPublisher.id}`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('dubaiAnalytica-userAccess') ? JSON.parse(localStorage.getItem('dubaiAnalytica-userAccess')!).token : ''}`,
-          'Content-Type': 'application/json'
+      const token = localStorage.getItem('dubaiAnalytica-userAccess')
+        ? JSON.parse(localStorage.getItem('dubaiAnalytica-userAccess')!).token
+        : '';
+      const response = await fetch(
+        `http://localhost:3001/api/admin/verify-publisher/${publisher.id}`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(buildVerifyPublisherRequestBody(publisher)),
         },
-        body: JSON.stringify({
-          type: selectedPublisher.isCompany ? 'company' : 'author',
-          durationHours: parseInt(verificationData.durationHours) || 0,
-          durationMinutes: parseInt(verificationData.durationMinutes) || 0,
-          completeAudioSample: selectedPublisher.audioSampleURL,
-          narratorName: verificationData.narratorName,
-          colorCode: verificationData.colorCode,
-          pdfURL: selectedPublisher.pdfURL,
-        })
-      });
+      );
 
       if (response.ok) {
-        setShowVerificationModal(false);
-        setVerificationData({
-          durationHours: '',
-          durationMinutes: '',
-          completeAudioSample: '',
-          narratorName: '',
-          colorCode: ''
-        });
         await loadPublisherData();
-        alert('Publisher verified successfully!');
+        alert(
+          'Publisher verified successfully. A confirmation email was sent to the publisher account on file.',
+        );
       } else {
-        alert('Failed to verify publisher');
+        let detail = 'Failed to verify publisher';
+        try {
+          const errBody = await response.json();
+          if (errBody?.message) detail = String(errBody.message);
+        } catch {
+          /* ignore */
+        }
+        alert(detail);
       }
     } catch (error) {
       console.error('Verification error:', error);
@@ -265,61 +409,217 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  const handleGenerateSampleAudio = async (publisher: Publisher) => {
-    try {
-      console.log(publisher, 'publisher in sample audio');
-      const response = await fetch(`http://localhost:3001/api/admin/send-sample-audio/${publisher.id}?isCompany=${publisher.isCompany}`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('dubaiAnalytica-userAccess') ? JSON.parse(localStorage.getItem('dubaiAnalytica-userAccess')!).token : ''}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          narrationSampleHeartzRate: publisher.narrationStyle?.includes('Slow') ? 0.8 : 1.0,
-          narrationSpeakingRate: publisher.narrationStyle?.includes('Fast') ? 1.2 : 1.0,
-          narrationGender: 'neutral',
-          narrationLanguageCode: publisher.language || 'en',
-          narrationVoiceName: publisher.narrator || 'default'
-        })
-      });
+  const getTaskKey = (publisher: Publisher, type: AudioTaskType) =>
+    `${type}:${publisher.isCompany ? 'company' : 'author'}:${publisher.id}`;
 
-      if (response.ok) {
-        alert('Sample audio generated successfully!');
-      } else {
-        alert('Failed to generate sample audio');
-      }
+  const isTaskRunning = (publisher: Publisher, type: AudioTaskType) => {
+    const task = audioTasks[getTaskKey(publisher, type)];
+    return task?.status === 'running';
+  };
+
+  const upsertAudioTask = (key: string, updater: (existing?: AudioTask) => AudioTask) => {
+    setAudioTasks((prev) => {
+      const nextTask = updater(prev[key]);
+      const merged = { ...prev, [key]: { ...nextTask, updatedAt: Date.now() } };
+      const orderedKeys = Object.keys(merged).sort((a, b) => merged[b].updatedAt - merged[a].updatedAt);
+      const limited: Record<string, AudioTask> = {};
+      orderedKeys.slice(0, MAX_AUDIO_TASKS).forEach((taskKey) => {
+        limited[taskKey] = merged[taskKey];
+      });
+      return limited;
+    });
+  };
+
+  const getProgressFromPhase = (
+    phase: string,
+    current?: number,
+    total?: number,
+    existingProgress = 0
+  ) => {
+    if (Number.isFinite(current) && Number.isFinite(total) && (total as number) > 0) {
+      const ratio = Math.min(1, Math.max(0, (current as number) / (total as number)));
+      return Math.round(50 + ratio * 45);
+    }
+
+    const phaseProgressMap: Record<string, number> = {
+      downloading_document: 5,
+      parsing_document: 15,
+      generating_segments: 30,
+      segments_preview: 30,
+      segments_cached: 35,
+      tts_batch_start: 50,
+      synthesizing_segment: 65,
+      synthesizing_audio: 70,
+      uploading: 95,
+      complete: 100
+    };
+
+    const mapped = phaseProgressMap[phase];
+    if (!Number.isFinite(mapped)) return existingProgress;
+    return Math.max(existingProgress, mapped);
+  };
+
+  const parseNdjsonPayload = (line: string) => {
+    try {
+      return JSON.parse(line);
     } catch (error) {
-      console.error('Sample audio error:', error);
-      alert('Error generating sample audio');
+      console.error('Failed to parse progress line:', line, error);
+      return null;
     }
   };
 
-  const handleGenerateFullAudio = async (publisher: Publisher) => {
+  const startAudioTask = async (publisher: Publisher, type: AudioTaskType) => {
+    const taskKey = getTaskKey(publisher, type);
+    if (audioTasks[taskKey]?.status === 'running') {
+      return;
+    }
+
+    const requestBody = {
+      narrationSampleHeartzRate: publisher.narrationStyle?.includes('Slow') ? 0.8 : 1.0,
+      narrationSpeakingRate: publisher.narrationStyle?.includes('Fast') ? 1.2 : 1.0,
+      narrationGender: 'neutral',
+      narrationLanguageCode: publisher.language || 'en',
+      narrationVoiceName: publisher.narrator || 'default'
+    };
+
+    upsertAudioTask(taskKey, (existing) => ({
+      key: taskKey,
+      publisherId: publisher.id,
+      publisherName: publisher.name,
+      isCompany: publisher.isCompany,
+      type,
+      status: 'running',
+      phase: 'queued',
+      message: type === 'sample' ? 'Preparing sample audio request…' : 'Preparing full audio request…',
+      progress: existing?.progress ?? 0,
+      startedAt: existing?.startedAt ?? Date.now(),
+      updatedAt: Date.now(),
+      publisher,
+      resultUrl: existing?.resultUrl
+    }));
+
+    const endpoint = type === 'sample' ? 'send-sample-audio' : 'generate-full-audio';
+    const token = localStorage.getItem('dubaiAnalytica-userAccess')
+      ? JSON.parse(localStorage.getItem('dubaiAnalytica-userAccess')!).token
+      : '';
+    const url = `http://localhost:3001/api/admin/${endpoint}/${publisher.id}?isCompany=${publisher.isCompany}&stream=true`;
+
     try {
-      const response = await fetch(`http://localhost:3001/api/admin/generate-full-audio/${publisher.id}?isCompany=${publisher.isCompany}`, {
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('dubaiAnalytica-userAccess') ? JSON.parse(localStorage.getItem('dubaiAnalytica-userAccess')!).token : ''}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          Accept: 'application/x-ndjson, application/json'
         },
-        body: JSON.stringify({
-          narrationSampleHeartzRate: publisher.narrationStyle?.includes('Slow') ? 0.8 : 1.0,
-          narrationSpeakingRate: publisher.narrationStyle?.includes('Fast') ? 1.2 : 1.0,
-          narrationGender: 'neutral',
-          narrationLanguageCode: publisher.language || 'en',
-          narrationVoiceName: publisher.narrator || 'default'
-        })
+        body: JSON.stringify(requestBody)
       });
 
-      if (response.ok) {
-        alert('Full audio generated successfully!');
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || `Failed to generate ${type} audio`);
+      }
+
+      if (!response.body) {
+        const fallback = await response.json().catch(() => ({}));
+        const resultUrl = fallback.audioSampleURL || fallback.completeAudioUrl;
+        upsertAudioTask(taskKey, (existing) => ({
+          ...(existing as AudioTask),
+          status: 'completed',
+          phase: 'complete',
+          message: type === 'sample' ? 'Sample audio generated.' : 'Full audio generated.',
+          progress: 100,
+          resultUrl: resultUrl || existing?.resultUrl
+        }));
+        await loadPublisherData();
+        return;
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffered = '';
+      let streamCompleted = false;
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffered += decoder.decode(value, { stream: true });
+        const lines = buffered.split('\n');
+        buffered = lines.pop() || '';
+
+        lines.forEach((line) => {
+          const trimmed = line.trim();
+          if (!trimmed) return;
+          const payload = parseNdjsonPayload(trimmed);
+          if (!payload) return;
+
+          if (payload.type === 'progress') {
+            upsertAudioTask(taskKey, (existing) => {
+              const progress = getProgressFromPhase(
+                payload.phase || '',
+                payload.current,
+                payload.total,
+                existing?.progress ?? 0
+              );
+              return {
+                ...(existing as AudioTask),
+                status: 'running',
+                phase: payload.phase || existing?.phase || 'progress',
+                message: payload.message || existing?.message || 'Processing audio…',
+                progress
+              };
+            });
+          } else if (payload.type === 'complete') {
+            streamCompleted = true;
+            const resultUrl = payload.audioSampleURL || payload.completeAudioUrl;
+            upsertAudioTask(taskKey, (existing) => ({
+              ...(existing as AudioTask),
+              status: 'completed',
+              phase: 'complete',
+              message: payload.message || 'Audio generation completed.',
+              progress: 100,
+              resultUrl: resultUrl || existing?.resultUrl
+            }));
+          } else if (payload.type === 'error') {
+            throw new Error(payload.message || `Failed to generate ${type} audio`);
+          }
+        });
+      }
+
+      if (!streamCompleted) {
+        upsertAudioTask(taskKey, (existing) => ({
+          ...(existing as AudioTask),
+          status: 'failed',
+          phase: 'failed',
+          message: existing?.message || 'Task stopped unexpectedly.',
+          error: 'Stream ended before completion.'
+        }));
       } else {
-        alert('Failed to generate full audio');
+        await loadPublisherData();
       }
     } catch (error) {
-      console.error('Full audio error:', error);
-      alert('Error generating full audio');
+      const message = error instanceof Error ? error.message : `Failed to generate ${type} audio`;
+      console.error(`${type} audio error:`, error);
+      upsertAudioTask(taskKey, (existing) => ({
+        ...(existing as AudioTask),
+        status: 'failed',
+        phase: 'failed',
+        message: 'Audio generation failed.',
+        error: message
+      }));
     }
+  };
+
+  const retryAudioTask = async (task: AudioTask) => {
+    await startAudioTask(task.publisher, task.type);
+  };
+
+  const handleGenerateSampleAudio = async (publisher: Publisher) => {
+    await startAudioTask(publisher, 'sample');
+  };
+
+  const handleGenerateFullAudio = async (publisher: Publisher) => {
+    await startAudioTask(publisher, 'full');
   };
 
   const handleOpenDocument = (url: string) => {
@@ -335,6 +635,7 @@ const AdminDashboard: React.FC = () => {
   }, []);
 
   const filteredPublishers = getFilteredPublishers();
+  const audioTaskList = Object.values(audioTasks).sort((a, b) => b.updatedAt - a.updatedAt);
   const pendingCount = filteredPublishers.filter(pub => !pub.isVerified).length;
   const verifiedCount = filteredPublishers.filter(pub => pub.isVerified).length;
 
@@ -530,9 +831,14 @@ const AdminDashboard: React.FC = () => {
                     {!publisher.isVerified && (
                       <button
                         onClick={() => handleVerifyPublisher(publisher)}
-                        className="flex items-center px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+                        disabled={isSubmitting}
+                        className="flex items-center px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        <Check className="h-4 w-4 mr-1" />
+                        {isSubmitting ? (
+                          <RefreshCw className="h-4 w-4 mr-1 animate-spin" />
+                        ) : (
+                          <Check className="h-4 w-4 mr-1" />
+                        )}
                         Verify
                       </button>
                     )}
@@ -572,17 +878,19 @@ const AdminDashboard: React.FC = () => {
                     <div className="flex flex-wrap gap-2">
                       <button
                         onClick={() => handleGenerateSampleAudio(publisher)}
-                        className="flex items-center px-3 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
+                        disabled={isTaskRunning(publisher, 'sample')}
+                        className="flex items-center px-3 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <Music className="h-4 w-4 mr-1" />
-                        Sample Audio
+                        {isTaskRunning(publisher, 'sample') ? 'Generating Sample…' : 'Sample Audio'}
                       </button>
                       <button
                         onClick={() => handleGenerateFullAudio(publisher)}
-                        className="flex items-center px-3 py-2 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition-colors"
+                        disabled={isTaskRunning(publisher, 'full')}
+                        className="flex items-center px-3 py-2 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <Library className="h-4 w-4 mr-1" />
-                        Generate Full Audio
+                        {isTaskRunning(publisher, 'full') ? 'Generating Full Audio…' : 'Generate Full Audio'}
                       </button>
                     </div>
                   </div>
@@ -592,6 +900,106 @@ const AdminDashboard: React.FC = () => {
           )}
         </div>
       </div>
+
+      {showAudioPanel && (
+        <div className="fixed bottom-4 right-4 w-96 max-w-[calc(100vw-2rem)] bg-white border border-gray-200 rounded-xl shadow-lg z-40">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+            <div>
+              <p className="text-sm font-semibold text-gray-900">Audio Uploads</p>
+              <p className="text-xs text-gray-500">Progress runs in background while you continue working</p>
+            </div>
+            <button
+              onClick={() => setShowAudioPanel(false)}
+              className="text-gray-400 hover:text-gray-700"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+
+          <div className="max-h-72 overflow-y-auto p-3 space-y-3">
+            {audioTaskList.length === 0 && (
+              <p className="text-sm text-gray-500">No active audio tasks yet.</p>
+            )}
+
+            {audioTaskList.map((task) => (
+              <div key={task.key} className="border border-gray-200 rounded-lg p-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium text-gray-900 truncate pr-2">
+                    {task.publisherName} · {task.type === 'sample' ? 'Sample' : 'Full'}
+                  </p>
+                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                    task.status === 'completed'
+                      ? 'bg-green-100 text-green-700'
+                      : task.status === 'failed'
+                        ? 'bg-red-100 text-red-700'
+                        : 'bg-blue-100 text-blue-700'
+                  }`}>
+                    {task.status.toUpperCase()}
+                  </span>
+                </div>
+
+                <p className="text-xs text-gray-600 mt-1">{task.message}</p>
+
+                <div className="mt-2">
+                  <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full transition-all ${
+                        task.status === 'failed' ? 'bg-red-500' : task.status === 'completed' ? 'bg-green-500' : 'bg-blue-500'
+                      }`}
+                      style={{ width: `${Math.max(5, task.progress)}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">{Math.round(task.progress)}%</p>
+                </div>
+
+                {task.status === 'completed' && task.resultUrl && (
+                  <div className="flex items-center gap-2 mt-2">
+                    <a
+                      href={task.resultUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center px-2 py-1 text-xs font-medium text-white bg-green-600 rounded hover:bg-green-700"
+                    >
+                      <Play className="h-3 w-3 mr-1" />
+                      Open
+                    </a>
+                    <a
+                      href={task.resultUrl}
+                      download
+                      className="inline-flex items-center px-2 py-1 text-xs font-medium text-white bg-gray-700 rounded hover:bg-gray-800"
+                    >
+                      <Download className="h-3 w-3 mr-1" />
+                      Download
+                    </a>
+                  </div>
+                )}
+
+                {task.status === 'failed' && (
+                  <div className="mt-2">
+                    {task.error && <p className="text-xs text-red-600 mb-2">{task.error}</p>}
+                    <button
+                      onClick={() => retryAudioTask(task)}
+                      className="inline-flex items-center px-2 py-1 text-xs font-medium text-white bg-red-600 rounded hover:bg-red-700"
+                    >
+                      Retry
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {!showAudioPanel && (
+        <button
+          onClick={() => setShowAudioPanel(true)}
+          className="fixed bottom-4 right-4 z-40 inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-full shadow-lg hover:bg-blue-700"
+        >
+          <Music className="h-4 w-4 mr-2" />
+          Audio Uploads ({audioTaskList.filter((task) => task.status === 'running').length})
+        </button>
+      )}
 
       {/* Publisher Details Modal */}
       {showDetails && selectedPublisher && (
@@ -751,93 +1159,6 @@ const AdminDashboard: React.FC = () => {
         </div>
       )}
 
-      {/* Verification Modal */}
-      {showVerificationModal && selectedPublisher && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-md w-full">
-            <div className="p-6 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-900">Verify Publisher</h2>
-              <p className="text-sm text-gray-500 mt-1">
-                Please provide the following information to complete the verification process
-              </p>
-            </div>
-            
-            <div className="p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Duration (Hours)</label>
-                  <input
-                    type="number"
-                    value={verificationData.durationHours}
-                    onChange={(e) => setVerificationData({...verificationData, durationHours: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="0"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Duration (Minutes)</label>
-                  <input
-                    type="number"
-                    value={verificationData.durationMinutes}
-                    onChange={(e) => setVerificationData({...verificationData, durationMinutes: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="0"
-                    max="59"
-                  />
-                </div>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Narrator Name</label>
-                <input
-                  type="text"
-                  value={verificationData.narratorName}
-                  onChange={(e) => setVerificationData({...verificationData, narratorName: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Enter narrator name"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Color Code</label>
-                <input
-                  type="text"
-                  value={verificationData.colorCode}
-                  onChange={(e) => setVerificationData({...verificationData, colorCode: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Enter color code"
-                />
-              </div>
-            </div>
-            
-            <div className="p-6 border-t border-gray-200 flex justify-end space-x-3">
-              <button
-                onClick={() => setShowVerificationModal(false)}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSubmitVerification}
-                disabled={isSubmitting}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-              >
-                {isSubmitting ? (
-                  <>
-                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    Verifying...
-                  </>
-                ) : (
-                  <>
-                    <Check className="h-4 w-4 mr-2" />
-                    Verify Publisher
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

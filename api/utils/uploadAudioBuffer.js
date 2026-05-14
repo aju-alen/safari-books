@@ -36,3 +36,27 @@ export const uploadAudioBufferToS3 = async (audioBuffer, s3Key, fileName) => {
       throw err;
     }
   }
+
+export const uploadAudioStreamToS3 = async (audioStream, s3Key, fileName, contentType = 'audio/mpeg') => {
+  try {
+    const params = {
+      Bucket: process.env.S3_BUCKET_NAME,
+      Key: `${s3Key}/${fileName}`,
+      Body: audioStream,
+      ContentType: contentType
+    };
+
+    console.log('Uploading audio stream to S3:', params.Key);
+
+    const uploadResult = await new Upload({
+      client: s3,
+      params
+    }).done();
+
+    console.log(`Audio stream uploaded successfully: ${uploadResult.Location}`);
+    return uploadResult;
+  } catch (err) {
+    console.error('Error uploading audio stream to S3:', err);
+    throw err;
+  }
+}

@@ -49,15 +49,40 @@ async function finalizeCoverUri(uri: string): Promise<string> {
   return manipulated.uri;
 }
 
+/** S3/URL-safe upload name: decode % encoding, keep extension, replace non-alphanumeric runs with "_". */
+function sanitizeUploadFileName(originalName: string): string {
+  let decoded = (originalName || 'file').trim();
+  try {
+    decoded = decodeURIComponent(decoded);
+  } catch {
+    // keep decoded as-is
+  }
+  const lastDot = decoded.lastIndexOf('.');
+  const hasExt = lastDot > 0 && lastDot < decoded.length - 1;
+  const base = hasExt ? decoded.slice(0, lastDot) : decoded;
+  const ext = hasExt ? decoded.slice(lastDot + 1) : '';
+  const safeBase =
+    base.replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_+|_+$/g, '') || 'file';
+  const safeExt = ext.replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+  return safeExt ? `${safeBase}.${safeExt}` : safeBase;
+}
+
 const publisherCommonForm = () => {
-    const {publisherCommonForm} = useLocalSearchParams()
-    console.log(publisherCommonForm, 'params');
+    const params = useLocalSearchParams<{
+        publisherCommonForm?: string;
+        loadExisting?: string;
+        isCompany?: string;
+    }>();
+    const listingId = String(params.publisherCommonForm ?? '');
+    const loadExistingParam = params.loadExisting === '1';
+    const resubmitIsCompany = String(params.isCompany) === 'true';
+    console.log(listingId, 'listing id params', { loadExistingParam, resubmitIsCompany });
     const [token, setToken] = useState(null);
     const {theme} = useTheme()
     const insets = useSafeAreaInsets();
     const [title, setTitle] = useState('')
     const [language, setLanguage] = useState('')
-    const [categories, setCategories] = useState({});
+    const [categories, setCategories] = useState('none');
     const [date, setDate] = useState(new Date(1598051730000));
     const [ISBNDOIISRC, setISBNDOIISRC] = useState('')
     const [synopsis, setSynopsis] = useState('')
@@ -68,12 +93,15 @@ const publisherCommonForm = () => {
     const [selectedSpeakingRate, setSelectedSpeakingRate] = useState('Normal')
     const [selectedAudioFormat, setSelectedAudioFormat] = useState('mp3')
     const [image, setImage] = useState(null);
+    const [coverUploadFileName, setCoverUploadFileName] = useState('cover.jpg');
     const [imageURL, setImageURL] = useState('');
     const [audioSample, setAudioSample] = useState<AudioSample | null>(null)
     const [audioCompressURL, setAudioCompressURL] = useState('')
     const [amount, setAmount] = useState('');
 
     const [doc1, setDoc1] = useState(null);
+    /** When resubmitting a rejected listing without picking a new manuscript, reuse this URL. */
+    const [existingPdfUrl, setExistingPdfUrl] = useState('');
     const [rightsHolder, setRightsHolder] = useState(false)
 
     const [isChecked, setChecked] = useState(false);
@@ -243,6 +271,120 @@ const publisherCommonForm = () => {
         getAsyncData();
       }, [])
 
+    useEffect(() => {
+        if (!loadExistingParam || !listingId) {
+            setExistingPdfUrl('');
+            return;
+        }
+        let cancelled = false;
+        const run = async () => {
+            try {
+                let row: Record<string, unknown> | null = null;
+                if (resubmitIsCompany) {
+                    const res = await axios.get(
+                        `${ipURL}/api/publisher/get-all-company-data-single/${listingId}`,
+                    );
+                    row = (res.data?.companyData?.[0] as Record<string, unknown>) ?? null;
+                } else {
+                    const res = await axios.get(
+                        `${ipURL}/api/publisher/get-all-author-data-single/${listingId}`,
+                    );
+                    row = (res.data?.authorData as Record<string, unknown>) ?? null;
+                }
+                if (cancelled) return;
+                if (!row) {
+                    Alert.alert('Error', 'Could not load this listing.');
+                    return;
+                }
+                setTitle(typeof row.title === 'string' ? row.title : '');
+                setLanguage(typeof row.language === 'string' ? row.language : '');
+                const cat = row.categories;
+                setCategories(
+                    typeof cat === 'string' && cat !== '' ? cat : 'none',
+                );
+                setISBNDOIISRC(typeof row.ISBNDOIISRC === 'string' ? row.ISBNDOIISRC : '');
+                setSynopsis(typeof row.synopsis === 'string' ? row.synopsis : '');
+                setNarrator(typeof row.narrator === 'string' ? row.narrator : '');
+                if (row.date) {
+                    const d = new Date(row.date as string);
+                    if (!Number.isNaN(d.getTime())) setDate(d);
+                }
+                setRightsHolder(Boolean(row.rightsHolder));
+                if (row.amount != null && Number.isFinite(Number(row.amount))) {
+                    setAmount(String(Math.round(Number(row.amount)) / 100));
+                } else {
+                    setAmount('');
+                }
+                setExistingPdfUrl(typeof row.pdfURL === 'string' ? row.pdfURL : '');
+                const cover =
+                    typeof row.coverImage === 'string' ? row.coverImage : '';
+                setImageURL(cover);
+                setImage(null);
+
+                let speakingLabel = 'Normal';
+                try {
+                    const raw = row.narrationSpeakingRate;
+                    const parsed =
+                        typeof raw === 'string' ? JSON.parse(raw) : raw;
+                    const rateNum =
+                        typeof parsed === 'number'
+                            ? parsed
+                            : Number(String(parsed).replace(/^"|"$/g, ''));
+                    const match = speakingRateOptions.find(
+                        (o) => Math.abs(o.rate - rateNum) < 0.001,
+                    );
+                    if (match) speakingLabel = match.value;
+                } catch {
+                    /* keep default */
+                }
+                setSelectedSpeakingRate(speakingLabel);
+
+                let fmt = 'mp3';
+                try {
+                    const hr = row.narrationSampleHeartzRate;
+                    fmt =
+                        typeof hr === 'string'
+                            ? JSON.parse(hr)
+                            : String(hr ?? 'mp3');
+                } catch {
+                    fmt = String(row.narrationSampleHeartzRate ?? 'mp3')
+                        .replace(/^"|"$/g, '')
+                        .trim();
+                }
+                if (!fmt) fmt = 'mp3';
+                setSelectedAudioFormat(fmt);
+
+                let lang = 'English (US)';
+                let gender: string = 'FEMALE';
+                const lc = row.narrationLanguageCode;
+                const vn = row.narrationVoiceName;
+                if (typeof lc === 'string' && typeof vn === 'string' && lc && vn) {
+                    for (const [langName, voices] of Object.entries(voiceOptions)) {
+                        const hit = voices.find(
+                            (v) => v.languageCode === lc && v.voiceName === vn,
+                        );
+                        if (hit) {
+                            lang = langName;
+                            gender = hit.gender;
+                            break;
+                        }
+                    }
+                }
+                setSelectedLanguage(lang);
+                setSelectedVoiceType(gender);
+            } catch (e) {
+                console.error(e);
+                if (!cancelled) {
+                    Alert.alert('Error', 'Could not load listing details.');
+                }
+            }
+        };
+        void run();
+        return () => {
+            cancelled = true;
+        };
+    }, [loadExistingParam, resubmitIsCompany, listingId]);
+
     const pickAudio = async () => {
         let result = await DocumentPicker.getDocumentAsync({
             type: "audio/*",
@@ -284,9 +426,9 @@ const publisherCommonForm = () => {
             name: audioSample.name,
             type: audioSample.type
         } as any);
-        console.log(publisherCommonForm,'companyId');
+        console.log(listingId,'companyId');
         
-        formData.append('id', publisherCommonForm as string)
+        formData.append('id', listingId)
 
         formData.append('userId', token)
 
@@ -334,7 +476,7 @@ const publisherCommonForm = () => {
                     ? 'application/pdf'
                     : (mimeType || 'application/pdf');
             var fileToUpload = {
-                name: name,
+                name: sanitizeUploadFileName(name || (isEpub ? 'file.epub' : isPdf ? 'file.pdf' : 'file.pdf')),
                 size: size,
                 uri: uri,
                 type: resolvedType
@@ -349,8 +491,8 @@ const publisherCommonForm = () => {
         
         if (doc1) formData.append('document1', { uri: doc1.uri, name: doc1.name, type: doc1.type } as any);       
 
-        formData.append('id',publisherCommonForm as string);
-console.log(publisherCommonForm,'companyId in document submit');
+        formData.append('id', listingId);
+console.log(listingId,'companyId in document submit');
 
         formData.append('userId',token);
     
@@ -397,6 +539,10 @@ console.log(publisherCommonForm,'companyId in document submit');
           const asset = result.assets[0];
           try {
             const finalUri = await finalizeCoverUri(asset.uri);
+            const raw = asset.fileName || '';
+            const dot = raw.lastIndexOf('.');
+            const stem = (dot > 0 ? raw.slice(0, dot) : raw) || 'cover';
+            setCoverUploadFileName(sanitizeUploadFileName(`${stem}.jpg`));
             setImage(finalUri);
           } catch (e) {
             console.error('Cover crop/resize failed:', e);
@@ -411,10 +557,10 @@ console.log(publisherCommonForm,'companyId in document submit');
         const formData = new FormData();
         formData.append('image', {
           uri: image,
-          name: 'cover.jpg',
+          name: coverUploadFileName,
           type: 'image/jpeg',
         } as any);
-        formData.append('id', publisherCommonForm as string);
+        formData.append('id', listingId);
         formData.append('userId', token);
     
         try {
@@ -471,12 +617,15 @@ console.log(publisherCommonForm,'companyId in document submit');
         // }
         
         
-        if (!doc1) {
-            newErrors.doc1 = 'A PDF or EPUB book file is required'
+        const hasPdf = Boolean(doc1) || Boolean(String(existingPdfUrl || '').trim());
+        if (!hasPdf) {
+            newErrors.doc1 = 'A PDF or EPUB book file is required (or keep your existing file)'
         }
-        
-        if (!image) {
-            newErrors.image = 'Cover image is required'
+
+        const hasCover =
+            Boolean(image) || Boolean(String(imageURL || '').trim());
+        if (!hasCover) {
+            newErrors.image = 'Cover image is required (or keep your existing cover)'
         }
         
         if (!rightsHolder) {
@@ -498,7 +647,7 @@ console.log(publisherCommonForm,'companyId in document submit');
                 speakingRate: speakingRateOptions.find(opt => opt.value === selectedSpeakingRate)?.rate || 1.0,
                 sampleRate: selectedAudioFormat,
                 voiceDetails: voiceOptions[selectedLanguage]?.find(voice => voice.gender === selectedVoiceType),
-                publisherId: publisherCommonForm,
+                publisherId: listingId,
             };
 
             // Send request to backend for voice sample
@@ -556,11 +705,113 @@ console.log(publisherCommonForm,'companyId in document submit');
         
         try{
             setLoading(true);
-            const docData = await postDocuments()
-            console.log(docData, 'docData');
+
+            let coverForPayload = String(imageURL || '').trim();
+            if (image && token) {
+                const formData = new FormData();
+                formData.append('image', {
+                    uri: image,
+                    name: coverUploadFileName,
+                    type: 'image/jpeg',
+                } as any);
+                formData.append('id', listingId);
+                formData.append('userId', token);
+                try {
+                    const imgRes = await axios.post(
+                        `${ipURL}/api/s3/upload-to-aws-image`,
+                        formData,
+                        {
+                            headers: {
+                                'Content-Type': 'multipart/form-data',
+                            },
+                        },
+                    );
+                    const loc = imgRes.data?.data;
+                    coverForPayload =
+                        typeof loc === 'string'
+                            ? loc
+                            : String(loc?.Location ?? '').trim();
+                    if (coverForPayload) setImageURL(coverForPayload);
+                } catch (uploadErr) {
+                    console.error(uploadErr);
+                    setLoading(false);
+                    Alert.alert(
+                        'Cover upload failed',
+                        'Could not upload the cover image. Try again or pick a different image.',
+                    );
+                    return;
+                }
+            }
+            if (!coverForPayload) {
+                setLoading(false);
+                Alert.alert(
+                    'Cover image required',
+                    'Add a cover image or keep your existing one.',
+                );
+                return;
+            }
+
+            let pdfURL: string;
+            if (doc1) {
+                const docData = await postDocuments();
+                console.log(docData, 'docData');
+                const first =
+                    docData?.data?.[0] ??
+                    (typeof docData?.data === 'string' ? docData.data : null);
+                if (!first || typeof first !== 'string') {
+                    setLoading(false);
+                    Alert.alert(
+                        'Upload failed',
+                        'Could not upload your manuscript. Please try again.',
+                    );
+                    return;
+                }
+                pdfURL = first;
+            } else {
+                const reuse = String(existingPdfUrl || '').trim();
+                if (!reuse) {
+                    setLoading(false);
+                    Alert.alert(
+                        'Manuscript required',
+                        'Upload a PDF or EPUB, or keep your existing file.',
+                    );
+                    return;
+                }
+                pdfURL = reuse;
+            }
+
+            const voiceDetails = voiceOptions[selectedLanguage]?.find(
+                (voice) => voice.gender === selectedVoiceType,
+            );
+            if (!voiceDetails) {
+                setLoading(false);
+                Alert.alert(
+                    'Voice configuration',
+                    'Please select a valid narration language and voice.',
+                );
+                return;
+            }
+
+            let publisherEmail = ''
+            try {
+                const userDetailsRaw = await SecureStore.getItemAsync('userDetails')
+                if (userDetailsRaw) {
+                    const userDetails = JSON.parse(userDetailsRaw) as { email?: string }
+                    const e = userDetails?.email
+                    if (e && e !== 'null') publisherEmail = e
+                }
+            } catch {
+                /* ignore missing or invalid userDetails */
+            }
+
+            const amountNum =
+                amount === '' || amount == null
+                    ? 0
+                    : Number(amount);
+            const amountForApi = Number.isFinite(amountNum) ? amountNum : 0;
     
             const data ={
-                id:publisherCommonForm,
+                id: listingId,
                 title: title,
                 language: language,
                 categories: categories,
@@ -573,12 +824,13 @@ console.log(publisherCommonForm,'companyId in document submit');
                     voiceType: selectedVoiceType,
                     speakingRate: speakingRateOptions.find(opt => opt.value === selectedSpeakingRate)?.rate || 1.0,
                     sampleRate: selectedAudioFormat,
-                    voiceDetails: voiceOptions[selectedLanguage]?.find(voice => voice.gender === selectedVoiceType)
+                    voiceDetails,
                 },
-                pdfURL: docData.data[0],
+                pdfURL,
                 rightsHolder: rightsHolder,
-                coverImage: imageURL,
-                amount: amount,
+                coverImage: coverForPayload,
+                amount: amountForApi,
+                email: publisherEmail,
             }
     
             console.log(data, 'data');
@@ -949,10 +1201,12 @@ console.log(publisherCommonForm,'companyId in document submit');
               <View style={styles.content}>
                   <View style={styles.headerContainer}>
                       <Text style={styles.headerText}>
-                          Last Steps
+                          {loadExistingParam ? 'Update & resubmit' : 'Last Steps'}
                       </Text>
                       <Text style={styles.subHeaderText}>
-                          Fill in the details to publish your audiobook
+                          {loadExistingParam
+                              ? 'Edit your listing and submit again for review. Rejection is cleared after a successful update.'
+                              : 'Fill in the details to publish your audiobook'}
                       </Text>
                   </View>
 
@@ -1202,10 +1456,15 @@ console.log(publisherCommonForm,'companyId in document submit');
                                   color={errors.doc1 ? '#FF6B6B' : theme.text} 
                               />
                               <Text style={[styles.uploadButtonText, errors.doc1 && styles.uploadButtonTextError]}>
-                                  {doc1?.name || 'Upload PDF or EPUB'}
+                                  {doc1?.name || (String(existingPdfUrl || '').trim() ? 'Using existing PDF/EPUB (tap to replace)' : 'Upload PDF or EPUB')}
                               </Text>
                           </TouchableOpacity>
                           {errors.doc1 && <Text style={styles.errorText}>{errors.doc1}</Text>}
+                          {loadExistingParam && String(existingPdfUrl || '').trim() && !doc1 ? (
+                              <Text style={{ color: theme.textMuted, fontSize: moderateScale(12), marginTop: verticalScale(6) }}>
+                                  Your current manuscript will be kept unless you choose a new file.
+                              </Text>
+                          ) : null}
                           
                           <TouchableOpacity 
                               style={[styles.uploadButton, errors.image && styles.uploadButtonError]} 
@@ -1217,10 +1476,19 @@ console.log(publisherCommonForm,'companyId in document submit');
                                   color={errors.image ? '#FF6B6B' : theme.text} 
                               />
                               <Text style={[styles.uploadButtonText, errors.image && styles.uploadButtonTextError]}>
-                                  {image ? 'Image Selected' : 'Upload Cover Image'}
+                                  {image
+                                      ? 'Image Selected'
+                                      : String(imageURL || '').trim()
+                                        ? 'Using existing cover (tap to replace)'
+                                        : 'Upload Cover Image'}
                               </Text>
                           </TouchableOpacity>
                           {errors.image && <Text style={styles.errorText}>{errors.image}</Text>}
+                          {loadExistingParam && String(imageURL || '').trim() && !image ? (
+                              <Text style={{ color: theme.textMuted, fontSize: moderateScale(12), marginTop: verticalScale(6) }}>
+                                  Your current cover will be kept unless you pick a new image.
+                              </Text>
+                          ) : null}
                           
                           {image && (
                               <TouchableOpacity 
@@ -1259,7 +1527,7 @@ console.log(publisherCommonForm,'companyId in document submit');
                                   </View>
                               ) : (
                                   <Text style={styles.submitButtonText}>
-                                      Submit Publication
+                                      {loadExistingParam ? 'Resubmit for review' : 'Submit Publication'}
                                   </Text>
                               )}
                           </TouchableOpacity>

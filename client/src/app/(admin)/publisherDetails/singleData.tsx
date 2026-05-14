@@ -3,6 +3,7 @@ import { ipURL } from '@/utils/backendURL';
 import { FontAwesome5, MaterialIcons, Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import { useLocalSearchParams, router } from 'expo-router';
+import { activateKeepAwake, deactivateKeepAwake } from 'expo-keep-awake';
 import React, { useEffect, useState } from 'react';
 import {
   Alert,
@@ -23,6 +24,70 @@ import { axiosWithAuth } from '@/utils/customAxios';
 import { postAdminNarrationStream } from '@/utils/adminNarrationStream';
 import { useTheme } from '@/providers/ThemeProvider';
 
+const ACCENT_PALETTE = ['#0d9488', '#2563eb', '#7c3aed', '#c026d3', '#ea580c', '#ca8a04'];
+
+function stableAccentFromId(listingId: string): string {
+  let h = 0;
+  for (let i = 0; i < listingId.length; i++) {
+    h = listingId.charCodeAt(i) + ((h << 5) - h);
+  }
+  return ACCENT_PALETTE[Math.abs(h) % ACCENT_PALETTE.length];
+}
+
+/** Timeline entries use `s` / `e` in ms (admin full-audio pipeline). */
+function durationFromNarrationSegmentsJson(
+  raw: string | null | undefined
+): { hours: number; minutes: number } {
+  if (!raw || typeof raw !== 'string') return { hours: 0, minutes: 0 };
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed) || parsed.length === 0) return { hours: 0, minutes: 0 };
+    let maxEnd = 0;
+    let hasTimeline = false;
+    for (const seg of parsed) {
+      if (!seg || typeof seg !== 'object') continue;
+      const e = (seg as { e?: unknown }).e;
+      const s = (seg as { s?: unknown }).s;
+      if (typeof e === 'number' && typeof s === 'number' && e > s) {
+        hasTimeline = true;
+        maxEnd = Math.max(maxEnd, e);
+      }
+    }
+    if (!hasTimeline || maxEnd <= 0) return { hours: 0, minutes: 0 };
+    let totalMinutes = Math.ceil(maxEnd / 60000);
+    if (maxEnd > 0 && totalMinutes === 0) totalMinutes = 1;
+    return {
+      hours: Math.floor(totalMinutes / 60),
+      minutes: totalMinutes % 60,
+    };
+  } catch {
+    return { hours: 0, minutes: 0 };
+  }
+}
+
+function buildVerifyPublisherBody(
+  pub: Record<string, unknown>,
+  isCompany: boolean,
+  listingId: string
+) {
+  const { hours, minutes } = durationFromNarrationSegmentsJson(
+    typeof pub.narrationSegments === 'string' ? pub.narrationSegments : undefined
+  );
+  const complete =
+    String(pub.completeAudioUrl || '').trim() ||
+    String(pub.audioSampleURL || '').trim();
+  const narrator = String(pub.narrator || '').trim() || 'Audiobook';
+  return {
+    type: isCompany ? 'company' : 'author',
+    durationHours: hours,
+    durationMinutes: minutes,
+    completeAudioSample: complete,
+    narratorName: narrator,
+    colorCode: stableAccentFromId(listingId),
+    pdfURL: pub.pdfURL,
+  };
+}
+
 const PublisherDetails = () => {
   const { theme } = useTheme();
   const { id, isCompany } = useLocalSearchParams();
@@ -33,17 +98,17 @@ const PublisherDetails = () => {
   const [publisherData, setPublisherData] = useState(null);
   const [error, setError] = useState(null);
   
-  // Modal states
-  const [showVerificationModal, setShowVerificationModal] = useState(false);
-  const [durationHours, setDurationHours] = useState('');
-  const [durationMinutes, setDurationMinutes] = useState('');
-  const [completeAudioSample, setCompleteAudioSample] = useState('');
-  const [narratorName, setNarratorName] = useState('');
-  const [colorCode, setColorCode] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [audioJobVisible, setAudioJobVisible] = useState(false);
   const [audioJobTitle, setAudioJobTitle] = useState('');
   const [audioJobDetail, setAudioJobDetail] = useState('');
+  const [audioJobStatus, setAudioJobStatus] = useState<'running' | 'completed' | 'failed'>('running');
+  const [sampleAudioRunning, setSampleAudioRunning] = useState(false);
+  const [fullAudioRunning, setFullAudioRunning] = useState(false);
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectMessage, setRejectMessage] = useState('');
+  const [isRejectSubmitting, setIsRejectSubmitting] = useState(false);
+  const keepAwakeTag = `admin-audio-generation-${String(id)}`;
   
   const fetchPublisherDetails = async (opts?: { silent?: boolean }) => {
     const silent = Boolean(opts?.silent);
@@ -65,6 +130,20 @@ const PublisherDetails = () => {
     fetchPublisherDetails();
   }, [id, isCompanyBoolean]);
 
+  useEffect(() => {
+    const shouldKeepAwake = sampleAudioRunning || fullAudioRunning;
+
+    if (shouldKeepAwake) {
+      activateKeepAwake(keepAwakeTag);
+    } else {
+      deactivateKeepAwake(keepAwakeTag);
+    }
+
+    return () => {
+      deactivateKeepAwake(keepAwakeTag);
+    };
+  }, [sampleAudioRunning, fullAudioRunning, keepAwakeTag]);
+
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
     fetchPublisherDetails().finally(() => {
@@ -76,12 +155,48 @@ const PublisherDetails = () => {
     router.back();
   };
 
-  const handleRejectPublisher = (id) => {}
+  const handleRejectPublisher = () => {
+    setRejectMessage('');
+    setShowRejectModal(true);
+  };
+
+  const handleRejectModalCancel = () => {
+    if (isRejectSubmitting) return;
+    setShowRejectModal(false);
+    setRejectMessage('');
+  };
+
+  const handleSubmitRejection = async () => {
+    const msg = rejectMessage.trim();
+    if (!msg) {
+      Alert.alert('Message required', 'Please enter a message explaining the rejection for the publisher.');
+      return;
+    }
+    if (!id) return;
+    try {
+      setIsRejectSubmitting(true);
+      await axiosWithAuth.post(
+        `${ipURL}/api/admin/reject-publisher/${id}?isCompany=${isCompanyBoolean}`,
+        { message: msg }
+      );
+      Alert.alert('Email sent', 'The publisher has been notified by email with your message.');
+      setShowRejectModal(false);
+      setRejectMessage('');
+    } catch (err: unknown) {
+      const ax = err as { response?: { data?: { message?: string } }; message?: string };
+      const m = ax?.response?.data?.message || ax?.message || 'Failed to send rejection email.';
+      Alert.alert('Error', String(m));
+    } finally {
+      setIsRejectSubmitting(false);
+    }
+  };
 
   const handleSendSampleAudio = async (id) => {
     if (!publisherData?.publisher) return;
-    setIsSubmitting(true);
+    if (sampleAudioRunning) return;
+    setSampleAudioRunning(true);
     setAudioJobVisible(true);
+    setAudioJobStatus('running');
     setAudioJobTitle('Starting sample audio…');
     setAudioJobDetail('This can take several minutes while the book is parsed and processed with AI.');
     const body = {
@@ -97,22 +212,27 @@ const PublisherDetails = () => {
         setAudioJobTitle(title);
         setAudioJobDetail(detail);
       });
-      Alert.alert('Success', 'Sample audio has been generated successfully.');
+      setAudioJobStatus('completed');
+      setAudioJobTitle('Sample audio completed');
+      setAudioJobDetail('You can continue using the screen while this status stays visible.');
       await fetchPublisherDetails({ silent: true });
     } catch (error) {
       console.error('Error generating sample audio:', error);
       const msg = error instanceof Error ? error.message : 'Failed to generate sample audio.';
-      Alert.alert('Error', msg);
+      setAudioJobStatus('failed');
+      setAudioJobTitle('Sample audio failed');
+      setAudioJobDetail(msg);
     } finally {
-      setAudioJobVisible(false);
-      setIsSubmitting(false);
+      setSampleAudioRunning(false);
     }
   };
 
   const handleGenerateFullAudio = async (id) => {
     if (!publisherData?.publisher) return;
-    setIsSubmitting(true);
+    if (fullAudioRunning) return;
+    setFullAudioRunning(true);
     setAudioJobVisible(true);
+    setAudioJobStatus('running');
     setAudioJobTitle('Starting full audiobook…');
     setAudioJobDetail('This often takes a long time: text extraction, AI segmentation, then many TTS requests.');
     const body = {
@@ -128,89 +248,50 @@ const PublisherDetails = () => {
         setAudioJobTitle(title);
         setAudioJobDetail(detail);
       });
-      Alert.alert('Success', 'Full audio has been generated successfully.');
+      setAudioJobStatus('completed');
+      setAudioJobTitle('Full audio completed');
+      setAudioJobDetail('Full audiobook has been generated successfully.');
       await fetchPublisherDetails({ silent: true });
     } catch (error) {
       console.error('Error generating full audio:', error);
       const msg = error instanceof Error ? error.message : 'Failed to generate full audio.';
-      Alert.alert('Error', msg);
+      setAudioJobStatus('failed');
+      setAudioJobTitle('Full audio failed');
+      setAudioJobDetail(msg);
     } finally {
-      setAudioJobVisible(false);
-      setIsSubmitting(false);
+      setFullAudioRunning(false);
     }
   };
 
-  const resetModalFields = () => {
-    setDurationHours('');
-    setDurationMinutes('');
-    setCompleteAudioSample('');
-  };
-
-  const handleVerifyPublisher = (id) => {
-    setShowVerificationModal(true);
-  };
-
-  const handleModalCancel = () => {
-    setShowVerificationModal(false);
-    resetModalFields();
-  };
-
-  const validateInputs = () => {
-    const hours = parseInt(durationHours) || 0;
-    const minutes = parseInt(durationMinutes) || 0;
-    
-    if (hours < 0 || minutes < 0 || minutes >= 60) {
-      Alert.alert('Invalid Input', 'Please enter valid duration values (minutes should be 0-59)');
-      return false;
+  const handleVerifyPublisher = async () => {
+    if (!id || !publisherData?.publisher) {
+      Alert.alert('Error', 'Publisher data is not loaded yet.');
+      return;
     }
-    
-    if (hours === 0 && minutes === 0) {
-      Alert.alert('Invalid Input', 'Duration cannot be zero');
-      return false;
-    }
-    
-    if (!completeAudioSample.trim()) {
-      Alert.alert('Missing Field', 'Please provide the complete audio sample URL');
-      return false;
-    }
-    
-    // Basic URL validation
-    const urlPattern = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/;
-    if (!urlPattern.test(completeAudioSample.trim())) {
-      Alert.alert('Invalid URL', 'Please enter a valid URL for the audio sample');
-      return false;
-    }
-    
-    return true;
-  };
-
-  const handleSubmitVerification = async () => {
-    // if (!validateInputs()) {
-    //   return;
-    // }
-    
     setIsSubmitting(true);
-    
     try {
-      const verificationData = {
-        type: isCompanyBoolean ? 'company' : 'author',
-        durationHours: parseInt(durationHours) || 0,
-        durationMinutes: parseInt(durationMinutes) || 0,
-        completeAudioSample: publisherData.publisher.completeAudioUrl,
-        narratorName: narratorName.trim(),
-        colorCode: colorCode.trim(),
-        pdfURL: publisherData.publisher.pdfURL,
-      };
-      // Make API call to verify the publisher with additional data
-      await axiosWithAuth.post(`${ipURL}/api/admin/verify-publisher/${id}`, verificationData);
-      
-      setShowVerificationModal(false);
-      resetModalFields();
-      Alert.alert('Success', 'Publisher has been verified successfully');
+      const body = buildVerifyPublisherBody(
+        publisherData.publisher as Record<string, unknown>,
+        isCompanyBoolean,
+        String(id)
+      );
+      await axiosWithAuth.post(
+        `${ipURL}/api/admin/verify-publisher/${id}`,
+        body
+      );
+      Alert.alert(
+        'Verified',
+        'Publisher verified successfully. A confirmation email was sent to the publisher account on file.'
+      );
       router.back();
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Verification error:', error);
-      Alert.alert('Error', 'Failed to verify publisher. Please try again.');
+      const ax = error as { response?: { data?: { message?: string } }; message?: string };
+      const m =
+        ax?.response?.data?.message ||
+        ax?.message ||
+        'Failed to verify publisher. Please try again.';
+      Alert.alert('Error', String(m));
     } finally {
       setIsSubmitting(false);
     }
@@ -618,132 +699,70 @@ const PublisherDetails = () => {
     );
   };
 
-  const renderVerificationModal = () => {
-    return (
-      <Modal
-        visible={showVerificationModal}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={handleModalCancel}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Verify Publisher</Text>
-              <TouchableOpacity onPress={handleModalCancel} style={styles.modalCloseButton}>
-                <Ionicons name="close" size={24} color="#94A3B8" />
-              </TouchableOpacity>
+  const renderRejectModal = () => (
+    <Modal
+      visible={showRejectModal}
+      transparent
+      animationType="slide"
+      onRequestClose={handleRejectModalCancel}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Reject publisher</Text>
+            <TouchableOpacity onPress={handleRejectModalCancel} style={styles.modalCloseButton} disabled={isRejectSubmitting}>
+              <Ionicons name="close" size={24} color="#94A3B8" />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView style={styles.modalContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+            <Text style={styles.modalDescription}>
+              Enter the reason for rejection. This text is emailed to the publisher as the main message body.
+            </Text>
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Message to publisher</Text>
+              <TextInput
+                style={[styles.textInput, styles.textAreaInput, styles.rejectMessageInput]}
+                value={rejectMessage}
+                onChangeText={setRejectMessage}
+                placeholder="Explain why this application cannot be approved…"
+                placeholderTextColor="#64748B"
+                multiline
+                numberOfLines={6}
+                textAlignVertical="top"
+                maxLength={8000}
+                editable={!isRejectSubmitting}
+              />
             </View>
+          </ScrollView>
 
-            <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
-              <Text style={styles.modalDescription}>
-                Please provide the following information to complete the verification process:
-              </Text>
-
-              {/* Duration Hours Input */}
-              <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Duration (Hours)</Text>
-                <TextInput
-                  style={styles.textInput}
-                  value={durationHours}
-                  onChangeText={setDurationHours}
-                  placeholder="Enter hours (e.g., 2)"
-                  placeholderTextColor="#64748B"
-                  keyboardType="numeric"
-                  maxLength={3}
-                />
-              </View>
-
-              {/* Duration Minutes Input */}
-              <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Duration (Minutes)</Text>
-                <TextInput
-                  style={styles.textInput}
-                  value={durationMinutes}
-                  onChangeText={setDurationMinutes}
-                  placeholder="Enter minutes (0-59)"
-                  placeholderTextColor="#64748B"
-                  keyboardType="numeric"
-                  maxLength={2}
-                />
-              </View>
-
-              {/* Complete Audio Sample URL Input */}
-              <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Complete Audio Sample URL</Text>
-                <TextInput
-                  style={[styles.textInput, styles.textAreaInput]}
-                  value={completeAudioSample}
-                  onChangeText={setCompleteAudioSample}
-                  placeholder="Enter the complete audio sample URL"
-                  placeholderTextColor="#64748B"
-                  multiline={true}
-                  numberOfLines={3}
-                  textAlignVertical="top"
-                />
-              </View>
-
-              <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Narrator Name</Text>
-                <TextInput
-                  style={[styles.textInput, styles.textAreaInput]}
-                  value={narratorName}
-                  onChangeText={setNarratorName}
-                  placeholder="Enter the narrator name"
-                  placeholderTextColor="#64748B"
-                  numberOfLines={1}
-                  textAlignVertical="top"
-                />
-              </View>
-
-              <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Enter Colour Code</Text>
-                <TextInput
-                  style={[styles.textInput, styles.textAreaInput]}
-                  value={colorCode}
-                  onChangeText={setColorCode}
-                  placeholder="Enter the color code"
-                  placeholderTextColor="#64748B"
-                  numberOfLines={1}
-                  textAlignVertical="top"
-                />
-              </View>
-
-             
-
-              {/* Display calculated total duration */}
-
-            </ScrollView>
-
-            <View style={styles.modalFooter}>
-              <TouchableOpacity 
-                style={styles.modalCancelButton} 
-                onPress={handleModalCancel}
-                disabled={isSubmitting}
-              >
-                <Text style={styles.modalCancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={styles.modalSubmitButton} 
-                onPress={handleSubmitVerification}
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                  <>
-                    <MaterialIcons name="verified" size={20} color="white" />
-                    <Text style={styles.modalSubmitButtonText}>Verify</Text>
-                  </>
-                )}
-              </TouchableOpacity>
-            </View>
+          <View style={styles.modalFooter}>
+            <TouchableOpacity
+              style={styles.modalCancelButton}
+              onPress={handleRejectModalCancel}
+              disabled={isRejectSubmitting}
+            >
+              <Text style={styles.modalCancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.modalSubmitButton, { backgroundColor: theme.secondary2 }]}
+              onPress={handleSubmitRejection}
+              disabled={isRejectSubmitting}
+            >
+              {isRejectSubmitting ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <>
+                  <MaterialIcons name="email" size={20} color="white" />
+                  <Text style={styles.modalSubmitButtonText}>Send email</Text>
+                </>
+              )}
+            </TouchableOpacity>
           </View>
         </View>
-      </Modal>
-    );
-  };
+      </View>
+    </Modal>
+  );
 
   return (
     <SafeAreaView style={[defaultStyles.container, styles.container, { backgroundColor: theme.background }]}>
@@ -830,23 +849,37 @@ const PublisherDetails = () => {
                 <TouchableOpacity 
                   style={[styles.sampleAudioButton, { backgroundColor: theme.tertiary }]} 
                   onPress={() => handleSendSampleAudio(id)}
-                  disabled={isSubmitting}
+                  disabled={sampleAudioRunning}
                 >
                   <MaterialIcons name="audiotrack" size={20} color={theme.white} />
-                  <Text style={[styles.buttonText, { color: theme.white }]}>Sample Audio</Text>
+                  <Text style={[styles.buttonText, { color: theme.white }]}>
+                    {sampleAudioRunning ? 'Generating…' : 'Sample Audio'}
+                  </Text>
                 </TouchableOpacity>
               </View>
               <TouchableOpacity 
                 style={[styles.fullAudioButton, { backgroundColor: theme.primary }]} 
                 onPress={() => handleGenerateFullAudio(id)}
-                disabled={isSubmitting}
+                disabled={fullAudioRunning}
               >
                 <MaterialIcons name="library-music" size={20} color={theme.white} />
-                <Text style={[styles.buttonText, { color: theme.white }]}>Generate Full Audio</Text>
+                <Text style={[styles.buttonText, { color: theme.white }]}>
+                  {fullAudioRunning ? 'Generating…' : 'Generate Full Audio'}
+                </Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.verifyButton, { backgroundColor: theme.primary }]} onPress={() => handleVerifyPublisher(id)}>
-                <MaterialIcons name="verified" size={20} color={theme.white} />
-                <Text style={[styles.buttonText, { color: theme.white }]}>Verify Publisher</Text>
+              <TouchableOpacity
+                style={[styles.verifyButton, { backgroundColor: theme.primary, opacity: isSubmitting ? 0.7 : 1 }]}
+                onPress={handleVerifyPublisher}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <ActivityIndicator size="small" color={theme.white} />
+                ) : (
+                  <MaterialIcons name="verified" size={20} color={theme.white} />
+                )}
+                <Text style={[styles.buttonText, { color: theme.white }]}>
+                  {isSubmitting ? 'Verifying…' : 'Verify Publisher'}
+                </Text>
               </TouchableOpacity>
              
             </View>
@@ -854,20 +887,26 @@ const PublisherDetails = () => {
         </ScrollView>
       )}
 
-      {/* Verification Modal */}
-      {renderVerificationModal()}
+      {renderRejectModal()}
 
-      <Modal visible={audioJobVisible} transparent animationType="fade">
-        <View style={styles.audioProgressOverlay}>
+      {audioJobVisible && (
+        <View pointerEvents="box-none" style={styles.audioProgressContainer}>
           <View style={[styles.audioProgressCard, { backgroundColor: theme.white }]}>
-            <ActivityIndicator size="large" color={theme.primary} />
+            {audioJobStatus === 'running' ? (
+              <ActivityIndicator size="small" color={theme.primary} />
+            ) : null}
             <Text style={[styles.audioProgressTitle, { color: theme.text }]}>{audioJobTitle}</Text>
             {audioJobDetail ? (
               <Text style={[styles.audioProgressDetail, { color: theme.textMuted }]}>{audioJobDetail}</Text>
             ) : null}
+            {(audioJobStatus === 'completed' || audioJobStatus === 'failed') && (
+              <TouchableOpacity onPress={() => setAudioJobVisible(false)} style={styles.audioProgressCloseButton}>
+                <Text style={[styles.audioProgressCloseText, { color: theme.white }]}>Dismiss</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
-      </Modal>
+      )}
     </SafeAreaView>
   );
 };
@@ -1263,6 +1302,9 @@ const styles = StyleSheet.create({
     minHeight: 80,
     paddingTop: 12,
   },
+  rejectMessageInput: {
+    minHeight: 160,
+  },
   durationPreview: {
     backgroundColor: 'rgba(79, 70, 229, 0.1)',
     borderWidth: 1,
@@ -1317,20 +1359,21 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#FFFFFF',
   },
-  audioProgressOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
+  audioProgressContainer: {
+    position: 'absolute',
+    right: 16,
+    bottom: 20,
+    left: 16,
+    alignItems: 'flex-end',
+    zIndex: 30,
   },
   audioProgressCard: {
     width: '100%',
-    maxWidth: 340,
+    maxWidth: 380,
     borderRadius: 16,
-    padding: 24,
-    alignItems: 'center',
-    gap: 14,
+    padding: 16,
+    alignItems: 'flex-start',
+    gap: 10,
     elevation: 6,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -1345,7 +1388,19 @@ const styles = StyleSheet.create({
   audioProgressDetail: {
     fontSize: 14,
     lineHeight: 20,
-    textAlign: 'center',
+    textAlign: 'left',
+  },
+  audioProgressCloseButton: {
+    marginTop: 6,
+    alignSelf: 'flex-end',
+    backgroundColor: '#4F46E5',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+  },
+  audioProgressCloseText: {
+    fontSize: 12,
+    fontWeight: '700',
   },
 });
 

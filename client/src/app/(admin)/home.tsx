@@ -57,6 +57,10 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleOpenProgress = () => {
+    router.push('/(admin)/progress');
+  };
+
   const handleVerifyPublisher = (id, isCompany) => {
     Alert.alert(
       'Verify Publisher',
@@ -208,9 +212,14 @@ const AdminDashboard = () => {
           <Text style={[styles.welcomeText, { color: theme.textMuted }]}>Admin Portal</Text>
           <Text style={[styles.adminTitle, { color: theme.text }]}>Publisher Verification</Text>
         </View>
-        <TouchableOpacity onPress={handleLogout} style={[styles.logoutButton, { backgroundColor: theme.primary, shadowColor: theme.primary }]}>
-          <MaterialIcons name="logout" size={22} color={theme.white} />
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <TouchableOpacity onPress={handleOpenProgress} style={[styles.progressButton, { backgroundColor: theme.secondary, shadowColor: theme.secondary }]}>
+            <MaterialIcons name="insights" size={20} color={theme.white} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={handleLogout} style={[styles.logoutButton, { backgroundColor: theme.primary, shadowColor: theme.primary }]}>
+            <MaterialIcons name="logout" size={22} color={theme.white} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView 
@@ -396,6 +405,18 @@ const styles = StyleSheet.create({
     // shadowColor removed - now using theme
     shadowOffset: { width: 0, height: 4 },
     
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  progressButton: {
+    padding: 10,
+    borderRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
     shadowRadius: 8,
     elevation: 5,
   },

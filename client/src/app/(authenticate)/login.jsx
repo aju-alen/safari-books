@@ -264,6 +264,10 @@ console.log(clickCount, 'this is click count');
                                     placeholder="Enter Your Email"
                                     placeholderTextColor={theme.textMuted}
                                     autoCapitalize="none"
+                                    autoCorrect={false}
+                                    spellCheck={false}
+                                    textContentType="emailAddress"
+                                    autoComplete="email"
                                     value={email}
                                     onChangeText={setEmail}
                                     keyboardType='email-address'

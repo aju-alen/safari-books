@@ -8,6 +8,7 @@ const AdminLayout = () =>{
         <View style={defaultStyles.container}>
         <Stack>
             <Stack.Screen name='home' options={{ headerShown: false }} />
+            <Stack.Screen name='progress' options={{ headerShown: false }} />
             <Stack.Screen name='publisherDetails' options={{ headerShown: false }} />
         </Stack>
         </View>

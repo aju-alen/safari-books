@@ -39,7 +39,7 @@ const PublisherHome = () => {
         const tokenStore = await SecureStore.getItemAsync('userDetails')
         setToken(JSON.parse(tokenStore).userId)
 
-        const response = await axiosWithAuth.get(`${ipURL}/api/publisher/publisher-analytics`)
+        const response = await axiosWithAuth.get(`${ipURL}/api/publisher/publisher-analytics/${token}`)
         setBookStats(response.data)
       } catch (error) {
         console.error('Error fetching data:', error)

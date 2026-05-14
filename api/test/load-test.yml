@@ -1,5 +1,5 @@
 config:
-  target: "https://safari-books.onrender.com"
+  target: "https://backend.safbooks.com/"
   phases:
     # Warm-up phase - gradual ramp up
     - duration: 60

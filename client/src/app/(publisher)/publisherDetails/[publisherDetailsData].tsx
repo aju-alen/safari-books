@@ -1,6 +1,6 @@
 import { defaultStyles } from '@/styles';
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import axios from 'axios';
@@ -11,46 +11,84 @@ import { useTheme } from '@/providers/ThemeProvider';
 const PublisherDetailsData = () => {
     const { theme } = useTheme();
     const { publisherDetailsData } = useLocalSearchParams();
+    console.log(publisherDetailsData,'userId in publisher details');
     const [authorData, setAuthorData] = useState([]);
     const [companyData, setCompanyData] = useState([]);
+    const [refreshing, setRefreshing] = useState(false);
+
+    const fetchListings = React.useCallback(async () => {
+        try {
+            const authorResponse = await axios.get(`${ipURL}/api/publisher/get-all-author-data/${publisherDetailsData}`);
+            const companyResponse = await axios.get(`${ipURL}/api/publisher/get-all-company-data/${publisherDetailsData}`);
+            setCompanyData(companyResponse.data["companyData"]);
+            setAuthorData(authorResponse.data["authorData"]);
+        } catch (error) {
+            console.error(error);
+        }
+    }, [publisherDetailsData]);
 
     useEffect(() => {
-        const getAllData = async () => {
-            try {
-                const authorResponse = await axios.get(`${ipURL}/api/publisher/get-all-author-data/${publisherDetailsData}`);
-                const companyResponse = await axios.get(`${ipURL}/api/publisher/get-all-company-data/${publisherDetailsData}`);
-                setCompanyData(companyResponse.data["companyData"]);
-                setAuthorData(authorResponse.data["authorData"]);
-            } catch (error) {
-                console.error(error);
-            }
-        };
-        getAllData();
-    }, []);
+        fetchListings();
+    }, [fetchListings]);
+
+    const onRefresh = React.useCallback(async () => {
+        setRefreshing(true);
+        await fetchListings();
+        setRefreshing(false);
+    }, [fetchListings]);
 
     const renderBookItem = (item, index, type) => {
         console.log(item,'renderEach book item');
-        
+        const isRejected = Boolean(item.isRejected);
+        const statusLabel = item.isVerified
+            ? 'Approved'
+            : isRejected
+              ? 'Not approved'
+              : 'Pending Approval';
+        const statusIcon = item.isVerified ? 'done' : isRejected ? 'cancel' : 'pending';
+        const statusColor = item.isVerified ? theme.primary : isRejected ? theme.secondary2 : theme.tertiary;
+
         return(
         <View key={index} style={styles.bookCard}>
             <View style={styles.bookInfo}>
                 <Text style={styles.bookTitle}>{item.title}</Text>
                 <View style={styles.detailRow}>
                     <View style={styles.statusContainer}>
-                        <MaterialIcons name={item.isVerified?"done": "pending"} size={16} color={theme.primary} />
-                        <Text style={styles.statusText}>{item.isVerified?"Approved": "Pending Approval"}</Text>
+                        <MaterialIcons name={statusIcon} size={16} color={statusColor} />
+                        <Text style={[styles.statusText, { color: statusColor }]}>{statusLabel}</Text>
                     </View>
                     {type === 'company' && (
                         <Text style={styles.companyName}>{item.companyName}</Text>
                     )}
                 </View>
             </View>
-            <TouchableOpacity 
-                style={styles.viewDetailsButton}
-                onPress={() => router.push(`/(publisher)/publisherSingleDetail/${item.id}`)}
-            >
-                <MaterialIcons name="arrow-forward" size={24} color={theme.white} />
-            </TouchableOpacity>
+            <View style={styles.cardActions}>
+                <TouchableOpacity
+                    style={styles.viewDetailsButton}
+                    onPress={() => router.push(`/(publisher)/publisherSingleDetail/${item.id}`)}
+                    accessibilityLabel="View listing details"
+                >
+                    <MaterialIcons name="visibility" size={22} color={theme.white} />
+                </TouchableOpacity>
+                {isRejected ? (
+                    <TouchableOpacity
+                        style={[styles.viewDetailsButton, { backgroundColor: theme.secondary }]}
+                        onPress={() =>
+                            router.push({
+                                pathname: '/(publisher)/[publisherCommonForm]',
+                                params: {
+                                    publisherCommonForm: String(item.id),
+                                    isCompany: type === 'company' ? 'true' : 'false',
+                                    loadExisting: '1',
+                                },
+                            })
+                        }
+                        accessibilityLabel="Edit listing and resubmit for review"
+                    >
+                        <MaterialIcons name="edit" size={22} color={theme.white} />
+                    </TouchableOpacity>
+                ) : null}
+            </View>
         </View>
     )};
 
@@ -136,6 +174,12 @@ const PublisherDetailsData = () => {
             fontSize: 12,
             fontWeight: '500',
         },
+        cardActions: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 8,
+            marginLeft: 12,
+        },
         viewDetailsButton: {
             backgroundColor: theme.primary,
             width: 40,
@@ -143,7 +187,6 @@ const PublisherDetailsData = () => {
             borderRadius: 20,
             justifyContent: 'center',
             alignItems: 'center',
-            marginLeft: 12,
             shadowColor: theme.primary,
             shadowOffset: {
                 width: 0,
@@ -194,7 +237,13 @@ const PublisherDetailsData = () => {
                 </Text>
             </View>
 
-            <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+            <ScrollView
+                style={styles.content}
+                showsVerticalScrollIndicator={false}
+                refreshControl={
+                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.primary} />
+                }
+            >
                 {authorData.length > 0 && (
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Author Publications</Text>

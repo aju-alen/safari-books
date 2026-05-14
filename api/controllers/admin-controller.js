@@ -1,15 +1,114 @@
 import AWS from 'aws-sdk';
+import { once } from 'events';
+import { PassThrough } from 'stream';
 import { prisma } from '../utils/database.js'
 import { getPdfFromAws } from '../utils/getPdfFromAws.js'
 import { extractPlainTextForNarration } from '../utils/bookDocumentText.js'
 import { googleTtsConvert } from '../utils/google-tts-convert.js'
-import { uploadAudioBufferToS3 } from '../utils/uploadAudioBuffer.js'
+import { uploadAudioStreamToS3 } from '../utils/uploadAudioBuffer.js'
 import { buildSmartNarrationChunksWithChatGpt } from '../utils/chatgpt-smart-chunks.js'
 import { getAudioDurationMs } from '../utils/audioDurationFromBuffer.js'
-
+import { sampleAudioReadyEmailTemplate, publisherRejectionEmailTemplate, publisherVerificationApprovedEmailTemplate } from '../utils/emailTemplate.js';
+import { resendEmailBoiler } from '../utils/resendFunction.js';
 
 import dotenv from "dotenv";
 dotenv.config();
+
+const parsedMaxBookSourceBytes = Number(process.env.MAX_BOOK_SOURCE_BYTES || 50 * 1024 * 1024);
+const MAX_BOOK_SOURCE_BYTES = Number.isFinite(parsedMaxBookSourceBytes) && parsedMaxBookSourceBytes > 0
+    ? parsedMaxBookSourceBytes
+    : 50 * 1024 * 1024;
+const parsedSampleSourceChars = Number(process.env.SAMPLE_AUDIO_SOURCE_CHAR_LIMIT || 18000);
+const SAMPLE_AUDIO_SOURCE_CHAR_LIMIT = Number.isFinite(parsedSampleSourceChars) && parsedSampleSourceChars > 0
+    ? Math.floor(parsedSampleSourceChars)
+    : 18000;
+const parsedMaxConcurrentJobs = Number(process.env.MAX_CONCURRENT_FULL_AUDIO_JOBS || 1);
+const MAX_CONCURRENT_FULL_AUDIO_JOBS = Number.isFinite(parsedMaxConcurrentJobs) && parsedMaxConcurrentJobs > 0
+    ? Math.floor(parsedMaxConcurrentJobs)
+    : 1;
+const activeFullAudioJobs = new Set();
+const adminAudioProgress = new Map();
+const MAX_AUDIO_PROGRESS_ENTRIES = 300;
+
+const toIsCompanyBool = (isCompanyQuery) => String(isCompanyQuery) === 'true';
+
+const buildAudioProgressKey = (jobType, publisherId, isCompanyQuery) =>
+    `${jobType}:${toIsCompanyBool(isCompanyQuery) ? 'company' : 'author'}:${publisherId}`;
+
+const phaseToProgressPercent = (phase, current, total, existingPercent = 0) => {
+    if (Number.isFinite(current) && Number.isFinite(total) && total > 0) {
+        const bounded = Math.min(100, Math.max(0, Math.round((current / total) * 100)));
+        return Math.max(existingPercent, bounded);
+    }
+
+    const phasePercent = {
+        queued: 0,
+        downloading_document: 5,
+        parsing_document: 15,
+        generating_segments: 30,
+        segments_preview: 30,
+        segments_cached: 35,
+        tts_batch_start: 50,
+        synthesizing_audio: 70,
+        synthesizing_segment: 70,
+        uploading: 95,
+        complete: 100
+    };
+    const mapped = phasePercent[phase];
+    if (!Number.isFinite(mapped)) return existingPercent;
+    return Math.max(existingPercent, mapped);
+};
+
+const pruneAudioProgressStore = () => {
+    if (adminAudioProgress.size <= MAX_AUDIO_PROGRESS_ENTRIES) return;
+    const sorted = Array.from(adminAudioProgress.entries())
+        .sort((a, b) => new Date(b[1].updatedAt).getTime() - new Date(a[1].updatedAt).getTime());
+    const limited = sorted.slice(0, MAX_AUDIO_PROGRESS_ENTRIES);
+    adminAudioProgress.clear();
+    limited.forEach(([key, value]) => adminAudioProgress.set(key, value));
+};
+
+const upsertAudioProgress = (key, patch) => {
+    const existing = adminAudioProgress.get(key);
+    const nowIso = new Date().toISOString();
+    const next = {
+        key,
+        jobType: patch.jobType || existing?.jobType || 'unknown',
+        publisherId: patch.publisherId || existing?.publisherId || '',
+        isCompany: typeof patch.isCompany === 'boolean' ? patch.isCompany : (existing?.isCompany ?? false),
+        status: patch.status || existing?.status || 'running',
+        phase: patch.phase || existing?.phase || 'queued',
+        message: patch.message || existing?.message || '',
+        current: Number.isFinite(patch.current) ? patch.current : existing?.current ?? null,
+        total: Number.isFinite(patch.total) ? patch.total : existing?.total ?? null,
+        segmentCount: Number.isFinite(patch.segmentCount) ? patch.segmentCount : existing?.segmentCount ?? null,
+        progressPercent: Number.isFinite(patch.progressPercent)
+            ? patch.progressPercent
+            : phaseToProgressPercent(
+                patch.phase || existing?.phase,
+                Number.isFinite(patch.current) ? patch.current : existing?.current,
+                Number.isFinite(patch.total) ? patch.total : existing?.total,
+                existing?.progressPercent ?? 0
+            ),
+        resultUrl: patch.resultUrl || existing?.resultUrl || null,
+        errorMessage: patch.errorMessage || existing?.errorMessage || null,
+        startedAt: existing?.startedAt || patch.startedAt || nowIso,
+        completedAt: patch.completedAt || existing?.completedAt || null,
+        updatedAt: nowIso
+    };
+
+    if (next.status === 'completed') {
+        next.progressPercent = 100;
+        next.completedAt = next.completedAt || nowIso;
+    }
+    if (next.status === 'failed') {
+        next.completedAt = next.completedAt || nowIso;
+    }
+
+    adminAudioProgress.set(key, next);
+    pruneAudioProgressStore();
+    return next;
+};
 
 const wantsNdjsonStream = (req) => {
     const q = String(req.query?.stream ?? '').toLowerCase();
@@ -353,6 +452,29 @@ const getNarrationSegmentsWithCache = async ({
     return generatedSegments;
 };
 
+const getSampleNarrationSegment = ({
+    publisher,
+    rawPdfText,
+    onProgress
+}) => {
+    const cachedSegments = parseStoredNarrationSegments(publisher?.narrationSegments);
+    if (cachedSegments.length > 0) {
+        onProgress?.({
+            phase: 'segments_cached',
+            message: 'Using first cached narration segment for sample audio.'
+        });
+        return cachedSegments[0];
+    }
+
+    const limitedSource = String(rawPdfText || '').slice(0, SAMPLE_AUDIO_SOURCE_CHAR_LIMIT);
+    onProgress?.({
+        phase: 'segments_preview',
+        message: 'Building first narration segment from document preview text…'
+    });
+    const previewSegments = buildNarrationSegments(limitedSource);
+    return previewSegments[0] || null;
+};
+
 export const getAllPendingVerifications = async (req, res) => {
 
     if(req.middlewareRole !== 'ADMIN'){
@@ -361,7 +483,8 @@ export const getAllPendingVerifications = async (req, res) => {
     try{
         const pendingVerificationsCompany = await prisma.company.findMany({
             where: {
-                isVerified: false
+                isVerified: false,
+                isRejected: false,
             },
             include: {
                 user: true,
@@ -370,7 +493,8 @@ export const getAllPendingVerifications = async (req, res) => {
 
         const pendingVerificationsAuthor = await prisma.author.findMany({
             where: {
-                isVerified: false
+                isVerified: false,
+                isRejected: false,
             },
             include: {
                 user: true,
@@ -431,6 +555,24 @@ export const verifyPublisher = async (req, res) => {
         return res.status(403).json({message: "You are not authorized to access this resource"});
     }
 
+    const sendApprovalEmail = async (publisherRow, bookTitle) => {
+        const recipientEmail = publisherRow.user?.email;
+        if (!recipientEmail || String(recipientEmail).toLowerCase() === 'null') {
+            console.warn('verifyPublisher: no publisher email on file; skipping approval email');
+            return;
+        }
+        const html = publisherVerificationApprovedEmailTemplate(
+            publisherRow.user?.name || 'there',
+            bookTitle
+        );
+        await resendEmailBoiler(
+            process.env.NAMECHEAP_EMAIL,
+            recipientEmail,
+            'Your Safari Books listing is approved',
+            html
+        );
+    };
+
     try{
         if(type === 'company'){
             const publisher = await prisma.company.update({
@@ -438,14 +580,18 @@ export const verifyPublisher = async (req, res) => {
                     id: id
                 },
                 data: {
-                    isVerified: true
+                    isVerified: true,
+                    isRejected: false,
+                    reject: null,
+                    rejectedAt: null,
                 },
+                include: { user: { select: { email: true, name: true } } },
             })
             console.log(publisher,'updated company publisher data');
             const cachedTimeline = parseNarrationTimelineFromSegments(publisher.narrationSegments);
             
 
-            const addBook = await prisma.book.create({
+            await prisma.book.create({
                 data:{
                     title:publisher.title,
                     description:publisher.synopsis,
@@ -471,6 +617,15 @@ export const verifyPublisher = async (req, res) => {
 
                 }
             })
+            const bookTitle =
+                (typeof publisher.title === 'string' && publisher.title.trim()) ||
+                publisher.companyName ||
+                'Your listing';
+            try {
+                await sendApprovalEmail(publisher, bookTitle);
+            } catch (mailErr) {
+                console.error('verifyPublisher: approval email failed', mailErr);
+            }
             res.status(200).json({message: "Company verified successfully",});
         }
         else{
@@ -479,14 +634,18 @@ export const verifyPublisher = async (req, res) => {
                     id: id
                 },
                 data: {
-                    isVerified: true
-                }
+                    isVerified: true,
+                    isRejected: false,
+                    reject: null,
+                    rejectedAt: null,
+                },
+                include: { user: { select: { email: true, name: true } } },
             })
 
             console.log(publisher,'updated publisher data');
             const cachedTimeline = parseNarrationTimelineFromSegments(publisher.narrationSegments);
 
-            const addBook = await prisma.book.create({
+            await prisma.book.create({
                 data:{
                     title:publisher.title,
                     description:publisher.synopsis,
@@ -509,7 +668,17 @@ export const verifyPublisher = async (req, res) => {
                     amount: publisher.amount,
                     publishedAt: new Date(),
                     timeStamp: cachedTimeline
-                }})
+                }
+            })
+            const bookTitle =
+                (typeof publisher.title === 'string' && publisher.title.trim()) ||
+                publisher.fullName ||
+                'Your listing';
+            try {
+                await sendApprovalEmail(publisher, bookTitle);
+            } catch (mailErr) {
+                console.error('verifyPublisher: approval email failed', mailErr);
+            }
             res.status(200).json({message: "Company verified successfully", publisher});
         }
       
@@ -519,6 +688,91 @@ export const verifyPublisher = async (req, res) => {
         res.status(500).json({message: "Internal server error", error});
     }
 }
+
+export const rejectPublisher = async (req, res) => {
+    const { id } = req.params;
+    const { isCompany } = req.query;
+    const { message } = req.body;
+
+    if (req.middlewareRole !== 'ADMIN') {
+        return res.status(403).json({ message: 'You are not authorized to access this resource' });
+    }
+
+    if (!message || typeof message !== 'string' || !message.trim()) {
+        return res.status(400).json({ message: 'Rejection message is required.' });
+    }
+
+    const trimmed = message.trim();
+    if (trimmed.length > 8000) {
+        return res.status(400).json({ message: 'Rejection message is too long (max 8000 characters).' });
+    }
+
+    try {
+        let publisher;
+        if (String(isCompany) === 'true') {
+            publisher = await prisma.company.findUnique({
+                where: { id },
+                include: { user: { select: { email: true, name: true } } },
+            });
+        } else {
+            publisher = await prisma.author.findUnique({
+                where: { id },
+                include: { user: { select: { email: true, name: true } } },
+            });
+        }
+
+        if (!publisher) {
+            return res.status(404).json({ message: 'Publisher not found' });
+        }
+
+        const recipientEmail = publisher.user?.email;
+        if (!recipientEmail || String(recipientEmail).toLowerCase() === 'null') {
+            return res.status(400).json({ message: 'No email on file for this publisher account.' });
+        }
+
+        const bookTitle =
+            (typeof publisher.title === 'string' && publisher.title.trim()) ||
+            (String(isCompany) === 'true' ? publisher.companyName : publisher.fullName) ||
+            '';
+
+        const html = publisherRejectionEmailTemplate(
+            publisher.user?.name || 'there',
+            bookTitle,
+            trimmed
+        );
+        await resendEmailBoiler(
+            process.env.NAMECHEAP_EMAIL,
+            recipientEmail,
+            'Update on your Safari Books publisher application',
+            html
+        );
+
+        if (String(isCompany) === 'true') {
+            await prisma.company.update({
+                where: { id },
+                data: {
+                    isRejected: true,
+                    reject: trimmed,
+                    rejectedAt: new Date(),
+                },
+            });
+        } else {
+            await prisma.author.update({
+                where: { id },
+                data: {
+                    isRejected: true,
+                    reject: trimmed,
+                    rejectedAt: new Date(),
+                },
+            });
+        }
+
+        return res.status(200).json({ message: 'Rejection email sent successfully.' });
+    } catch (error) {
+        console.error('rejectPublisher:', error);
+        return res.status(500).json({ message: 'Internal server error', error: error.message });
+    }
+};
 
 // export const verifyPublisher = async (req, res) => {
 //     try {
@@ -599,10 +853,35 @@ export const verifyPublisher = async (req, res) => {
 
 // Helper function to split text into chunks
 
+export const getAdminAudioProgress = async (req, res) => {
+    if (req.middlewareRole !== 'ADMIN') {
+        return res.status(403).json({ message: 'You are not authorized to access this resource' });
+    }
+
+    const { publisherId, isCompany, jobType } = req.query;
+    const normalizedIsCompany = isCompany == null ? null : toIsCompanyBool(isCompany);
+    const normalizedJobType = typeof jobType === 'string' ? jobType.toLowerCase() : null;
+
+    let jobs = Array.from(adminAudioProgress.values());
+    if (publisherId) {
+        jobs = jobs.filter((job) => job.publisherId === publisherId);
+    }
+    if (normalizedIsCompany != null) {
+        jobs = jobs.filter((job) => job.isCompany === normalizedIsCompany);
+    }
+    if (normalizedJobType) {
+        jobs = jobs.filter((job) => job.jobType === normalizedJobType);
+    }
+
+    jobs.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+    return res.status(200).json({ jobs });
+};
+
 
 export const sendSampleAudio = async (req, res) => {
     const {id} = req.params;
     const {isCompany} = req.query;
+    const progressKey = buildAudioProgressKey('sample', id, isCompany);
 
     const {narrationSampleHeartzRate, narrationSpeakingRate, narrationGender, narrationLanguageCode, narrationVoiceName} = req.body;
     if (req.middlewareRole !== 'ADMIN') {
@@ -610,23 +889,63 @@ export const sendSampleAudio = async (req, res) => {
     }
 
     const stream = wantsNdjsonStream(req);
+    let sampleAudioStream = null;
+    let sampleUploadPromise = null;
     const pushProgress = (payload) => {
+        upsertAudioProgress(progressKey, {
+            jobType: 'sample',
+            publisherId: id,
+            isCompany: toIsCompanyBool(isCompany),
+            status: 'running',
+            phase: payload.phase || 'progress',
+            message: payload.message,
+            current: payload.current,
+            total: payload.total,
+            segmentCount: payload.segmentCount
+        });
         if (stream) writeNdjsonLine(res, { type: 'progress', ...payload });
     };
 
     try {
+        upsertAudioProgress(progressKey, {
+            jobType: 'sample',
+            publisherId: id,
+            isCompany: toIsCompanyBool(isCompany),
+            status: 'running',
+            phase: 'queued',
+            message: 'Sample audio request accepted.'
+        });
+
         let publisher;
         if (isCompany === 'true') {
-            publisher = await prisma.company.findUnique({ where: { id } });
+            publisher = await prisma.company.findUnique({
+                where: { id },
+                include: { user: { select: { email: true, name: true } } },
+            });
         } else {
-            publisher = await prisma.author.findUnique({ where: { id } });
+            publisher = await prisma.author.findUnique({
+                where: { id },
+                include: { user: { select: { email: true, name: true } } },
+            });
         }
 
         if (!publisher) {
+            upsertAudioProgress(progressKey, {
+                status: 'failed',
+                phase: 'publisher_not_found',
+                message: 'Publisher not found.',
+                errorMessage: 'Publisher not found'
+            });
             return res.status(404).json({ message: 'Publisher not found' });
         }
 
         if (!publisher.pdfURL) {
+            upsertAudioProgress(progressKey, {
+                status: 'failed',
+                phase: 'missing_document_url',
+                message: 'No book document URL found for this publisher.',
+                errorMessage: 'No book document URL found for this publisher'
+            });
             return res.status(400).json({ message: 'No book document URL found for this publisher' });
         }
 
@@ -635,30 +954,56 @@ export const sendSampleAudio = async (req, res) => {
         pushProgress({ phase: 'downloading_document', message: 'Downloading book file from storage…' });
         const pdfKey = publisher.pdfURL.split('/').slice(3).join('/');
         const userId = pdfKey.split('/').slice(0, 3).join('/');
-        const data = await getPdfFromAws(pdfKey);
+        let data = await getPdfFromAws(pdfKey);
+        const sourceByteLength = Buffer.isBuffer(data) ? data.length : (data?.byteLength ?? 0);
+        if (sourceByteLength > MAX_BOOK_SOURCE_BYTES) {
+            upsertAudioProgress(progressKey, {
+                status: 'failed',
+                phase: 'document_too_large',
+                message: `Source document is too large (${sourceByteLength} bytes).`,
+                errorMessage: 'Source document is too large'
+            });
+            return res.status(413).json({
+                message: `Source document is too large (${sourceByteLength} bytes). Max allowed is ${MAX_BOOK_SOURCE_BYTES} bytes.`
+            });
+        }
 
         pushProgress({ phase: 'parsing_document', message: 'Extracting text from PDF or EPUB…' });
-        const rawBookText = await extractPlainTextForNarration(data, publisher.pdfURL);
+        let rawBookText = await extractPlainTextForNarration(data, publisher.pdfURL);
+        data = null;
 
         console.log('[sendSampleAudio] extracted_raw_text', {
-            chars: typeof rawBookText === 'string' ? rawBookText.length : 0,
-            preview: typeof rawBookText === 'string' ? rawBookText.slice(0, 120) : ''
+            chars: typeof rawBookText === 'string' ? rawBookText.length : 0
         });
 
-        const narrationSegments = await getNarrationSegmentsWithCache({
+        const sampleSegment = getSampleNarrationSegment({
             publisher,
-            isCompany,
-            id,
             rawPdfText: rawBookText,
             onProgress: pushProgress
         });
+        rawBookText = null;
+
+        const recipientEmail = publisher.user?.email;
+        const recipientName = publisher.user?.name || 'there';
+        const bookTitleForEmail =
+            (typeof publisher.title === 'string' && publisher.title.trim()) ||
+            (isCompany === 'true' ? publisher.companyName : publisher.fullName) ||
+            'your listing';
+
+        publisher = null;
 
         console.log('[sendSampleAudio] narration_segments_ready', {
-            count: narrationSegments.length,
-            firstSegmentChars: narrationSegments?.[0]?.ssml?.length ?? 0
+            hasSampleSegment: Boolean(sampleSegment),
+            firstSegmentChars: sampleSegment?.ssml?.length ?? 0
         });
 
-        if (!narrationSegments.length) {
+        if (!sampleSegment?.ssml) {
+            upsertAudioProgress(progressKey, {
+                status: 'failed',
+                phase: 'no_narration_segments',
+                message: 'Unable to generate narration chunks from the uploaded document',
+                errorMessage: 'Unable to generate narration chunks from the uploaded document'
+            });
             if (stream) {
                 writeNdjsonLine(res, { type: 'error', message: 'Unable to generate narration chunks from the uploaded document' });
                 return res.end();
@@ -667,9 +1012,8 @@ export const sendSampleAudio = async (req, res) => {
         }
 
         pushProgress({ phase: 'synthesizing_audio', message: 'Converting first segment to speech (OpenAI TTS)…' });
-        const firstSegment = narrationSegments[0].ssml;
         const [response] = await googleTtsConvert(
-            firstSegment,
+            sampleSegment.ssml,
             narrationSampleHeartzRate,
             narrationSpeakingRate,
             narrationGender,
@@ -681,7 +1025,23 @@ export const sendSampleAudio = async (req, res) => {
         const sampleFileName = `sample_output_${id}.${ext}`;
 
         pushProgress({ phase: 'uploading', message: 'Uploading sample audio…' });
-        const { Location } = await uploadAudioBufferToS3(response.audioContent, userId, sampleFileName);
+        sampleAudioStream = new PassThrough();
+        sampleUploadPromise = uploadAudioStreamToS3(sampleAudioStream, userId, sampleFileName);
+        if (response.audioContent?.length) {
+            const canContinueWriting = sampleAudioStream.write(response.audioContent);
+            if (!canContinueWriting) {
+                await once(sampleAudioStream, 'drain');
+            }
+        }
+        sampleAudioStream.end();
+        const { Location } = await sampleUploadPromise;
+
+        upsertAudioProgress(progressKey, {
+            status: 'completed',
+            phase: 'complete',
+            message: 'Sample audio generated and uploaded successfully',
+            resultUrl: Location
+        });
 
         if (isCompany === 'true') {
             await prisma.company.update({
@@ -693,6 +1053,22 @@ export const sendSampleAudio = async (req, res) => {
                 where: { id },
                 data: { audioSampleURL: Location }
             });
+        }
+
+        if (recipientEmail) {
+            void (async () => {
+                try {
+                    const html = sampleAudioReadyEmailTemplate(recipientName, bookTitleForEmail);
+                    await resendEmailBoiler(
+                        process.env.NAMECHEAP_EMAIL,
+                        recipientEmail,
+                        'Your sample audio is ready — Safari Books',
+                        html
+                    );
+                } catch (notifyErr) {
+                    console.error('[sendSampleAudio] publisher notify email failed:', notifyErr);
+                }
+            })();
         }
 
         if (stream) {
@@ -710,6 +1086,15 @@ export const sendSampleAudio = async (req, res) => {
         });
     } catch (error) {
         console.error('Error in sendSampleAudio:', error);
+        upsertAudioProgress(progressKey, {
+            status: 'failed',
+            phase: 'failed',
+            message: error.message || 'Internal server error',
+            errorMessage: error.message || 'Internal server error'
+        });
+        if (sampleAudioStream && !sampleAudioStream.destroyed) {
+            sampleAudioStream.destroy(error);
+        }
         if (stream && res.headersSent) {
             writeNdjsonLine(res, { type: 'error', message: error.message || 'Internal server error' });
             return res.end();
@@ -721,6 +1106,7 @@ export const sendSampleAudio = async (req, res) => {
 export const generateFullAudio = async (req, res) => {
     const { id } = req.params;
     const { isCompany } = req.query;
+    const progressKey = buildAudioProgressKey('full', id, isCompany);
 
     const { narrationSpeakingRate, narrationGender, narrationLanguageCode, narrationVoiceName } = req.body;
     if (req.middlewareRole !== 'ADMIN') {
@@ -728,7 +1114,22 @@ export const generateFullAudio = async (req, res) => {
     }
 
     const stream = wantsNdjsonStream(req);
+    const jobKey = `${isCompany === 'true' ? 'company' : 'author'}:${id}`;
+    let audioStream = null;
+    let uploadPromise = null;
+    let jobRegistered = false;
     const pushProgress = (payload) => {
+        upsertAudioProgress(progressKey, {
+            jobType: 'full',
+            publisherId: id,
+            isCompany: toIsCompanyBool(isCompany),
+            status: 'running',
+            phase: payload.phase || 'progress',
+            message: payload.message,
+            current: payload.current,
+            total: payload.total,
+            segmentCount: payload.segmentCount
+        });
         logGenerateFullAudio(id, isCompany, payload.phase || 'progress', {
             message: payload.message,
             current: payload.current,
@@ -741,6 +1142,44 @@ export const generateFullAudio = async (req, res) => {
     const jobStartedAt = Date.now();
 
     try {
+        upsertAudioProgress(progressKey, {
+            jobType: 'full',
+            publisherId: id,
+            isCompany: toIsCompanyBool(isCompany),
+            status: 'running',
+            phase: 'queued',
+            message: 'Full audio request accepted.'
+        });
+
+        if (activeFullAudioJobs.size >= MAX_CONCURRENT_FULL_AUDIO_JOBS) {
+            logGenerateFullAudio(id, isCompany, 'concurrency_limit_hit', {
+                activeJobs: activeFullAudioJobs.size,
+                maxJobs: MAX_CONCURRENT_FULL_AUDIO_JOBS
+            });
+            upsertAudioProgress(progressKey, {
+                status: 'failed',
+                phase: 'concurrency_limit_hit',
+                message: 'Full audio generation is busy right now. Please retry shortly.',
+                errorMessage: 'Full audio generation is busy right now. Please retry shortly.'
+            });
+            return res.status(429).json({
+                message: 'Full audio generation is busy right now. Please retry shortly.'
+            });
+        }
+        if (activeFullAudioJobs.has(jobKey)) {
+            logGenerateFullAudio(id, isCompany, 'job_already_running', { jobKey });
+            upsertAudioProgress(progressKey, {
+                status: 'running',
+                phase: 'job_already_running',
+                message: 'A full-audio generation job is already running for this publisher.'
+            });
+            return res.status(409).json({
+                message: 'A full-audio generation job is already running for this publisher.'
+            });
+        }
+        activeFullAudioJobs.add(jobKey);
+        jobRegistered = true;
+
         logGenerateFullAudio(id, isCompany, 'job_started', {
             stream,
             narrationLanguageCode,
@@ -756,11 +1195,23 @@ export const generateFullAudio = async (req, res) => {
 
         if (!publisher) {
             logGenerateFullAudio(id, isCompany, 'publisher_not_found', {});
+            upsertAudioProgress(progressKey, {
+                status: 'failed',
+                phase: 'publisher_not_found',
+                message: 'Publisher not found',
+                errorMessage: 'Publisher not found'
+            });
             return res.status(404).json({ message: 'Publisher not found' });
         }
 
         if (!publisher.pdfURL) {
             logGenerateFullAudio(id, isCompany, 'missing_document_url', {});
+            upsertAudioProgress(progressKey, {
+                status: 'failed',
+                phase: 'missing_document_url',
+                message: 'No book document URL found for this publisher',
+                errorMessage: 'No book document URL found for this publisher'
+            });
             return res.status(400).json({ message: 'No book document URL found for this publisher' });
         }
 
@@ -780,14 +1231,31 @@ export const generateFullAudio = async (req, res) => {
         pushProgress({ phase: 'downloading_document', message: 'Downloading book file from storage…' });
         const pdfKey = publisher.pdfURL.split('/').slice(3).join('/');
         const userId = pdfKey.split('/').slice(0, 3).join('/');
-        const data = await getPdfFromAws(pdfKey);
+        let data = await getPdfFromAws(pdfKey);
+        const sourceByteLength = Buffer.isBuffer(data) ? data.length : (data?.byteLength ?? 0);
+        if (sourceByteLength > MAX_BOOK_SOURCE_BYTES) {
+            logGenerateFullAudio(id, isCompany, 'document_too_large', {
+                sourceByteLength,
+                maxAllowedBytes: MAX_BOOK_SOURCE_BYTES
+            });
+            upsertAudioProgress(progressKey, {
+                status: 'failed',
+                phase: 'document_too_large',
+                message: `Source document is too large (${sourceByteLength} bytes).`,
+                errorMessage: 'Source document is too large'
+            });
+            return res.status(413).json({
+                message: `Source document is too large (${sourceByteLength} bytes). Max allowed is ${MAX_BOOK_SOURCE_BYTES} bytes.`
+            });
+        }
         logGenerateFullAudio(id, isCompany, 'document_downloaded', {
             s3KeyTail: pdfKey.split('/').slice(-2).join('/'),
-            byteLength: Buffer.isBuffer(data) ? data.length : (data?.byteLength ?? 'unknown')
+            byteLength: sourceByteLength || 'unknown'
         });
 
         pushProgress({ phase: 'parsing_document', message: 'Extracting text from PDF or EPUB…' });
-        const rawBookText = await extractPlainTextForNarration(data, publisher.pdfURL);
+        let rawBookText = await extractPlainTextForNarration(data, publisher.pdfURL);
+        data = null;
         logGenerateFullAudio(id, isCompany, 'text_extracted', {
             textCharLength: typeof rawBookText === 'string' ? rawBookText.length : 0
         });
@@ -799,8 +1267,16 @@ export const generateFullAudio = async (req, res) => {
             rawPdfText: rawBookText,
             onProgress: pushProgress
         });
+        rawBookText = null;
+        publisher = null;
         if (!narrationSegments.length) {
             logGenerateFullAudio(id, isCompany, 'no_narration_segments', { msSinceStart: Date.now() - jobStartedAt });
+            upsertAudioProgress(progressKey, {
+                status: 'failed',
+                phase: 'no_narration_segments',
+                message: 'Unable to generate narration chunks from the uploaded document',
+                errorMessage: 'Unable to generate narration chunks from the uploaded document'
+            });
             if (stream) {
                 writeNdjsonLine(res, { type: 'error', message: 'Unable to generate narration chunks from the uploaded document' });
                 return res.end();
@@ -819,10 +1295,16 @@ export const generateFullAudio = async (req, res) => {
             segmentCount: narrationSegments.length
         });
 
-        const audioBuffers = [];
         const generatedTimestamps = [];
         let timelineCursorMs = 0;
         const ttsStartedAt = Date.now();
+        let cumulativeAudioBytes = 0;
+        const fullAudioFileName = `full_output_${id}.mp3`;
+        audioStream = new PassThrough();
+
+        pushProgress({ phase: 'uploading', message: 'Uploading combined audiobook file…' });
+        uploadPromise = uploadAudioStreamToS3(audioStream, userId, fullAudioFileName);
+
         for (let i = 0; i < narrationSegments.length; i++) {
             pushProgress({
                 phase: 'synthesizing_segment',
@@ -840,8 +1322,16 @@ export const generateFullAudio = async (req, res) => {
                 narrationVoiceName
             );
             const segMs = Date.now() - segStart;
-            audioBuffers.push(response.audioContent);
             const bufLen = response.audioContent?.length ?? 0;
+            cumulativeAudioBytes += bufLen;
+
+            if (bufLen > 0) {
+                const canContinueWriting = audioStream.write(response.audioContent);
+                if (!canContinueWriting) {
+                    await once(audioStream, 'drain');
+                }
+            }
+
             let measuredDurationMs = 0;
             let durationSource = 'measured_from_audio';
             try {
@@ -883,19 +1373,14 @@ export const generateFullAudio = async (req, res) => {
                 await new Promise((resolve) => setTimeout(resolve, 100));
             }
         }
+        audioStream.end();
+        const { Location } = await uploadPromise;
+
         logGenerateFullAudio(id, isCompany, 'tts_batch_complete', {
             segmentTotal: narrationSegments.length,
-            ttsTotalMs: Date.now() - ttsStartedAt
+            ttsTotalMs: Date.now() - ttsStartedAt,
+            combinedBytesUploaded: cumulativeAudioBytes
         });
-
-        const singleAudio = Buffer.concat(audioBuffers);
-        const fullAudioFileName = `full_output_${id}.mp3`;
-        logGenerateFullAudio(id, isCompany, 'audio_concatenated', {
-            combinedBytes: singleAudio.length
-        });
-
-        pushProgress({ phase: 'uploading', message: 'Uploading combined audiobook file…' });
-        const { Location } = await uploadAudioBufferToS3(singleAudio, userId, fullAudioFileName);
         logGenerateFullAudio(id, isCompany, 'upload_complete', {
             s3ObjectKey: `${userId}/${fullAudioFileName}`
         });
@@ -933,11 +1418,11 @@ export const generateFullAudio = async (req, res) => {
                 totalEstimatedDurationMs: timelineCursorMs
             });
         } else {
-            const timedNarrationSegments = narrationSegments.map((segment, idx) => {
+            for (let idx = 0; idx < narrationSegments.length; idx++) {
                 const timing = generatedTimestamps[idx];
-                if (!timing) return segment;
-                return {
-                    ...segment,
+                if (!timing) continue;
+                narrationSegments[idx] = {
+                    ...narrationSegments[idx],
                     i: timing.i,
                     s: timing.s,
                     e: timing.e,
@@ -945,16 +1430,16 @@ export const generateFullAudio = async (req, res) => {
                     p: timing.p,
                     source: timing.source
                 };
-            });
+            }
             if (isCompany === 'true') {
                 await prisma.company.update({
                     where: { id },
-                    data: { narrationSegments: JSON.stringify(timedNarrationSegments) }
+                    data: { narrationSegments: JSON.stringify(narrationSegments) }
                 });
             } else {
                 await prisma.author.update({
                     where: { id },
-                    data: { narrationSegments: JSON.stringify(timedNarrationSegments) }
+                    data: { narrationSegments: JSON.stringify(narrationSegments) }
                 });
             }
             logGenerateFullAudio(id, isCompany, 'book_not_found_for_timestamp', {});
@@ -966,6 +1451,12 @@ export const generateFullAudio = async (req, res) => {
         logGenerateFullAudio(id, isCompany, 'job_complete', {
             msTotal: Date.now() - jobStartedAt,
             completeAudioUrl: Location
+        });
+        upsertAudioProgress(progressKey, {
+            status: 'completed',
+            phase: 'complete',
+            message: 'Full audio generated and uploaded successfully',
+            resultUrl: Location
         });
 
         if (stream) {
@@ -986,11 +1477,24 @@ export const generateFullAudio = async (req, res) => {
             errorMessage: error.message,
             msSinceStart: Date.now() - jobStartedAt
         });
+        upsertAudioProgress(progressKey, {
+            status: 'failed',
+            phase: 'failed',
+            message: error.message || 'Internal server error',
+            errorMessage: error.message || 'Internal server error'
+        });
         console.error('Error in generateFullAudio:', error);
+        if (audioStream && !audioStream.destroyed) {
+            audioStream.destroy(error);
+        }
         if (stream && res.headersSent) {
             writeNdjsonLine(res, { type: 'error', message: error.message || 'Internal server error' });
             return res.end();
         }
         return res.status(500).json({ message: 'Internal server error', error: error.message });
+    } finally {
+        if (jobRegistered) {
+            activeFullAudioJobs.delete(jobKey);
+        }
     }
 };

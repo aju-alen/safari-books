@@ -196,36 +196,47 @@ const ChooseRole = () => {
         </View>
       </ScrollView>
 
-      <Animated.View 
-        style={[
-          styles.buttonContainer,
-          { 
-            transform: [{ translateY: buttonTranslateY }],
-            opacity: buttonOpacity
-          }
-        ]}
-      >
-        <TouchableOpacity
+      <View style={styles.footer}>
+        <Animated.View 
           style={[
-            styles.button,
+            styles.buttonAnimated,
             { 
-              backgroundColor: selectedId 
-                ? options.find(item => item.role === selectedId)?.gradient[0] || theme.primary
-                : theme.gray
+              transform: [{ translateY: buttonTranslateY }],
+              opacity: buttonOpacity
             }
           ]}
-          onPress={handleContinue}
-          disabled={!selectedId}
-          activeOpacity={0.8}
         >
-          <Text style={styles.buttonText}>
-            {selectedId ? 'Continue' : 'Select a role to continue'}
-          </Text>
-          {selectedId && (
-            <Ionicons name="arrow-forward" size={20} color="#fff" style={styles.buttonIcon} />
-          )}
+          <TouchableOpacity
+            style={[
+              styles.button,
+              { 
+                backgroundColor: selectedId 
+                  ? options.find(item => item.role === selectedId)?.gradient[0] || theme.primary
+                  : theme.gray
+              }
+            ]}
+            onPress={handleContinue}
+            disabled={!selectedId}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.buttonText}>
+              {selectedId ? 'Continue' : 'Select a role to continue'}
+            </Text>
+            {selectedId && (
+              <Ionicons name="arrow-forward" size={20} color="#fff" style={styles.buttonIcon} />
+            )}
+          </TouchableOpacity>
+        </Animated.View>
+
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.replace('/(authenticate)/login')}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="chevron-back" size={28} color={theme.text} />
+          <Text style={[styles.backButtonText, { color: theme.text }]}>Back</Text>
         </TouchableOpacity>
-      </Animated.View>
+      </View>
     </SafeAreaView>
   );
 };
@@ -244,7 +255,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: horizontalScale(24),
     paddingTop: verticalScale(40),
-    paddingBottom: verticalScale(120),
+    paddingBottom: verticalScale(185),
   },
   headerContainer: {
     alignItems: 'center',
@@ -336,11 +347,27 @@ const styles = StyleSheet.create({
   selectedCard: {
     borderWidth: 3,
   },
-  buttonContainer: {
+  footer: {
     position: 'absolute',
     bottom: verticalScale(40),
     left: horizontalScale(24),
     right: horizontalScale(24),
+  },
+  buttonAnimated: {
+    width: '100%',
+  },
+  backButton: {
+    marginTop: verticalScale(14),
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: verticalScale(14),
+    minHeight: verticalScale(48),
+  },
+  backButtonText: {
+    fontFamily: FONT.notoBold,
+    fontSize: moderateScale(20),
+    marginLeft: horizontalScale(6),
   },
   button: {
     height: verticalScale(56),
