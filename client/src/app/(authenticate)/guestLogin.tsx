@@ -1,7 +1,8 @@
-import { StyleSheet, Text, View, TouchableOpacity, SafeAreaView } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import React from 'react';
 import * as SecureStore from 'expo-secure-store';
 import { router } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const GuestLogin = () => {
     const handleGuestLogin = async() => {

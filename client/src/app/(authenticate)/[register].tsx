@@ -9,7 +9,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -21,6 +20,7 @@ import { COLORS, welcomeCOLOR } from '../../constants/tokens';
 import { ipURL } from '../../utils/backendURL';
 import { horizontalScale, moderateScale, verticalScale } from '../../utils/responsiveSize';
 import { useTheme } from '@/providers/ThemeProvider';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const RegisterPage = () => {
   const {theme} = useTheme()

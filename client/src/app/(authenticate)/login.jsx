@@ -3,13 +3,14 @@ import axios from 'axios';
 import { router } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import React, { useState } from 'react';
-import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, FONT, welcomeCOLOR } from '../../constants/tokens.ts';
 import { useTheme } from '@/providers/ThemeProvider';
 import { defaultStyles } from '../../styles/index.ts';
 import { ipURL } from '../../utils/backendURL.ts';
 import { horizontalScale, moderateScale, verticalScale } from '../../utils/responsiveSize.ts';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 
 const LoginPage = () => {

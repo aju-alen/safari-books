@@ -6,27 +6,24 @@ import {
   TouchableOpacity,
   Image,
   Pressable,
-  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAudio } from './AudioContext';
 import { useTheme } from '@/providers/ThemeProvider';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, usePathname } from 'expo-router';
 import { moderateScale } from '@/utils/responsiveSize';
-
-const TAB_BAR_BASE = Platform.OS === 'android' ? 60 : 52;
+import { useBasePaddingToInset } from '@/providers/BasePaddingToInset';
 
 const MiniPlayer = () => {
   const { theme } = useTheme();
-  const insets = useSafeAreaInsets();
+  const { tabBarHeight } = useBasePaddingToInset();
   const pathname = usePathname();
   const { currentTrack, isPlaying, handlePlayPause, miniPlayerVisible, unloadActiveSound } = useAudio();
 
   const isFullAudioPlayerRoute = /\/play\//.test(pathname);
   if (isFullAudioPlayerRoute || !miniPlayerVisible || !currentTrack) return null;
 
-  const bottom = TAB_BAR_BASE + insets.bottom + 6;
+  const bottom = tabBarHeight + 6;
 
   const openFullPlayer = () => {
     if (currentTrack.bookId) {

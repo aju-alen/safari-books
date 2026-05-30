@@ -6,15 +6,7 @@ import {  Stack } from 'expo-router'
 import { AudioProvider } from '@/store/AudioContext';
 import ThemeProvider from '@/providers/ThemeProvider';
 import { NotificationProvider } from '@/providers/NotificationsProvider';
-import * as Notifications from "expo-notifications";
-
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-  }),
-});
+import { BasePaddingToInsetProvider } from '@/providers/BasePaddingToInset';
 
 
 SplashScreen.preventAutoHideAsync();
@@ -54,6 +46,7 @@ const MainLayout = () => {
         return null;
       }
   return (
+    <BasePaddingToInsetProvider>
     <NotificationProvider>
       <ThemeProvider>
     <AudioProvider>
@@ -68,6 +61,7 @@ const MainLayout = () => {
   </AudioProvider>
   </ThemeProvider>
   </NotificationProvider>
+  </BasePaddingToInsetProvider>
   )
 }
 

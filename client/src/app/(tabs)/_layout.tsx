@@ -8,11 +8,11 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { RevenueCatProvider } from '../../providers/RevenueCat';
 import { useTheme } from '@/providers/ThemeProvider';
-import { Platform } from 'react-native';
+import { useBasePaddingToInset } from '@/providers/BasePaddingToInset';
 
 const TabsLayout = () => {
     const {theme} = useTheme()
-    const isAndroid = Platform.OS === 'android';
+    const { tabBarHeight, bottomInset } = useBasePaddingToInset();
     const pathname = usePathname();
     const isFullAudioPlayer = /\/play\//.test(pathname);
 
@@ -22,17 +22,17 @@ const TabsLayout = () => {
         borderTopRightRadius: 20,
         borderTopWidth: 0,
         paddingTop: 8,
+        height: tabBarHeight,
         backgroundColor: theme.background,
-        ...(isAndroid && {
-            height: 60,
-        }),
     };
 
     return (
         <RevenueCatProvider>
         <View style={styles.container}>
             {/* Bottom Tab Navigator */}
-            <Tabs screenOptions={{
+            <Tabs
+            safeAreaInsets={{ bottom: bottomInset }}
+            screenOptions={{
                 tabBarActiveTintColor: theme.primary,
                 tabBarLabelStyle: {
                     fontSize: FONTSIZE.xSmall,
@@ -62,7 +62,7 @@ const TabsLayout = () => {
                     name="discover"
                     options={{
                         tabBarLabel: "Discover",
-                        tabBarIcon: () => <AntDesign name="find" size={24} color={theme.primary} />
+                        tabBarIcon: () => <AntDesign name="search" size={24} color={theme.primary} />
                     }}
                 />
 

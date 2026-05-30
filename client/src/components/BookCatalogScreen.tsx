@@ -7,7 +7,6 @@ import {
   FlatList,
   Image,
   ActivityIndicator,
-  SafeAreaView,
   Alert,
 } from 'react-native';
 import React, { useState, useEffect, useRef } from 'react';
@@ -18,6 +17,7 @@ import { horizontalScale, verticalScale, moderateScale } from '@/utils/responsiv
 import { FONT } from '@/constants/tokens';
 import { axiosWithAuth } from '@/utils/customAxios';
 import { ipURL } from '@/utils/backendURL';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export type BookCatalogScreenProps = {
   categoryKey?: string;

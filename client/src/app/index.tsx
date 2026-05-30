@@ -2,7 +2,6 @@ import { StatusBar } from "expo-status-bar";
 import { StyleSheet, Text, View, Pressable, Dimensions, Image } from 'react-native';
 import { router } from "expo-router";
 import React, { useEffect, useState } from 'react';
-import { SafeAreaProvider } from "react-native-safe-area-context";
 import * as SecureStore from 'expo-secure-store';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -53,7 +52,7 @@ const App = () => {
   if (loading) return null; // or a spinner
 
   return (
-    <SafeAreaProvider>
+    <>
       <StatusBar style="light" />
       <View style={[styles.container, { backgroundColor: theme.background }]}>
         {/* Header Section */}
@@ -124,7 +123,7 @@ const App = () => {
           </Text>
         </View>
       </View>
-    </SafeAreaProvider>
+    </>
   );
 };
 
