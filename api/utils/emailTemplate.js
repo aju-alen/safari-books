@@ -267,6 +267,102 @@ export const registerEmailTemplate = (firstName, verificationToken, backendUrl) 
   };
 
 /**
+ * Password reset email template
+ * @param {string} name - User's name
+ * @param {string} resetCode - 6-digit password reset code
+ * @returns {string} HTML email template
+ */
+export const forgotPasswordEmailTemplate = (name, resetCode) => {
+    return `
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Reset Your Password - Safari Books</title>
+        <style>
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            line-height: 1.7;
+            color: #222;
+            background-color: #f6f8fa;
+            margin: 0;
+            padding: 0;
+          }
+          .email-wrapper {
+            background-color: #f6f8fa;
+            padding: 40px 0;
+          }
+          .email-container {
+            max-width: 480px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
+          }
+          .header {
+            background: linear-gradient(135deg, #4A4DFF 0%, #6366F1 100%);
+            padding: 32px 24px;
+            text-align: center;
+          }
+          .header h1 {
+            color: #ffffff;
+            font-size: 24px;
+            margin: 0;
+          }
+          .content {
+            padding: 32px 24px;
+          }
+          .content p {
+            margin: 0 0 16px 0;
+            color: #444;
+          }
+          .code-box {
+            background: #f3f4f6;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            font-family: monospace;
+            font-size: 32px;
+            font-weight: 700;
+            letter-spacing: 6px;
+            margin: 24px 0;
+            color: #222;
+          }
+          .footer {
+            padding: 24px;
+            text-align: center;
+            color: #888;
+            font-size: 13px;
+            border-top: 1px solid #eee;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="email-wrapper">
+          <div class="email-container">
+            <div class="header">
+              <h1>Reset Your Password</h1>
+            </div>
+            <div class="content">
+              <p>Hi ${name},</p>
+              <p>We received a request to reset your Safari Books password. This is your reset code:</p>
+              <div class="code-box">${resetCode}</div>
+              <p>Open the Safari Books app, go to the reset password screen, paste this code, and enter your new password.</p>
+              <p>This code expires in 1 hour. If you did not request a password reset, you can safely ignore this email.</p>
+            </div>
+            <div class="footer">
+              &copy; ${new Date().getFullYear()} Safari Books. All rights reserved.
+            </div>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+};
+
+/**
  * Welcome email template
  * @param {string} name - User's name
  * @returns {string} HTML email template

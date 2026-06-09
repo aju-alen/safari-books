@@ -22,6 +22,8 @@ model User{
   role Role 
   emailVerificationToken String?
   emailVerified Boolean @default(false)
+  passwordResetToken String?
+  passwordResetExpires DateTime?
   firstTimeLogin Boolean @default(true)
   pushToken String? // Store push notification token
   

@@ -4,7 +4,7 @@ import bcrypt from 'bcrypt';
 import nodemailer from "nodemailer";
 import jwt from "jsonwebtoken";
 import { backendUrl } from "../utils/backendUrl.js";
-import { registerEmailTemplate, sendWelcomeEmailTemplate } from "../utils/emailTemplate.js";
+import { registerEmailTemplate, sendWelcomeEmailTemplate, forgotPasswordEmailTemplate } from "../utils/emailTemplate.js";
 import { resendEmailBoiler } from "../utils/resendFunction.js";
 import dotenv from "dotenv";
 dotenv.config();
@@ -435,6 +435,92 @@ export const registerPushToken = async (req, res) => {
 //         res.status(500).json({ message: "An error has occurred, please contact support" });
 //     }
 // };
+
+export const forgotPassword = async (req, res) => {
+    const successMessage = "If an account exists with that email, you will receive a password reset code shortly.";
+
+    try {
+        const { email } = req.body;
+
+        if (!email || !email.trim()) {
+            return res.status(400).json({ message: "Email is required" });
+        }
+
+        const lowercaseEmail = email.toLowerCase().trim();
+        const user = await prisma.user.findUnique({
+            where: { email: lowercaseEmail }
+        });
+
+        if (!user) {
+            return res.status(200).json({ message: successMessage });
+        }
+
+        const resetCode = String(crypto.randomInt(100000, 1000000));
+        const resetExpires = new Date(Date.now() + 60 * 60 * 1000);
+
+        await prisma.user.update({
+            where: { id: user.id },
+            data: {
+                passwordResetToken: resetCode,
+                passwordResetExpires: resetExpires
+            }
+        });
+
+        const emailTemplate = forgotPasswordEmailTemplate(user.name, resetCode);
+        await resendEmailBoiler(
+            process.env.NAMECHEAP_EMAIL,
+            user.email,
+            'Reset Your Password - Safari Books',
+            emailTemplate
+        );
+
+        res.status(200).json({ message: successMessage });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "An error has occurred, please contact support" });
+    }
+};
+
+export const resetPassword = async (req, res) => {
+    try {
+        const { token, password } = req.body;
+
+        if (!token || !password) {
+            return res.status(400).json({ message: "Reset token and new password are required" });
+        }
+
+        if (password.length < 6) {
+            return res.status(400).json({ message: "Password must be at least 6 characters long" });
+        }
+
+        const user = await prisma.user.findFirst({
+            where: {
+                passwordResetToken: token,
+                passwordResetExpires: { gt: new Date() }
+            }
+        });
+
+        if (!user) {
+            return res.status(400).json({ message: "Invalid or expired reset token" });
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        await prisma.user.update({
+            where: { id: user.id },
+            data: {
+                password: hashedPassword,
+                passwordResetToken: null,
+                passwordResetExpires: null
+            }
+        });
+
+        res.status(200).json({ message: "Password reset successfully. You can now log in." });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "An error has occurred, please contact support" });
+    }
+};
 
 export const webAdminLogin = async (req, res) => {
     try {

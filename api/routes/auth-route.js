@@ -1,11 +1,13 @@
 import express from "express";
-import {  register,verifyEmail,login,getUserById,loginAdmin,deleteAccount,updateUserProfile,registerPushToken,webAdminLogin} from "../controllers/auth-controller.js";
+import {  register,verifyEmail,login,getUserById,loginAdmin,deleteAccount,updateUserProfile,registerPushToken,webAdminLogin,forgotPassword,resetPassword} from "../controllers/auth-controller.js";
 import { verifyToken } from "../middlewares/jwtVerify.js";
 const router = express.Router()
 
 router.post('/register', register);
 // router.post('/register-admin', registerAdmin);
 router.post('/login', login);
+router.post('/forgot-password', forgotPassword);
+router.post('/reset-password', resetPassword);
 router.post('/admin', loginAdmin);
 router.get('/verify/:token', verifyEmail);
 router.get('/get-user/:id',getUserById);
