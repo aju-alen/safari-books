@@ -437,12 +437,18 @@ export const registerPushToken = async (req, res) => {
 // };
 
 export const forgotPassword = async (req, res) => {
+    const requestId = crypto.randomBytes(4).toString('hex');
     const successMessage = "If an account exists with that email, you will receive a password reset code shortly.";
 
     try {
         const { email } = req.body;
+        console.log(`[forgot-password:${requestId}] Request received`, {
+            emailProvided: !!email,
+            email: email ? email.toLowerCase().trim() : null,
+        });
 
         if (!email || !email.trim()) {
+            console.log(`[forgot-password:${requestId}] Rejected: missing email`);
             return res.status(400).json({ message: "Email is required" });
         }
 
@@ -452,6 +458,7 @@ export const forgotPassword = async (req, res) => {
         });
 
         if (!user) {
+            console.log(`[forgot-password:${requestId}] No user found for email`, { email: lowercaseEmail });
             return res.status(200).json({ message: successMessage });
         }
 
@@ -466,6 +473,15 @@ export const forgotPassword = async (req, res) => {
             }
         });
 
+        console.log(`[forgot-password:${requestId}] Reset code saved`, {
+            userId: user.id,
+            email: user.email,
+            resetCodeLength: resetCode.length,
+            resetCodePreview: `${resetCode.slice(0, 2)}****`,
+            expiresAt: resetExpires.toISOString(),
+            serverTime: new Date().toISOString(),
+        });
+
         const emailTemplate = forgotPasswordEmailTemplate(user.name, resetCode);
         await resendEmailBoiler(
             process.env.NAMECHEAP_EMAIL,
@@ -474,33 +490,87 @@ export const forgotPassword = async (req, res) => {
             emailTemplate
         );
 
+        console.log(`[forgot-password:${requestId}] Reset email sent`, { userId: user.id, email: user.email });
         res.status(200).json({ message: successMessage });
     } catch (error) {
-        console.log(error);
+        console.error(`[forgot-password:${requestId}] Error`, error);
         res.status(500).json({ message: "An error has occurred, please contact support" });
     }
 };
 
 export const resetPassword = async (req, res) => {
+    const requestId = crypto.randomBytes(4).toString('hex');
+
     try {
         const { token, password } = req.body;
+        const serverTime = new Date();
+
+        console.log(`[reset-password:${requestId}] Request received`, {
+            tokenType: typeof token,
+            tokenRawLength: token != null ? String(token).length : 0,
+            tokenPreview: token != null ? `${String(token).slice(0, 2)}****` : null,
+            passwordLength: password?.length ?? 0,
+            serverTime: serverTime.toISOString(),
+        });
 
         if (!token || !password) {
+            console.log(`[reset-password:${requestId}] Rejected: missing token or password`, {
+                hasToken: !!token,
+                hasPassword: !!password,
+            });
             return res.status(400).json({ message: "Reset token and new password are required" });
         }
 
+        const normalizedToken = String(token).trim();
+
         if (password.length < 6) {
+            console.log(`[reset-password:${requestId}] Rejected: password too short`, {
+                passwordLength: password.length,
+            });
             return res.status(400).json({ message: "Password must be at least 6 characters long" });
         }
 
+        const userByToken = await prisma.user.findFirst({
+            where: { passwordResetToken: normalizedToken },
+            select: {
+                id: true,
+                email: true,
+                passwordResetToken: true,
+                passwordResetExpires: true,
+            },
+        });
+
+        console.log(`[reset-password:${requestId}] Token lookup (without expiry filter)`, {
+            normalizedTokenLength: normalizedToken.length,
+            userFound: !!userByToken,
+            userId: userByToken?.id ?? null,
+            email: userByToken?.email ?? null,
+            storedTokenLength: userByToken?.passwordResetToken?.length ?? null,
+            storedTokenMatches: userByToken ? userByToken.passwordResetToken === normalizedToken : null,
+            expiresAt: userByToken?.passwordResetExpires?.toISOString() ?? null,
+            isExpired: userByToken?.passwordResetExpires
+                ? userByToken.passwordResetExpires <= serverTime
+                : null,
+            msUntilExpiry: userByToken?.passwordResetExpires
+                ? userByToken.passwordResetExpires.getTime() - serverTime.getTime()
+                : null,
+        });
+
         const user = await prisma.user.findFirst({
             where: {
-                passwordResetToken: token,
-                passwordResetExpires: { gt: new Date() }
+                passwordResetToken: normalizedToken,
+                passwordResetExpires: { gt: serverTime }
             }
         });
 
         if (!user) {
+            console.log(`[reset-password:${requestId}] Rejected: invalid or expired token`, {
+                normalizedTokenLength: normalizedToken.length,
+                hadMatchingToken: !!userByToken,
+                tokenWasExpired: userByToken?.passwordResetExpires
+                    ? userByToken.passwordResetExpires <= serverTime
+                    : null,
+            });
             return res.status(400).json({ message: "Invalid or expired reset token" });
         }
 
@@ -515,9 +585,14 @@ export const resetPassword = async (req, res) => {
             }
         });
 
+        console.log(`[reset-password:${requestId}] Password reset successful`, {
+            userId: user.id,
+            email: user.email,
+        });
+
         res.status(200).json({ message: "Password reset successfully. You can now log in." });
     } catch (error) {
-        console.log(error);
+        console.error(`[reset-password:${requestId}] Error`, error);
         res.status(500).json({ message: "An error has occurred, please contact support" });
     }
 };
