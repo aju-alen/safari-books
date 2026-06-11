@@ -6,7 +6,10 @@ import { getPdfFromAws } from '../utils/getPdfFromAws.js'
 import { extractPlainTextForNarration } from '../utils/bookDocumentText.js'
 import { googleTtsConvert } from '../utils/google-tts-convert.js'
 import { uploadAudioStreamToS3 } from '../utils/uploadAudioBuffer.js'
-import { buildSmartNarrationChunksWithChatGpt } from '../utils/chatgpt-smart-chunks.js'
+import {
+    buildAudiobookNarrationSegmentsWithChatGpt,
+    preCleanRawExtractForNarration
+} from '../utils/chatgpt-smart-chunks.js'
 import { getAudioDurationMs } from '../utils/audioDurationFromBuffer.js'
 import { sampleAudioReadyEmailTemplate, publisherRejectionEmailTemplate, publisherVerificationApprovedEmailTemplate } from '../utils/emailTemplate.js';
 import { resendEmailBoiler } from '../utils/resendFunction.js';
@@ -18,10 +21,6 @@ const parsedMaxBookSourceBytes = Number(process.env.MAX_BOOK_SOURCE_BYTES || 50 
 const MAX_BOOK_SOURCE_BYTES = Number.isFinite(parsedMaxBookSourceBytes) && parsedMaxBookSourceBytes > 0
     ? parsedMaxBookSourceBytes
     : 50 * 1024 * 1024;
-const parsedSampleSourceChars = Number(process.env.SAMPLE_AUDIO_SOURCE_CHAR_LIMIT || 18000);
-const SAMPLE_AUDIO_SOURCE_CHAR_LIMIT = Number.isFinite(parsedSampleSourceChars) && parsedSampleSourceChars > 0
-    ? Math.floor(parsedSampleSourceChars)
-    : 18000;
 const parsedMaxConcurrentJobs = Number(process.env.MAX_CONCURRENT_FULL_AUDIO_JOBS || 1);
 const MAX_CONCURRENT_FULL_AUDIO_JOBS = Number.isFinite(parsedMaxConcurrentJobs) && parsedMaxConcurrentJobs > 0
     ? Math.floor(parsedMaxConcurrentJobs)
@@ -127,6 +126,9 @@ const beginNdjsonStream = (res) => {
 
 const writeNdjsonLine = (res, obj) => {
     res.write(`${JSON.stringify(obj)}\n`);
+    if (typeof res.flush === 'function') {
+        res.flush();
+    }
 };
 
 /** Server-side status logs for the full-audio job (grep: `[generateFullAudio]`). */
@@ -186,19 +188,102 @@ const escapeSsml = (text = '') => text
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
 
+const CHAPTER_HEADING_RE = /^(chapter|part)\s+([ivxlcdm\d]+)\b[:.\-\s]*(.*)$/i;
+const NARRATIVE_SECTION_RE = /^(prologue|epilogue|introduction|preface|summary|synopsis)\b/i;
+const TOC_HEADING_RE = /^(table\s+of\s+contents?|contents|index|list\s+of\s+(illustrations|tables|figures))\s*$/i;
+const SKIP_BLOCK_RE = /^(thematic playlist|playlist|dedication|author'?s note|copyright|published by|all rights reserved|isbn)\b/i;
+
+const isTocEntryLine = (line = '') => {
+    const t = String(line).trim();
+    if (!t) return false;
+    if (/\.{2,}\s*\d+\s*$/.test(t)) return true;
+    if (t.length <= 120 && !/[.!?]["']?\s*$/.test(t) && /\s+\d{1,4}\s*$/.test(t)) {
+        const withoutPage = t.replace(/\s+\d{1,4}\s*$/, '').trim();
+        if (withoutPage.split(/\s+/).filter(Boolean).length <= 12 || /\.{2,}/.test(withoutPage)) {
+            return true;
+        }
+    }
+    return false;
+};
+
+const isNarrativeSectionStart = (line = '') => {
+    const t = String(line).trim();
+    if (!t || isTocEntryLine(t)) return false;
+    if (/^prologue\b/i.test(t)) return true;
+    if (NARRATIVE_SECTION_RE.test(t) && !/\.{2,}/.test(t)) return true;
+    if (CHAPTER_HEADING_RE.test(t) && !/\.{2,}/.test(t.replace(CHAPTER_HEADING_RE, ''))) return true;
+    return false;
+};
+
+const stripFrontMatterAndTocLines = (lines = []) => {
+    const kept = [];
+    const openingBuffer = [];
+    let inToc = false;
+    let capturing = false;
+
+    const flushOpeningBuffer = () => {
+        if (openingBuffer.length > 0) {
+            kept.push(...openingBuffer);
+            openingBuffer.length = 0;
+        }
+    };
+
+    for (const rawLine of lines) {
+        let line = String(rawLine).trim().replace(/^\[\d{1,4}\]\s*/, '');
+        if (!line || /^\[\d{1,4}\]\s*$/.test(line)) continue;
+        if (TOC_HEADING_RE.test(line)) {
+            inToc = true;
+            continue;
+        }
+        if (SKIP_BLOCK_RE.test(line)) {
+            capturing = false;
+            continue;
+        }
+        if (inToc) {
+            if (isTocEntryLine(line)) continue;
+            if (isNarrativeSectionStart(line)) {
+                inToc = false;
+                capturing = true;
+                flushOpeningBuffer();
+                kept.push(line);
+            }
+            continue;
+        }
+        if (!capturing) {
+            if (isTocEntryLine(line) || SKIP_BLOCK_RE.test(line)) continue;
+            if (isNarrativeSectionStart(line)) {
+                capturing = true;
+                flushOpeningBuffer();
+                kept.push(line);
+                continue;
+            }
+            if (line.length <= 200 && !/^by\s*$/i.test(line)) {
+                openingBuffer.push(line);
+            }
+            continue;
+        }
+        kept.push(line);
+    }
+
+    return kept.length > 0 ? kept : lines;
+};
+
 const cleanPdfTextForNarration = (rawText = '') => {
-    const normalized = rawText
+    const preCleaned = preCleanRawExtractForNarration(rawText);
+    const normalized = preCleaned
         .replace(/\r/g, '\n')
         .replace(/\u000c/g, '\n')
         .replace(/-\n(?=[a-z])/g, '')
         .replace(/[^\S\n]+/g, ' ');
 
-    const lines = normalized
-        .split('\n')
-        .map((line) => line.trim())
-        .filter((line) => line.length > 0)
-        .filter((line) => !/^(page\s*)?\d+$/i.test(line))
-        .filter((line) => !/^[|_~`•·\-.]{2,}$/.test(line));
+    const lines = stripFrontMatterAndTocLines(
+        normalized
+            .split('\n')
+            .map((line) => line.trim())
+            .filter((line) => line.length > 0)
+            .filter((line) => !/^(page\s*)?\d+$/i.test(line))
+            .filter((line) => !/^[|_~`•·\-.]{2,}$/.test(line))
+    );
 
     return lines
         .join('\n')
@@ -230,26 +315,44 @@ const expandNarrationAbbreviations = (text = '') => text
 
 const detectChapters = (text = '') => {
     const lines = text.split('\n');
-    const chapterRegex = /^(chapter|part)\s+([ivxlcdm\d]+)\b[:.\-\s]*(.*)$/i;
     const chapters = [];
     let currentChapter = null;
 
     for (const rawLine of lines) {
         const line = rawLine.trim();
-        if (!line) continue;
-        const chapterMatch = line.match(chapterRegex);
+        if (!line || isTocEntryLine(line)) continue;
 
+        if (/^prologue\b/i.test(line)) {
+            if (currentChapter?.content.length) chapters.push(currentChapter);
+            currentChapter = { heading: 'Prologue', content: [] };
+            const body = line.replace(/^prologue\b[:.\-\s]*/i, '').trim();
+            if (body) currentChapter.content.push(body);
+            continue;
+        }
+
+        const chapterMatch = line.match(CHAPTER_HEADING_RE);
         if (chapterMatch) {
             if (currentChapter && currentChapter.content.length > 0) {
                 chapters.push(currentChapter);
             }
-
             const chapterNumber = chapterMatch[2];
             const chapterTitle = chapterMatch[3]?.trim() || `${chapterMatch[1]} ${chapterNumber}`;
             currentChapter = {
                 heading: `Chapter ${chapterNumber}: ${chapterTitle}`,
                 content: []
             };
+            continue;
+        }
+
+        if (/^(epilogue|introduction|preface|summary|synopsis)\b/i.test(line)) {
+            if (currentChapter?.content.length) chapters.push(currentChapter);
+            const label = line.split(/\s+/)[0];
+            currentChapter = {
+                heading: label.charAt(0).toUpperCase() + label.slice(1).toLowerCase(),
+                content: []
+            };
+            const body = line.replace(/^(epilogue|introduction|preface|summary|synopsis)\b[:.\-\s]*/i, '').trim();
+            if (body) currentChapter.content.push(body);
             continue;
         }
 
@@ -315,8 +418,13 @@ const buildNarrationSegments = (rawPdfText = '') => {
         const chapterText = chapter.content.join(' ').replace(/\s+/g, ' ').trim();
         const chapterSegments = splitChapterIntoSegments(chapterText);
 
-        for (const segmentText of chapterSegments) {
-            const expanded = expandNarrationAbbreviations(segmentText);
+        for (let segIdx = 0; segIdx < chapterSegments.length; segIdx++) {
+            const segmentText = chapterSegments[segIdx];
+            let expanded = expandNarrationAbbreviations(segmentText);
+            if (segIdx === 0) {
+                const headingAnnounce = escapeSsml(`${chapter.heading}.`);
+                expanded = `${headingAnnounce}<break time="700ms"/> ${expanded}`;
+            }
             const ssmlContent = addNarrationPauses(expanded);
 
             narrationSegments.push({
@@ -373,32 +481,57 @@ const parseNarrationTimelineFromSegments = (storedValue) => {
         }));
 };
 
-const getNarrationSegmentsWithCache = async ({
+const saveNarrationSegmentsToPublisher = async (id, isCompany, segments) => {
+    const serialized = JSON.stringify(segments);
+    if (isCompany === 'true') {
+        await prisma.company.update({
+            where: { id },
+            data: { narrationSegments: serialized }
+        });
+    } else {
+        await prisma.author.update({
+            where: { id },
+            data: { narrationSegments: serialized }
+        });
+    }
+};
+
+const buildPublisherNarrationMetadata = (publisher, isCompany) => {
+    const authorName = isCompany === 'true'
+        ? publisher?.companyName
+        : publisher?.fullName;
+    return {
+        title: typeof publisher?.title === 'string' ? publisher.title.trim() : '',
+        authorName: typeof authorName === 'string' ? authorName.trim() : '',
+        synopsis: typeof publisher?.synopsis === 'string' ? publisher.synopsis.trim() : ''
+    };
+};
+
+const getAudiobookNarrationSegmentsWithCache = async ({
     publisher,
     isCompany,
     id,
     rawPdfText,
-    onProgress
+    onProgress,
+    forceRegenerate = false
 }) => {
     const t0 = Date.now();
-    console.log('[sendSampleAudio][segments] start', {
+    console.log('[audiobook][segments] start', {
         publisherId: id,
         isCompany,
         rawTextChars: typeof rawPdfText === 'string' ? rawPdfText.length : 0,
-        hasStoredSegments: Boolean(publisher?.narrationSegments)
+        hasStoredSegments: Boolean(publisher?.narrationSegments),
+        forceRegenerate
     });
 
     const cachedSegments = parseStoredNarrationSegments(publisher?.narrationSegments);
-    console.log('[sendSampleAudio][segments] parsed_cached_segments', {
-        count: cachedSegments.length
-    });
-    if (cachedSegments.length > 0) {
+    if (!forceRegenerate && cachedSegments.length > 0) {
         onProgress?.({
             phase: 'segments_cached',
-            message: `Using saved narration plan (${cachedSegments.length} segments).`,
+            message: `Using saved full-book narration plan (${cachedSegments.length} segments).`,
             segmentCount: cachedSegments.length
         });
-        console.log('[sendSampleAudio][segments] using_cache', {
+        console.log('[audiobook][segments] using_cache', {
             count: cachedSegments.length,
             elapsedMs: Date.now() - t0
         });
@@ -407,72 +540,95 @@ const getNarrationSegmentsWithCache = async ({
 
     onProgress?.({
         phase: 'generating_segments',
-        message: 'Building SSML narration segments with ChatGPT (often several minutes)…'
+        message: 'AI building full-book narration plan (title, author, sections — skipping TOC & page numbers)…'
     });
 
-    const generatedSegments = await buildSmartNarrationChunksWithChatGpt(
+    const metadata = buildPublisherNarrationMetadata(publisher, isCompany);
+    const generatedSegments = await buildAudiobookNarrationSegmentsWithChatGpt(
         rawPdfText,
-        buildNarrationSegments,
-        onProgress
+        (text) => buildNarrationSegments(text),
+        onProgress,
+        metadata
     );
-    console.log('[sendSampleAudio][segments] generated_result', {
+    console.log('[audiobook][segments] generated_result', {
         count: Array.isArray(generatedSegments) ? generatedSegments.length : -1,
         elapsedMs: Date.now() - t0
     });
     if (!generatedSegments.length) {
-        console.log('[sendSampleAudio][segments] empty_segments_return');
+        console.log('[audiobook][segments] empty_segments_return');
         return [];
     }
 
     onProgress?.({
         phase: 'segments_generated',
-        message: `Generated ${generatedSegments.length} segments. Saving narration plan…`,
+        message: `Saved full-book plan: ${generatedSegments.length} segments.`,
         segmentCount: generatedSegments.length
     });
 
-    const serialized = JSON.stringify(generatedSegments);
-    if (isCompany === 'true') {
-        console.log('[sendSampleAudio][segments] saving_to_company');
-        await prisma.company.update({
-            where: { id },
-            data: { narrationSegments: serialized }
-        });
-    } else {
-        console.log('[sendSampleAudio][segments] saving_to_author');
-        await prisma.author.update({
-            where: { id },
-            data: { narrationSegments: serialized }
-        });
-    }
+    await saveNarrationSegmentsToPublisher(id, isCompany, generatedSegments);
 
-    console.log('[sendSampleAudio][segments] done', {
+    console.log('[audiobook][segments] done', {
         count: generatedSegments.length,
         elapsedMs: Date.now() - t0
     });
     return generatedSegments;
 };
 
-const getSampleNarrationSegment = ({
-    publisher,
-    rawPdfText,
-    onProgress
-}) => {
-    const cachedSegments = parseStoredNarrationSegments(publisher?.narrationSegments);
-    if (cachedSegments.length > 0) {
-        onProgress?.({
-            phase: 'segments_cached',
-            message: 'Using first cached narration segment for sample audio.'
-        });
-        return cachedSegments[0];
+const pickSampleSegmentFromList = (segments = []) => {
+    if (!segments.length) return { segment: null, selectedIndex: -1 };
+
+    const findByHeading = (pattern) =>
+        segments.findIndex((s) => pattern.test(String(s?.chapterHeading || '').trim()));
+
+    const openingIndex = findByHeading(/^opening\b/i);
+    if (openingIndex >= 0) {
+        return { segment: segments[openingIndex], selectedIndex: openingIndex };
     }
 
-    const limitedSource = String(rawPdfText || '').slice(0, SAMPLE_AUDIO_SOURCE_CHAR_LIMIT);
-    onProgress?.({
-        phase: 'segments_preview',
-        message: 'Building first narration segment from document preview text…'
+    // Segment 1 is the sample preview: title, author, then prologue/summary/chapter start
+    return { segment: segments[0], selectedIndex: 0 };
+};
+
+const getSampleNarrationSegmentWithCache = async ({
+    publisher,
+    isCompany,
+    id,
+    rawPdfText,
+    onProgress,
+    forceRegenerate = false
+}) => {
+    const usedCache = !forceRegenerate
+        && parseStoredNarrationSegments(publisher?.narrationSegments).length > 0;
+
+    const segments = await getAudiobookNarrationSegmentsWithCache({
+        publisher,
+        isCompany,
+        id,
+        rawPdfText,
+        onProgress,
+        forceRegenerate
     });
-    const previewSegments = buildNarrationSegments(limitedSource);
-    return previewSegments[0] || null;
+
+    if (!segments.length) {
+        return { segment: null, segments: [], segmentSource: 'ai_failed', selectedIndex: -1 };
+    }
+
+    const segmentSource = usedCache ? 'cached_narration_segments' : 'ai_chatgpt_audiobook';
+
+    const { segment, selectedIndex } = pickSampleSegmentFromList(segments);
+    console.log('[sendSampleAudio][segment_select]', {
+        segmentSource,
+        segmentCount: segments.length,
+        selectedIndex,
+        chapterHeading: segment?.chapterHeading
+    });
+
+    return {
+        segment,
+        segments,
+        segmentSource,
+        selectedIndex
+    };
 };
 
 export const getAllPendingVerifications = async (req, res) => {
@@ -880,7 +1036,8 @@ export const getAdminAudioProgress = async (req, res) => {
 
 export const sendSampleAudio = async (req, res) => {
     const {id} = req.params;
-    const {isCompany} = req.query;
+    const {isCompany, regenerateSegments} = req.query;
+    const forceRegenerate = String(regenerateSegments).toLowerCase() === 'true' || regenerateSegments === '1';
     const progressKey = buildAudioProgressKey('sample', id, isCompany);
 
     const {narrationSampleHeartzRate, narrationSpeakingRate, narrationGender, narrationLanguageCode, narrationVoiceName} = req.body;
@@ -976,11 +1133,28 @@ export const sendSampleAudio = async (req, res) => {
             chars: typeof rawBookText === 'string' ? rawBookText.length : 0
         });
 
-        const sampleSegment = getSampleNarrationSegment({
-            publisher,
-            rawPdfText: rawBookText,
-            onProgress: pushProgress
-        });
+        const segmentHeartbeat = setInterval(() => {
+            pushProgress({
+                phase: 'generating_segments',
+                message: 'Still processing book text with AI…'
+            });
+        }, 15000);
+
+        let sampleResult;
+        try {
+            sampleResult = await getSampleNarrationSegmentWithCache({
+                publisher,
+                isCompany,
+                id,
+                rawPdfText: rawBookText,
+                onProgress: pushProgress,
+                forceRegenerate
+            });
+        } finally {
+            clearInterval(segmentHeartbeat);
+        }
+
+        const sampleSegment = sampleResult.segment;
         rawBookText = null;
 
         const recipientEmail = publisher.user?.email;
@@ -1260,7 +1434,7 @@ export const generateFullAudio = async (req, res) => {
             textCharLength: typeof rawBookText === 'string' ? rawBookText.length : 0
         });
 
-        const narrationSegments = await getNarrationSegmentsWithCache({
+        const narrationSegments = await getAudiobookNarrationSegmentsWithCache({
             publisher,
             isCompany,
             id,
