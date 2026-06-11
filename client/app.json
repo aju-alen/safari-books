@@ -2,7 +2,7 @@
   "expo": {
     "name": "Safari Books",
     "slug": "safari-books",
-    "version": "1.2.2",
+    "version": "1.2.19",
     "orientation": "portrait",
     "icon": "./assets/sbLogo.png",
     "userInterfaceStyle": "dark",
@@ -36,13 +36,13 @@
           "backgroundColor": "#000000"
         }
       },
-      "buildNumber": "33"
+      "buildNumber": "41"
     },
     "android": {
-      "versionCode": 13,
+      "versionCode": 38,
       "icon": "./assets/sbLogo.png",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/sbLogo.png",
+        "foregroundImage": "./assets/sb-android.png",
         "backgroundColor": "#FFFFFF"
       },
       "permissions": [

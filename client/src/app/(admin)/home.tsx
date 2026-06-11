@@ -303,10 +303,7 @@ const AdminDashboard = () => {
               ) : (
                 filteredPublishers.map((publisher) => (
                   <View key={publisher.id} style={[styles.publisherCard, { backgroundColor: theme.white, shadowColor: theme.text, borderLeftColor: theme.primary }]}>
-                    <TouchableOpacity
-                      style={styles.publisherInfo}
-                      onPress={() => handleViewDetails(publisher.id, publisher.isCompany)}
-                    >
+                    <View style={styles.publisherInfo}>
                       <View style={[styles.publisherIconContainer, { backgroundColor: theme.primary }]}>
                         {publisher.isCompany ? (
                           <FontAwesome5 name="building" size={20} color={theme.white} />
@@ -333,36 +330,57 @@ const AdminDashboard = () => {
                           </View>
                         </View>
                       </View>
-                    </TouchableOpacity>
-                    
+                    </View>
+
                     <View style={[styles.documentsSection, { borderTopColor: theme.gray2 }]}>
-                      <Text style={[styles.documentsSectionTitle, { color: theme.text }]}>Verification Documents</Text>
+                      <Text style={[styles.documentsSectionTitle, { color: theme.textMuted }]}>Verification documents</Text>
                       <View style={styles.documents}>
-                        <TouchableOpacity 
-                          style={[styles.documentItem, { backgroundColor: `${theme.gray2}15` }]}
+                        <TouchableOpacity
+                          style={[styles.documentItem, { borderColor: theme.gray2 }]}
                           onPress={() => handleOpenDocument(publisher.document1)}
+                          activeOpacity={0.7}
                         >
-                          <MaterialIcons name="description" size={18} color={theme.textMuted} />
+                          <MaterialIcons name="description" size={20} color={theme.textMuted} />
                           <View style={styles.documentDetails}>
-                            <Text style={[styles.documentLabel, { color: theme.textMuted }]}>{publisher.document1Label}</Text>
+                            <Text style={[styles.documentLabel, { color: theme.text }]}>{publisher.document1Label}</Text>
                             <Text style={[styles.documentNumber, { color: theme.textMuted }]}>{publisher.documentNumber1}</Text>
                           </View>
+                          <MaterialIcons name="open-in-new" size={18} color={theme.textMuted} />
                         </TouchableOpacity>
-                        
-                        <TouchableOpacity 
-                          style={[styles.documentItem, { backgroundColor: `${theme.gray2}15` }]}
+
+                        <TouchableOpacity
+                          style={[styles.documentItem, { borderColor: theme.gray2 }]}
                           onPress={() => handleOpenDocument(publisher.document2)}
+                          activeOpacity={0.7}
                         >
-                          <MaterialIcons name="description" size={18} color={theme.textMuted} />
+                          <MaterialIcons name="description" size={20} color={theme.textMuted} />
                           <View style={styles.documentDetails}>
-                            <Text style={[styles.documentLabel, { color: theme.textMuted }]}>{publisher.document2Label}</Text>
+                            <Text style={[styles.documentLabel, { color: theme.text }]}>{publisher.document2Label}</Text>
                             <Text style={[styles.documentNumber, { color: theme.textMuted }]}>{publisher.documentNumber2}</Text>
                           </View>
+                          <MaterialIcons name="open-in-new" size={18} color={theme.textMuted} />
                         </TouchableOpacity>
                       </View>
                     </View>
-                    
-                   
+
+                    <View style={[styles.actionButtons, { borderTopColor: theme.gray2 }]}>
+                      <TouchableOpacity
+                        style={[styles.viewDetailsButton, { backgroundColor: theme.primary }]}
+                        onPress={() => handleViewDetails(publisher.id, publisher.isCompany)}
+                      >
+                        <MaterialIcons name="visibility" size={18} color={theme.white} />
+                        <Text style={[styles.buttonText, { color: theme.white }]}>View Details</Text>
+                      </TouchableOpacity>
+                      {!publisher.isVerified && (
+                        <TouchableOpacity
+                          style={[styles.verifyButton, { backgroundColor: theme.secondary }]}
+                          onPress={() => handleVerifyPublisher(publisher.id, publisher.isCompany)}
+                        >
+                          <MaterialIcons name="check-circle" size={18} color={theme.white} />
+                          <Text style={[styles.buttonText, { color: theme.white }]}>Verify</Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
                   </View>
                 ))
               )}
@@ -601,13 +619,13 @@ const styles = StyleSheet.create({
   documentsSection: {
     marginTop: 16,
     borderTopWidth: 1,
-    // borderTopColor removed - now using theme
-    paddingTop: 16,
+    paddingTop: 14,
   },
   documentsSectionTitle: {
-    fontSize: 15,
+    fontSize: 12,
     fontWeight: '600',
-    // color removed - now using theme
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
     marginBottom: 10,
   },
   documents: {
@@ -617,36 +635,55 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    padding: 10,
-    // backgroundColor removed - now using theme
-    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    backgroundColor: 'transparent',
   },
   documentDetails: {
     flex: 1,
   },
   documentLabel: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '500',
-    // color removed - now using theme
   },
   documentNumber: {
     fontSize: 12,
-    // color removed - now using theme
+    marginTop: 2,
   },
   actionButtons: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
+    flexWrap: 'wrap',
     marginTop: 16,
-    gap: 8,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    gap: 10,
+  },
+  viewDetailsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    elevation: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
   },
   verifyButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingVertical: 10,
+    paddingVertical: 12,
     paddingHorizontal: 16,
-    // backgroundColor removed - now using theme
     borderRadius: 10,
+    elevation: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
   },
   buttonText: {
     // color removed - now using theme

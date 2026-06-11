@@ -6,6 +6,7 @@ import * as SecureStore from 'expo-secure-store';
 import { router } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '@/providers/ThemeProvider';
+import { useBasePaddingToInset } from '@/providers/BasePaddingToInset';
 import { moderateScale, verticalScale } from '@/utils/responsiveSize';
 import { LinearGradient } from 'expo-linear-gradient';
 import { axiosWithAuth } from '@/utils/customAxios';
@@ -33,6 +34,7 @@ const ProfilePage = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const {theme} = useTheme()
+  const { tabBarHeight } = useBasePaddingToInset();
   const [listenerAnalytics, setListenerAnalytics] = useState(null);
   const [userRole, setUserRole] = useState(null);
 
@@ -124,7 +126,7 @@ const ProfilePage = () => {
     <SafeAreaView style={[defaultStyles.container, { backgroundColor: theme.background }]}>
       <ScrollView 
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={{ paddingBottom: tabBarHeight + moderateScale(20) }}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -231,9 +233,6 @@ const ProfilePage = () => {
 export default ProfilePage
 
 const styles = StyleSheet.create({
-  scrollContent: {
-    paddingBottom: moderateScale(30),
-  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',

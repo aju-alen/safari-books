@@ -198,7 +198,7 @@ const PublisherDetails = () => {
     setAudioJobVisible(true);
     setAudioJobStatus('running');
     setAudioJobTitle('Starting sample audio…');
-    setAudioJobDetail('This can take several minutes while the book is parsed and processed with AI.');
+    setAudioJobDetail('Builds the full-book narration plan with AI, then TTS for the first segment only.');
     const body = {
       narrationSampleHeartzRate: publisherData.publisher.narrationSampleHeartzRate,
       narrationSpeakingRate: publisherData.publisher.narrationSpeakingRate,
@@ -206,7 +206,7 @@ const PublisherDetails = () => {
       narrationLanguageCode: publisherData.publisher.narrationLanguageCode,
       narrationVoiceName: publisherData.publisher.narrationVoiceName,
     };
-    const url = `${ipURL}/api/admin/send-sample-audio/${id}?isCompany=${isCompanyBoolean}`;
+    const url = `${ipURL}/api/admin/send-sample-audio/${id}?isCompany=${isCompanyBoolean}&regenerateSegments=true`;
     try {
       await postAdminNarrationStream(url, body, (title, detail) => {
         setAudioJobTitle(title);
@@ -234,7 +234,7 @@ const PublisherDetails = () => {
     setAudioJobVisible(true);
     setAudioJobStatus('running');
     setAudioJobTitle('Starting full audiobook…');
-    setAudioJobDetail('This often takes a long time: text extraction, AI segmentation, then many TTS requests.');
+    setAudioJobDetail('Uses the saved full-book narration plan (or builds it if missing), then TTS for every segment.');
     const body = {
       narrationSampleHeartzRate: publisherData.publisher.narrationSampleHeartzRate,
       narrationSpeakingRate: publisherData.publisher.narrationSpeakingRate,
@@ -1362,7 +1362,7 @@ const styles = StyleSheet.create({
   audioProgressContainer: {
     position: 'absolute',
     right: 16,
-    bottom: 20,
+    bottom: 88,
     left: 16,
     alignItems: 'flex-end',
     zIndex: 30,
@@ -1405,3 +1405,8 @@ const styles = StyleSheet.create({
 });
 
 export default PublisherDetails;
+
+
+
+
+[{"chapterHeading":"Opening: Prologue","segmentLabel":"[SEGMENT 1]","ssml":"<speak><prosody rate=\"96%\">The First Betrayal. <break time=\"400ms\"/> Agnes Mwelu Mugenya. <break time=\"700ms\"/> Prologue. <break time=\"700ms\"/> I watch frozen with shock as the manor — my whole life — engulfs in flames. I cling tighter to my teddy bear while police and firefighters from both sides arrive. Tears are streaking down my face while I try my best not to have a meltdown. I feel a tap on my shoulder. I turn around to find Aunt Julie, my mother’s best friend, sad face staring back at me. <break time=\"400ms\"/> She says nothing as she stretches her arms wide open to welcome me in. I don’t waste a second. I run into her open arms finally crumbling down while she calmly soothes me, caressing my hair. <break time=\"400ms\"/> “They didn’t make it out in time,” I whimper, wiping my tears with the back of my silk sleeping gown sleeve. She gives me a sad smile releasing me from the embrace enough for me to see her face. She tilts my chin up one hand on my shoulder. Her warm chocolate eyes now glistening with tears. <break time=\"400ms\"/> “No, they didn’t because... saving you was their first priority honey. Since they loved you Violet,” she whispers, as if she was there with us when the ceiling collapsed, her voice cracking as tears fall down her face. <break time=\"400ms\"/> “Why did they have to love me so much? I miss them. Now they’re gone,” I sob fresh tears cascading down my face. She pulls me in again and I can feel her tears in my hair as she hugs me.</prosody></speak>"}]

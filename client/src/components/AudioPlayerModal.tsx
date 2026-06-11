@@ -12,6 +12,7 @@ import {
   Pressable,
   FlatList,
   BackHandler,
+  Platform,
   type LayoutChangeEvent,
 } from 'react-native';
 import { Audio } from 'expo-av';
@@ -105,6 +106,19 @@ const AudioPlayer = ({
   const [readerBgIndex, setReaderBgIndex] = useState(0);
 
   const insets = useSafeAreaInsets();
+  const isIPad = Platform.OS === 'ios' && Platform.isPad;
+  const ipadLayout = {
+    contentMaxWidth: 640,
+    coverWidth: 320,
+    coverHeight: 387,
+    vinylOuter: 387,
+    vinylMid: 271,
+  };
+  const ipadContentWidth = {
+    width: '100%' as const,
+    maxWidth: ipadLayout.contentMaxWidth,
+    alignSelf: 'center' as const,
+  };
 
   const sleepPickerMinutes = useMemo(() => {
     const opts = [...timerOptions];
@@ -899,17 +913,46 @@ const AudioPlayer = ({
               contentContainerStyle={[
                 styles.audioScrollInner,
                 { paddingBottom: verticalScale(200) },
+                isIPad && {
+                  alignItems: 'center',
+                  flexGrow: 1,
+                  justifyContent: 'center',
+                  paddingHorizontal: 32,
+                },
               ]}
               showsVerticalScrollIndicator={false}
               bounces={false}
             >
-              <View style={styles.audioHero}>
-                <View style={styles.vinylStage}>
+              <View style={[styles.audioHero, isIPad && ipadContentWidth]}>
+                <View style={[styles.vinylStage, isIPad && { minHeight: ipadLayout.coverHeight }]}>
                   <View
-                    style={[styles.vinylRingOuter, { backgroundColor: theme.gray2, borderColor: theme.maximumTrackTintColor }]}
+                    style={[
+                      styles.vinylRingOuter,
+                      { backgroundColor: theme.gray2, borderColor: theme.maximumTrackTintColor },
+                      isIPad && {
+                        width: ipadLayout.vinylOuter,
+                        height: ipadLayout.vinylOuter,
+                        borderRadius: ipadLayout.vinylOuter / 2,
+                      },
+                    ]}
                   />
-                  <View style={[styles.vinylRingMid, { borderColor: `${String(theme.primary)}35` }]} />
-                  <View style={styles.audioCoverWrap}>
+                  <View
+                    style={[
+                      styles.vinylRingMid,
+                      { borderColor: `${String(theme.primary)}35` },
+                      isIPad && {
+                        width: ipadLayout.vinylMid,
+                        height: ipadLayout.vinylMid,
+                        borderRadius: ipadLayout.vinylMid / 2,
+                      },
+                    ]}
+                  />
+                  <View
+                    style={[
+                      styles.audioCoverWrap,
+                      isIPad && { width: ipadLayout.coverWidth, height: ipadLayout.coverHeight },
+                    ]}
+                  >
                     <Image source={{ uri: bookCover }} style={styles.audioCoverImage} resizeMode="stretch" />
                   </View>
                 </View>
@@ -935,13 +978,28 @@ const AudioPlayer = ({
                   </View>
                 </View>
 
-                <Text style={[styles.bigTitle, { color: theme.text }]} numberOfLines={3}>
+                <Text
+                  style={[
+                    styles.bigTitle,
+                    { color: theme.text },
+                    isIPad && { fontSize: 30, lineHeight: 38, width: '100%' },
+                  ]}
+                  numberOfLines={3}
+                >
                   {title}
                 </Text>
-                <Text style={[styles.audioAuthorSubtitle, { color: theme.textMuted }]}>{author}</Text>
+                <Text
+                  style={[
+                    styles.audioAuthorSubtitle,
+                    { color: theme.textMuted },
+                    isIPad && { fontSize: 16, width: '100%' },
+                  ]}
+                >
+                  {author}
+                </Text>
               </View>
 
-              <View style={styles.audioTimelineBlock}>
+              <View style={[styles.audioTimelineBlock, isIPad && ipadContentWidth]}>
                 <View style={styles.audioSliderWrap}>
                   <Slider
                     style={styles.slider}
@@ -963,7 +1021,7 @@ const AudioPlayer = ({
               </View>
 
               {queueItems.length > 0 ? (
-                <View style={styles.queueSection}>
+                <View style={[styles.queueSection, isIPad && ipadContentWidth]}>
                   <View style={styles.queueTitleRow}>
                     <Text style={[styles.queueTitle, { color: theme.text }]}>Up next</Text>
                     <TouchableOpacity
@@ -1018,10 +1076,26 @@ const AudioPlayer = ({
             </ScrollView>
 
             <View
-              style={[styles.audioDockOuter, { paddingBottom: Math.max(insets.bottom, 12) }]}
+              style={[
+                styles.audioDockOuter,
+                { paddingBottom: Math.max(insets.bottom, 12) },
+                isIPad && { alignItems: 'center', paddingHorizontal: 32 },
+              ]}
               pointerEvents="box-none"
             >
-              <View style={[styles.audioDockPill, { backgroundColor: audioDockPillBg }]}>
+              <View
+                style={[
+                  styles.audioDockPill,
+                  { backgroundColor: audioDockPillBg },
+                  isIPad && {
+                    maxWidth: ipadLayout.contentMaxWidth,
+                    width: '100%',
+                    gap: 20,
+                    paddingVertical: 16,
+                    paddingHorizontal: 20,
+                  },
+                ]}
+              >
                 <TouchableOpacity
                   style={styles.audioDockMiniBtn}
                   onPress={changePlaybackRate}

@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, Image, TouchableOpacity, ScrollView, Modal, Alert } from 'react-native';
+import { StyleSheet, Text, View, Image, TouchableOpacity, ScrollView, Modal, Alert, Platform } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -47,6 +47,7 @@ const SingleBookPage = () => {
   const [loading, setLoading] = useState(true);
   const { isPro } = useRevenueCat();
   const [bookRecommendations, setBookRecommendations] = useState([]);
+  const isIPad = Platform.OS === 'ios' && Platform.isPad;
   
   // useEffect(() => {
   //   const book = eBookData.find((book) => book.id === singleBook);
@@ -223,7 +224,7 @@ const SingleBookPage = () => {
         minHeight: '100%',
         paddingBottom: verticalScale(48),
         paddingHorizontal: horizontalScale(20),
-        maxWidth: 520,
+        maxWidth: isIPad ? undefined : 520,
         width: '100%',
         alignSelf: 'center',
       },
@@ -231,6 +232,11 @@ const SingleBookPage = () => {
         alignItems: 'center',
         marginTop: verticalScale(8),
         marginBottom: verticalScale(8),
+      },
+      belowImageContent: {
+        width: '100%',
+        alignSelf: 'center',
+        ...(isIPad ? { maxWidth: 960 } : {}),
       },
       coverFrame: {
         width: horizontalScale(260),
@@ -336,12 +342,6 @@ const SingleBookPage = () => {
         fontSize: moderateScale(14),
         fontWeight: '600',
         textAlign: 'center',
-      },
-      divider: {
-        width: StyleSheet.hairlineWidth,
-        alignSelf: 'stretch',
-        backgroundColor: theme.maximumTrackTintColor,
-        marginHorizontal: horizontalScale(8),
       },
       primaryButton: {
         backgroundColor: 'transparent',
@@ -610,7 +610,9 @@ const SingleBookPage = () => {
                 resizeMode='stretch'
               />
             </View>
+          </View>
 
+          <View style={styles.belowImageContent}>
             <View style={styles.titleContainer}>
               <Text style={styles.title}>{singleBookData[0]?.title}</Text>
               <Text style={styles.description}>{singleBookData[0]?.description}</Text>
@@ -630,11 +632,6 @@ const SingleBookPage = () => {
               <View style={styles.creditItem}>
                 <Text style={styles.creditLabel}>AUTHOR</Text>
                 <Text style={styles.creditName}>{singleBookData[0]?.authorName}</Text>
-              </View>
-              <View style={styles.divider} />
-              <View style={styles.creditItem}>
-                <Text style={styles.creditLabel}>NARRATOR</Text>
-                <Text style={styles.creditName}>{singleBookData[0]?.narratorName}</Text>
               </View>
             </View>
 
