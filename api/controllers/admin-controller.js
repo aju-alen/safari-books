@@ -1672,3 +1672,317 @@ export const generateFullAudio = async (req, res) => {
         }
     }
 };
+
+const parsePaging = (req) => {
+    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+    const pageSize = Math.min(Math.max(parseInt(req.query.pageSize, 10) || 50, 1), 50);
+    return { page, pageSize, skip: (page - 1) * pageSize };
+};
+
+const requireAdmin = (req, res) => {
+    if (req.middlewareRole !== 'ADMIN') {
+        res.status(403).json({ message: 'You are not authorized to access this resource' });
+        return false;
+    }
+    return true;
+};
+
+export const getAdminStats = async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    try {
+        const [
+            listenersJoined,
+            publishersJoined,
+            narratorsJoined,
+            companiesTotal,
+            companiesVerified,
+            companiesPending,
+            companiesRejected,
+            authorsTotal,
+            authorsVerified,
+            authorsPending,
+            authorsRejected,
+            booksTotal,
+            booksPublished,
+            booksFeatured,
+            libraryEntries,
+            bookmarks,
+            likes,
+        ] = await Promise.all([
+            prisma.user.count({ where: { role: 'LISTENER' } }),
+            prisma.user.count({ where: { role: 'PUBLISHER' } }),
+            prisma.user.count({ where: { role: 'NARRATOR' } }),
+            prisma.company.count(),
+            prisma.company.count({ where: { isVerified: true } }),
+            prisma.company.count({ where: { isVerified: false, isRejected: false } }),
+            prisma.company.count({ where: { isRejected: true } }),
+            prisma.author.count(),
+            prisma.author.count({ where: { isVerified: true } }),
+            prisma.author.count({ where: { isVerified: false, isRejected: false } }),
+            prisma.author.count({ where: { isRejected: true } }),
+            prisma.book.count(),
+            prisma.book.count({ where: { isPublished: true } }),
+            prisma.book.count({ where: { featuredBook: true } }),
+            prisma.library.count(),
+            prisma.bookmark.count(),
+            prisma.like.count(),
+        ]);
+
+        return res.status(200).json({
+            listenersJoined,
+            publishersJoined,
+            narratorsJoined,
+            companiesTotal,
+            companiesVerified,
+            companiesPending,
+            companiesRejected,
+            authorsTotal,
+            authorsVerified,
+            authorsPending,
+            authorsRejected,
+            publishersPending: companiesPending + authorsPending,
+            booksTotal,
+            booksPublished,
+            booksFeatured,
+            libraryEntries,
+            bookmarks,
+            likes,
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: 'Internal server error', error: error.message });
+    }
+};
+
+export const getAdminListeners = async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    try {
+        const { page, pageSize, skip } = parsePaging(req);
+        const q = typeof req.query.q === 'string' ? req.query.q.trim() : '';
+        const where = {
+            role: 'LISTENER',
+            ...(q
+                ? {
+                      OR: [{ name: { contains: q } }, { email: { contains: q } }],
+                  }
+                : {}),
+        };
+
+        const [total, listeners] = await Promise.all([
+            prisma.user.count({ where }),
+            prisma.user.findMany({
+                where,
+                skip,
+                take: pageSize,
+                orderBy: { createdAt: 'desc' },
+                select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    emailVerified: true,
+                    createdAt: true,
+                    _count: { select: { Library: true, bookmarks: true, likes: true } },
+                },
+            }),
+        ]);
+
+        return res.status(200).json({
+            page,
+            pageSize,
+            total,
+            listeners: listeners.map((row) => ({
+                id: row.id,
+                name: row.name,
+                email: row.email,
+                emailVerified: row.emailVerified,
+                libraryCount: row._count.Library,
+                bookmarksCount: row._count.bookmarks,
+                likesCount: row._count.likes,
+                createdAt: row.createdAt,
+            })),
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: 'Internal server error', error: error.message });
+    }
+};
+
+export const getAdminPublishers = async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    try {
+        const { page, pageSize, skip } = parsePaging(req);
+        const q = typeof req.query.q === 'string' ? req.query.q.trim() : '';
+        const status =
+            typeof req.query.status === 'string' && req.query.status.trim()
+                ? req.query.status.trim().toLowerCase()
+                : 'all';
+
+        const statusWhere =
+            status === 'verified'
+                ? { isVerified: true }
+                : status === 'pending'
+                  ? { isVerified: false, isRejected: false }
+                  : status === 'rejected'
+                    ? { isRejected: true }
+                    : {};
+
+        const companyWhere = {
+            ...statusWhere,
+            ...(q
+                ? {
+                      OR: [
+                          { companyName: { contains: q } },
+                          { title: { contains: q } },
+                          { user: { email: { contains: q } } },
+                          { user: { name: { contains: q } } },
+                      ],
+                  }
+                : {}),
+        };
+        const authorWhere = {
+            ...statusWhere,
+            ...(q
+                ? {
+                      OR: [
+                          { fullName: { contains: q } },
+                          { title: { contains: q } },
+                          { user: { email: { contains: q } } },
+                          { user: { name: { contains: q } } },
+                      ],
+                  }
+                : {}),
+        };
+
+        const [companies, authors] = await Promise.all([
+            prisma.company.findMany({
+                where: companyWhere,
+                orderBy: { registrationStartedAt: 'desc' },
+                include: {
+                    user: { select: { id: true, name: true, email: true } },
+                    _count: { select: { books: true } },
+                },
+            }),
+            prisma.author.findMany({
+                where: authorWhere,
+                orderBy: { registrationStartedAt: 'desc' },
+                include: {
+                    user: { select: { id: true, name: true, email: true } },
+                    _count: { select: { books: true } },
+                },
+            }),
+        ]);
+
+        const merged = [
+            ...companies.map((c) => ({
+                id: c.id,
+                type: 'company',
+                displayName: c.companyName,
+                bookTitle: c.title || null,
+                email: c.user?.email || null,
+                userName: c.user?.name || null,
+                isVerified: c.isVerified,
+                isRejected: c.isRejected,
+                isRegistrationComplete: c.isRegistrationComplete,
+                booksCount: c._count.books,
+                createdAt: c.registrationStartedAt,
+            })),
+            ...authors.map((a) => ({
+                id: a.id,
+                type: 'author',
+                displayName: a.fullName,
+                bookTitle: a.title || null,
+                email: a.user?.email || null,
+                userName: a.user?.name || null,
+                isVerified: a.isVerified,
+                isRejected: a.isRejected,
+                isRegistrationComplete: a.isRegistrationComplete,
+                booksCount: a._count.books,
+                createdAt: a.registrationStartedAt,
+            })),
+        ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+        const total = merged.length;
+        const publishers = merged.slice(skip, skip + pageSize);
+
+        return res.status(200).json({ page, pageSize, total, publishers });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: 'Internal server error', error: error.message });
+    }
+};
+
+export const getAdminBooks = async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    try {
+        const { page, pageSize, skip } = parsePaging(req);
+        const q = typeof req.query.q === 'string' ? req.query.q.trim() : '';
+        const published =
+            typeof req.query.published === 'string' ? req.query.published.trim().toLowerCase() : '';
+
+        const where = {
+            ...(published === 'true' ? { isPublished: true } : {}),
+            ...(published === 'false' ? { isPublished: false } : {}),
+            ...(q
+                ? {
+                      OR: [
+                          { title: { contains: q } },
+                          { authorName: { contains: q } },
+                          { narratorName: { contains: q } },
+                          { publisher: { contains: q } },
+                      ],
+                  }
+                : {}),
+        };
+
+        const [total, books] = await Promise.all([
+            prisma.book.count({ where }),
+            prisma.book.findMany({
+                where,
+                skip,
+                take: pageSize,
+                orderBy: { createdAt: 'desc' },
+                select: {
+                    id: true,
+                    title: true,
+                    authorName: true,
+                    narratorName: true,
+                    publisher: true,
+                    categories: true,
+                    amount: true,
+                    isPublished: true,
+                    featuredBook: true,
+                    rating: true,
+                    createdAt: true,
+                    publishedAt: true,
+                    _count: { select: { Library: true, likes: true, bookmarks: true } },
+                },
+            }),
+        ]);
+
+        return res.status(200).json({
+            page,
+            pageSize,
+            total,
+            books: books.map((b) => ({
+                id: b.id,
+                title: b.title,
+                authorName: b.authorName,
+                narratorName: b.narratorName,
+                publisher: b.publisher,
+                category: b.categories,
+                amount: b.amount,
+                isPublished: b.isPublished,
+                featuredBook: b.featuredBook,
+                rating: b.rating,
+                libraryCount: b._count.Library,
+                likesCount: b._count.likes,
+                bookmarksCount: b._count.bookmarks,
+                createdAt: b.createdAt,
+                publishedAt: b.publishedAt,
+            })),
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: 'Internal server error', error: error.message });
+    }
+};
